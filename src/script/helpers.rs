@@ -1,5 +1,5 @@
 use crate::Result;
-use rhai::{Array, Dynamic, Map};
+use rhai::{Array, Dynamic, Map, Scope};
 use serde_json::{json, Map as SerdeMap, Value};
 use std::collections::HashMap;
 
@@ -33,4 +33,50 @@ pub fn rhai_dynamic_to_serde_value(dynamic: Dynamic) -> Result<Value> {
 	};
 
 	Ok(val)
+}
+
+pub fn serde_value_to_scope(value: &Value) -> Result<Scope> {
+	let mut scope = Scope::new();
+
+	match value {
+		Value::Object(map) => {
+			for (k, v) in map {
+				let dynamic_value = serde_value_to_dynamic(v);
+				scope.push_dynamic(k.as_str(), dynamic_value);
+			}
+			Ok(scope)
+		}
+		_ => Err("Root value must be an object".into()),
+	}
+}
+
+pub fn serde_value_to_dynamic(value: &Value) -> Dynamic {
+	match value {
+		Value::Null => Dynamic::UNIT,
+		Value::Bool(b) => (*b).into(),
+		Value::Number(n) => {
+			if let Some(i) = n.as_i64() {
+				i.into()
+			} else if let Some(f) = n.as_f64() {
+				f.into()
+			} else {
+				Dynamic::UNIT
+			}
+		}
+		Value::String(s) => s.clone().into(),
+		Value::Array(arr) => {
+			let mut rhai_array = Array::new();
+			for v in arr {
+				rhai_array.push(serde_value_to_dynamic(v));
+			}
+			rhai_array.into()
+		}
+		Value::Object(obj) => {
+			let mut rhai_map = Map::new();
+			for (k, v) in obj {
+				rhai_map.insert(k.clone().into(), serde_value_to_dynamic(v));
+			}
+			rhai_map.into()
+		}
+	}
 }

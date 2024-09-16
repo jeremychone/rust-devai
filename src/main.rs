@@ -2,17 +2,21 @@
 
 mod agent;
 mod ai;
+mod cli;
 mod error;
 mod script;
 mod support;
 mod tmpl;
+mod types;
 
-use crate::agent::get_agent_instruction;
-use crate::ai::run_ai_on_file;
-use crate::support::args::AppArgs;
+use crate::agent::{find_agent, init_agent_files};
+use crate::ai::run_agent;
+use crate::cli::{AppArgs, CmdConfig};
 use crate::support::cred::get_or_prompt_api_key;
+use crate::types::FileRef;
 use clap::Parser;
 pub use error::{Error, Result};
+use serde_json::json;
 use simple_fs::list_files;
 
 // endregion: --- Modules
@@ -20,38 +24,30 @@ use simple_fs::list_files;
 #[tokio::main]
 async fn main() -> Result<()> {
 	// -- command arguments
-	let mut args = AppArgs::parse().args;
-	args.reverse();
+	let args = AppArgs::parse(); // will fail early, but ok.
+	let cmd_config = CmdConfig::from(args);
 
-	// -- get the cmd
-	// get the agent command
-	let cmd = args.pop().ok_or("Cannot find cmd")?;
-	// get the eventual name match
-	let target_glob = match args.pop() {
-		Some(target) => {
-			if target.contains('*') {
-				target
-			} else {
-				format!("**/{target}")
-			}
-		}
-		None => "**/*.rs".to_string(),
-	};
+	// -- Init the default agent files
+	init_agent_files();
 
-	let agent_inst = get_agent_instruction(&cmd)?;
-
-	// -- get ai client
+	// -- get ai client and agent
 	let client = ai::get_genai_client()?;
+	let agent = find_agent(cmd_config.cmd_agent())?;
 
-	// for now, very simple
-	let is_glob = target_glob.contains("*");
-
-	let src_files = list_files("./", Some(&[target_glob.as_ref()]), None)?;
-
-	for src_file in src_files {
-		println!("processing: {src_file}");
-		let source = std::fs::read_to_string(&src_file)?;
-		run_ai_on_file(&client, &agent_inst, src_file).await?;
+	// -- Exec the command
+	let on_file_globs = cmd_config.on_file_globs();
+	// if we have the on_file_globs, so, they become the items
+	if let Some(on_file_globs) = on_file_globs {
+		let files = list_files("./", Some(&on_file_globs), None)?;
+		for sfile in files {
+			let file_ref = FileRef::from(sfile);
+			let scope_value = json!({
+				"on_file_ref": file_ref
+			});
+			run_agent(&client, &agent, Some(scope_value)).await?;
+		}
+	} else {
+		run_agent(&client, &agent, None).await?;
 	}
 
 	Ok(())

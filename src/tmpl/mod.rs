@@ -13,9 +13,9 @@ static HANDLEBARS: LazyLock<Arc<Handlebars>> = LazyLock::new(|| {
 	handlebars
 });
 
-pub fn render_hbs(hbs_tmpl: &str, data: HashMap<String, Value>) -> Result<String> {
+pub fn hbs_render(hbs_tmpl: &str, data_root: &HashMap<String, Value>) -> Result<String> {
 	let handlebars = &*HANDLEBARS;
-	let res = handlebars.render_template(hbs_tmpl, &data)?;
+	let res = handlebars.render_template(hbs_tmpl, &data_root)?;
 	Ok(res)
 }
 
@@ -35,8 +35,8 @@ mod tests {
 	fn test_hbs_with_rhai_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let script = r#"
-        let file1 = load_file("src/main.rs");
-        let file2 = load_file("src/error.rs");
+        let file1 = file_load("src/main.rs");
+        let file2 = file_load("src/error.rs");
         [file1, file2]  // Return an array of File structs
     "#;
 		let tmpl = r#"
@@ -50,7 +50,7 @@ The files are:
 		let result_json = rhai_eval(script, None)?;
 		// execute the tmpl
 		let data = HashMap::from([("data".to_string(), result_json)]);
-		let res = render_hbs(tmpl, data)?;
+		let res = hbs_render(tmpl, &data)?;
 
 		// -- Check
 		assert!(res.contains("- src/main.rs"), "- src/main.rs");

@@ -10,7 +10,13 @@ pub enum Error {
 	#[from]
 	Custom(String),
 
+	// -- Sub Modules
+	#[from]
+	DynamicSupport(crate::script::DynamicSupportError),
+
 	// -- Externals
+	#[from]
+	JsonValueExt(value_ext::JsonValueExtError),
 	#[from]
 	Serde(serde_json::Error),
 	#[from]

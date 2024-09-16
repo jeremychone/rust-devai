@@ -3,9 +3,14 @@ use crate::{Error, Result};
 
 const AGENT_MD_PROOF_COMMENTS: &str = include_str!("../../agents/proof-comments.md");
 
-pub fn get_agent_instruction(name: &str) -> Result<String> {
-	match name {
-		"pc" | "proof-comments" => Ok(AGENT_MD_PROOF_COMMENTS.to_string()),
-		_ => Err(Error::AgentNotFound(name.to_string())),
-	}
+pub(super) struct EmbeddedAgentFile {
+	pub name: &'static str,
+	pub content: &'static str,
+}
+
+pub(super) fn get_embedded_agent_files() -> &'static [&'static EmbeddedAgentFile] {
+	&[&EmbeddedAgentFile {
+		name: "proof-comments.md",
+		content: AGENT_MD_PROOF_COMMENTS,
+	}]
 }
