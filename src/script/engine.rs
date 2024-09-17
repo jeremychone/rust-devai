@@ -5,6 +5,7 @@ use rhai::{Dynamic, Engine};
 use serde::Serialize;
 use simple_fs::{ensure_file_dir, read_to_string, SFile};
 use std::fs::write;
+use std::path::Path;
 use std::sync::{Arc, LazyLock};
 
 type RhaiResult = core::result::Result<Dynamic, Box<rhai::EvalAltResult>>;
@@ -66,10 +67,11 @@ fn file_save_rhai(file_path: &str, content: &str) -> RhaiResult {
 }
 
 fn file_save(file_path: &str, content: &str) -> Result<()> {
-	let sfile = SFile::from_path(file_path)?;
-	ensure_file_dir(&sfile)?;
-	write(sfile.path(), content);
-	println!("File saved: {}", sfile.to_str());
+	// let sfile = SFile::from_path(file_path)?;
+	let path = Path::new(file_path);
+	ensure_file_dir(path)?;
+	write(path, content);
+	println!("File saved: {}", file_path);
 	Ok(())
 }
 

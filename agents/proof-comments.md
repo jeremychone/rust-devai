@@ -1,7 +1,7 @@
 # Data
 
 ```rhai
-let path = on_file_ref.path;
+let path = item.path;
 let file = file_load(path);
 
 return #{file: file};

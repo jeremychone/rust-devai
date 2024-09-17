@@ -86,7 +86,7 @@ mod tests {
 		on_file_ref.x_insert("path", on_file.path());
 		on_file_ref.x_insert("stem", on_file.file_stem());
 		on_file_ref.x_insert("ext", on_file.ext());
-		root.x_insert("on_file_ref", on_file_ref);
+		root.x_insert("item", on_file_ref);
 
 		run_agent(&client, &agent, Some(root)).await?;
 

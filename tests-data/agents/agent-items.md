@@ -1,3 +1,14 @@
+# Items
+
+```yaml
+
+- name: Jean Dumond
+  title: Director Engineering
+- name: Mike Donavan
+  title: Director Markeing
+
+```
+
 # Data
 
 ```rhai
@@ -10,6 +21,8 @@ return #{ file: file };
 # Instruction
 
 Correct english in the comments of the rust content below, while preserving everything else as is. 
+
+{{item.name}}
 
 ```rust
 {{data.file.content}}

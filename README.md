@@ -14,6 +14,8 @@ It's very rudimentary at this stage and will change significantly between `0.0.z
 
 ## Concept
 
+The concept of this command line, is to have a completely configurable "Command Agent" in markdown format
+
 This is very early experimentation, but the goal is to continue maturing the concept.
 
 The idea is to have more "Command Agents" described as markdown configuration files that can be run with the devai command (CLI).
@@ -38,37 +40,3 @@ Right now, this will run it for the source file targeted, and whatever the AI re
 ... some instruction ...
 ```
 
-### Advanced
-
-``````md
-## Data
-
-```rhai
-// Some scripts that load the data
-// Will have access to the command line args after command name
-
-let src_builder_file = read_file("./src/client/builder.rs");
-// src_builder_file.name: "builder.rs"
-// src_builder_file.path: "./src/client/builder.rs"
-// src_builder_file.content: ".... content of the file ...."
-```
-
-## Instruction
-
-... some instruction, will support handlebars in this block (first system content) ..
-
-## message: System
-
-... possible extra system message (will support handlebars) ...
-
-## message: User
-
-... possible extra user message (will support handlebars) ...
-
-## Output Processing
-
-```rhai
-/// optional output processing.
-```
-
-`````

@@ -13,6 +13,7 @@ const DEVAI_CUSTOMS_DIR: &str = ".devai/customs";
 pub fn init_agent_files() -> Result<()> {
 	ensure_dir(DEVAI_DIR)?;
 	ensure_dir(DEVAI_DEFAULTS_DIR)?;
+	ensure_dir(DEVAI_CUSTOMS_DIR)?;
 
 	let existing_files = list_files(DEVAI_DEFAULTS_DIR, Some(&["*.md"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.file_name()).collect();

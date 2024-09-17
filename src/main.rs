@@ -24,25 +24,25 @@ use simple_fs::list_files;
 #[tokio::main]
 async fn main() -> Result<()> {
 	// -- command arguments
-	let args = AppArgs::parse(); // will fail early, but ok.
+	let args = AppArgs::parse(); // will fail early, but that's okay.
 	let cmd_config = CmdConfig::from(args);
 
 	// -- Init the default agent files
 	init_agent_files();
 
-	// -- get ai client and agent
+	// -- get AI client and agent
 	let client = ai::get_genai_client()?;
 	let agent = find_agent(cmd_config.cmd_agent())?;
 
-	// -- Exec the command
+	// -- Execute the command
 	let on_file_globs = cmd_config.on_file_globs();
-	// if we have the on_file_globs, so, they become the items
+	// if we have the on_file_globs, they become the items
 	if let Some(on_file_globs) = on_file_globs {
 		let files = list_files("./", Some(&on_file_globs), None)?;
 		for sfile in files {
 			let file_ref = FileRef::from(sfile);
 			let scope_value = json!({
-				"on_file_ref": file_ref
+				"item": file_ref
 			});
 			run_agent(&client, &agent, Some(scope_value)).await?;
 		}
