@@ -12,7 +12,6 @@ mod types;
 use crate::agent::{find_agent, init_agent_files};
 use crate::ai::run_agent;
 use crate::cli::{AppArgs, CmdConfig};
-use crate::support::cred::get_or_prompt_api_key;
 use crate::types::FileRef;
 use clap::Parser;
 pub use error::{Error, Result};
@@ -28,7 +27,7 @@ async fn main() -> Result<()> {
 	let cmd_config = CmdConfig::from(args);
 
 	// -- Init the default agent files
-	init_agent_files();
+	init_agent_files()?;
 
 	// -- get AI client and agent
 	let client = ai::get_genai_client()?;

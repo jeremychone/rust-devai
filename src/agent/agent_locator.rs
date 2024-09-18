@@ -1,7 +1,7 @@
 use crate::agent::agents::get_embedded_agent_files;
 use crate::agent::{Agent, AgentDoc};
 use crate::Result;
-use simple_fs::{ensure_dir, list_files, read_to_string, SFile};
+use simple_fs::{ensure_dir, list_files, SFile};
 use std::collections::HashSet;
 use std::fs::write;
 use std::path::Path;

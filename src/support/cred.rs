@@ -6,8 +6,9 @@ use std::io::{self, Write};
 const KEY_SERVICE: &str = "jc_secrets";
 const KEY_NAME: &str = "OPENAI_API_KEY";
 
-pub fn clear_api_key() -> Result<()> {
-	clear_key(KEY_SERVICE, KEY_NAME)?;
+// NOT USED NOW
+fn _clear_api_key() -> Result<()> {
+	_clear_key(KEY_SERVICE, KEY_NAME)?;
 	Ok(())
 }
 
@@ -40,7 +41,9 @@ fn get_and_save_pwd(service: &str, name: &str) -> Result<String> {
 /// Clear the secret key if present
 /// - Returns true if it was present
 /// - If not present, will do nothing (and no error)
-fn clear_key(service: &str, name: &str) -> Result<bool> {
+///
+/// NOT USED FOR NOW
+fn _clear_key(service: &str, name: &str) -> Result<bool> {
 	if let Ok(entry) = Entry::new(service, name) {
 		entry.delete_credential()?;
 		Ok(true)

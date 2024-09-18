@@ -1,7 +1,6 @@
 use crate::Result;
 use rhai::{Array, Dynamic, Map, Scope};
-use serde_json::{json, Map as SerdeMap, Value};
-use std::collections::HashMap;
+use serde_json::{Map as SerdeMap, Value};
 
 pub fn rhai_dynamic_to_serde_value(dynamic: Dynamic) -> Result<Value> {
 	// Check the type of Dynamic and convert it to serde_json::Value

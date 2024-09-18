@@ -1,10 +1,9 @@
 use super::engine::rhai_engine;
 use super::helpers::rhai_dynamic_to_serde_value;
-use crate::script::helpers::{serde_value_to_dynamic, serde_value_to_scope};
+use crate::script::helpers::serde_value_to_scope;
 use crate::Result;
-use rhai::{Array, Dynamic, Scope};
+use rhai::{Dynamic, Scope};
 use serde_json::Value;
-use value_ext::JsonValueExt;
 
 pub fn rhai_eval(script: &str, scope_value: Option<Value>) -> Result<Value> {
 	// Initialize the Rhai engine
@@ -35,13 +34,11 @@ mod tests {
 
 	use super::*;
 	use crate::script::engine::rhai_engine;
-	use rhai::Array;
 	use value_ext::JsonValueExt;
 
 	#[test]
 	fn test_eval_file_load_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let engine = rhai_engine()?;
 		let script = r#"
         let file1 = file_load("src/main.rs");
         let file2 = file_load("src/error.rs");

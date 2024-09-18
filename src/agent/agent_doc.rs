@@ -1,7 +1,6 @@
 use crate::agent::Agent;
 use crate::Result;
 use simple_fs::read_to_string;
-use std::io::{BufRead, BufReader};
 use std::path::Path;
 
 #[derive(Debug)]

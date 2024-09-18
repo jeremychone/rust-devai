@@ -1,5 +1,4 @@
 use clap::{command, Parser};
-use std::collections::VecDeque;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]

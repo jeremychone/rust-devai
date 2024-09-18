@@ -1,13 +1,9 @@
 //! Module about AI Support functions.
 
-use crate::agent::Agent;
 use crate::support::cred::get_or_prompt_api_key;
 use crate::Result;
-use genai::chat::{ChatMessage, ChatRequest};
 use genai::resolver::AuthData;
 use genai::{Client, ModelIden};
-use simple_fs::SFile;
-use std::fs;
 
 pub fn get_genai_client() -> Result<genai::Client> {
 	let client = Client::builder()

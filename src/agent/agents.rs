@@ -1,6 +1,3 @@
-use crate::{Error, Result};
-// get the include for the agents/proof-comments
-
 const AGENT_MD_PROOF_COMMENTS: &str = include_str!("../../agents/proof-comments.md");
 
 pub(super) struct EmbeddedAgentFile {

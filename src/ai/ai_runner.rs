@@ -1,16 +1,11 @@
 use crate::agent::Agent;
-use crate::ai::support::clean_rust_content;
 use crate::script::rhai_eval;
-use crate::support::cred::get_or_prompt_api_key;
 use crate::tmpl::hbs_render;
 use crate::Result;
-use genai::chat::{ChatMessage, ChatRequest};
-use genai::resolver::AuthData;
-use genai::{Client, ModelIden};
-use serde_json::{json, Value};
-use simple_fs::SFile;
+use genai::chat::ChatRequest;
+use genai::Client;
+use serde_json::Value;
 use std::collections::HashMap;
-use std::fs;
 use value_ext::JsonValueExt;
 
 const MODEL: &str = "gpt-4o-mini";
@@ -35,8 +30,8 @@ pub async fn run_agent(client: &Client, agent: &Agent, scope_value: Option<Value
 
 	let response_value: Value = if let Some(output_script) = agent.output_script.as_ref() {
 		let mut value = Value::x_new_object();
-		value.x_insert("ai_output", ai_output);
-		value.x_insert("data", data);
+		value.x_insert("ai_output", ai_output)?;
+		value.x_insert("data", data)?;
 		rhai_eval(output_script, Some(value))?
 	} else {
 		ai_output.into()
@@ -55,6 +50,7 @@ mod tests {
 	use super::*;
 	use crate::agent::AgentDoc;
 	use crate::ai::get_genai_client;
+	use simple_fs::SFile;
 
 	#[tokio::test]
 	async fn test_run_agent_simple_ok() -> Result<()> {
@@ -82,11 +78,11 @@ mod tests {
 		let mut root = Value::x_new_object();
 		let on_file = SFile::new("./src/main.rs")?;
 		let mut on_file_ref = Value::x_new_object();
-		on_file_ref.x_insert("name", on_file.file_name());
-		on_file_ref.x_insert("path", on_file.path());
-		on_file_ref.x_insert("stem", on_file.file_stem());
-		on_file_ref.x_insert("ext", on_file.ext());
-		root.x_insert("item", on_file_ref);
+		on_file_ref.x_insert("name", on_file.file_name())?;
+		on_file_ref.x_insert("path", on_file.path())?;
+		on_file_ref.x_insert("stem", on_file.file_stem())?;
+		on_file_ref.x_insert("ext", on_file.ext())?;
+		root.x_insert("item", on_file_ref)?;
 
 		run_agent(&client, &agent, Some(root)).await?;
 

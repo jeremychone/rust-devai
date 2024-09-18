@@ -1,9 +1,6 @@
-use crate::Result;
-
 // region:    --- Agent Types
 
 use genai::chat::ChatMessage;
-use simple_fs::{read_to_string, SFile};
 
 #[derive(Debug, Clone, Default)]
 pub struct Agent {
@@ -12,6 +9,7 @@ pub struct Agent {
 	/// Script
 	pub data_script: Option<String>,
 	/// Messages
+	#[allow(unused)]
 	pub messages: Option<Vec<ChatMessage>>,
 	pub output_script: Option<String>,
 }

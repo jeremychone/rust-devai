@@ -27,9 +27,7 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
-
 	use crate::script::rhai_eval;
-	use rhai::{Array, Dynamic};
 
 	#[test]
 	fn test_hbs_with_rhai_ok() -> Result<()> {

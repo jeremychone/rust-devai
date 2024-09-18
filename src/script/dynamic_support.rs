@@ -1,7 +1,6 @@
 use derive_more::derive::From;
 use rhai::Dynamic;
 use std::any::Any;
-use std::collections::BTreeMap;
 
 pub struct DynamicMap(rhai::Map);
 
@@ -22,7 +21,7 @@ impl DynamicMap {
 	pub fn get<T: Any + Clone>(&self, name: &str) -> Result<T, DynamicSupportError> {
 		let map = &self.0;
 
-		let val = self.0.get(name).ok_or_else(|| DynamicSupportError::PropertyMissing {
+		let val = map.get(name).ok_or_else(|| DynamicSupportError::PropertyMissing {
 			name: name.to_string(),
 			cause: "missing".to_string(),
 		})?;

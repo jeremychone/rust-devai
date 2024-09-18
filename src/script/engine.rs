@@ -1,9 +1,8 @@
 use crate::support::md;
 use crate::types::FileRecord;
-use crate::{Error, Result};
+use crate::Result;
 use rhai::{Dynamic, Engine};
-use serde::Serialize;
-use simple_fs::{ensure_file_dir, read_to_string, SFile};
+use simple_fs::ensure_file_dir;
 use std::fs::write;
 use std::path::Path;
 use std::sync::{Arc, LazyLock};
@@ -70,7 +69,7 @@ fn file_save(file_path: &str, content: &str) -> Result<()> {
 	// let sfile = SFile::from_path(file_path)?;
 	let path = Path::new(file_path);
 	ensure_file_dir(path)?;
-	write(path, content);
+	write(path, content)?;
 	println!("File saved: {}", file_path);
 	Ok(())
 }
