@@ -45,7 +45,7 @@ pub enum DynamicSupportError {
 	PropertyMissing {
 		name: String,
 		cause: String,
-	}, // TBC
+	}, // To be confirmed
 }
 
 impl DynamicSupportError {

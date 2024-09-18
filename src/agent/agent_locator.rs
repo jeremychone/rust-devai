@@ -18,7 +18,7 @@ pub fn init_agent_files() -> Result<()> {
 	let existing_files = list_files(DEVAI_DEFAULTS_DIR, Some(&["*.md"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.file_name()).collect();
 
-	for &e_file in get_embedded_agent_files() {
+	for e_file in get_embedded_agent_files() {
 		if !existing_names.contains(e_file.name) {
 			let path = Path::new(DEVAI_DEFAULTS_DIR).join(e_file.name);
 			write(&path, e_file.content)?;

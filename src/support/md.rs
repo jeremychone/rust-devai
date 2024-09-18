@@ -30,7 +30,7 @@ pub fn md_extract_first_rust_block(content: &str) -> Option<String> {
 	if res.is_empty() {
 		None
 	} else {
-		// now make sure that string with end with one and only one new line
+		// now make sure that the string ends with one and only one newline
 		res = adjust_single_ending_newline(res);
 
 		Some(res)

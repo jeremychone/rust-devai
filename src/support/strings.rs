@@ -6,7 +6,7 @@ pub fn adjust_single_ending_newline(mut s: String) -> String {
 		return s;
 	}
 
-	// Note: Some, perhaps uncessary, optimization to avoid traversing the whole string or doing uneccesary allocation.
+	// Note: Some, perhaps unnecessary, optimization to avoid traversing the whole string or doing unnecessary allocation.
 	let chars = s.chars().rev(); // Create an iterator that traverses the string backwards
 
 	// Count the number of trailing newlines

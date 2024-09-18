@@ -11,7 +11,7 @@ use value_ext::JsonValueExt;
 const MODEL: &str = "gpt-4o-mini";
 
 pub async fn run_agent(client: &Client, agent: &Agent, scope_value: Option<Value>) -> Result<Value> {
-	// -- Get the script data (eval script if present)
+	// -- Get the script data (evaluate script if present)
 	let data = if let Some(data_script) = agent.data_script.as_ref() {
 		rhai_eval(data_script, scope_value)?
 	} else {
@@ -22,11 +22,12 @@ pub async fn run_agent(client: &Client, agent: &Agent, scope_value: Option<Value
 	// -- Execute the handlebars on instruction
 	let inst = hbs_render(&agent.inst, &hbs_scope)?;
 
-	// -- Exec genai
+	// -- Execute genai
 	let chat_req = ChatRequest::from_system(inst);
 
 	let chat_res = client.exec_chat(MODEL, chat_req, None).await?;
 	let ai_output = chat_res.content_text_into_string().unwrap_or_default();
+	println!("->> ai_output\n{ai_output}");
 
 	let response_value: Value = if let Some(output_script) = agent.output_script.as_ref() {
 		let mut value = Value::x_new_object();
@@ -59,7 +60,7 @@ mod tests {
 		let doc = AgentDoc::from_file("./tests-data/agents/agent-simple.md")?;
 		let agent = doc.into_agent()?;
 
-		// -- Exec
+		// -- Execute
 		run_agent(&client, &agent, None).await?;
 
 		// -- Check
@@ -74,7 +75,7 @@ mod tests {
 		let doc = AgentDoc::from_file("./tests-data/agents/agent-on-file.md")?;
 		let agent = doc.into_agent()?;
 
-		// -- Exec
+		// -- Execute
 		let mut root = Value::x_new_object();
 		let on_file = SFile::new("./src/main.rs")?;
 		let mut on_file_ref = Value::x_new_object();

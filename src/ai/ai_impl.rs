@@ -1,4 +1,4 @@
-//! Module about AI Support functions.
+//! Module about AI support functions.
 
 use crate::support::cred::get_or_prompt_api_key;
 use crate::Result;
@@ -16,7 +16,7 @@ pub fn get_genai_client() -> Result<genai::Client> {
 			if let Some(key) = key_from_env {
 				Ok(Some(AuthData::from_single(key)))
 			} else {
-				// TODO: needs to pass the model
+				// TODO: need to pass the model
 				let key = get_or_prompt_api_key().map_err(|err| genai::resolver::Error::Custom(err.to_string()))?;
 				Ok(Some(AuthData::from_single(key)))
 			}

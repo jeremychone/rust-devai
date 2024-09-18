@@ -4,7 +4,7 @@ use genai::chat::ChatMessage;
 
 #[derive(Debug, Clone, Default)]
 pub struct Agent {
-	/// The agent instruction
+	/// The agent's instruction
 	pub inst: String,
 	/// Script
 	pub data_script: Option<String>,

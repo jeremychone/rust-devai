@@ -61,7 +61,7 @@ mod tests {
 		Ok(())
 	}
 
-	/// Lower engine level eval test
+	/// Lower engine-level eval test
 	#[test]
 	fn test_engine_eval_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures

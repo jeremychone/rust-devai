@@ -26,13 +26,13 @@ pub fn get_or_prompt_api_key() -> Result<String> {
 
 // region:    --- Support
 
-// Get the value from local keychain, or prompt use to save and return.
+// Get the value from the local keychain, or prompt the user to save and return.
 fn get_and_save_pwd(service: &str, name: &str) -> Result<String> {
 	let entry = Entry::new(service, name)?;
 	let pwd = match entry.get_password() {
 		Ok(pwd) => pwd,
 		Err(keyring::Error::NoEntry) => prompt_and_save(entry, name)?,
-		Err(other) => return Err(format!("Fail to exec keyring: {other}").into()),
+		Err(other) => return Err(format!("Failed to execute keyring: {other}").into()),
 	};
 
 	Ok(pwd)
@@ -57,8 +57,9 @@ fn prompt_and_save(entry: Entry, disp_name: &str) -> Result<String> {
 	// -- Prompt the user
 	let mut input = String::new();
 	println!(
-		r#"'{disp_name}' not found in keychain. 
-Please enter value: "#
+		r#"'{}' not found in keychain. 
+Please enter value: "#,
+		disp_name
 	);
 	io::stdout().flush()?;
 	io::stdin().read_line(&mut input)?;

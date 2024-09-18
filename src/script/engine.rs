@@ -59,7 +59,7 @@ fn file_save_rhai(file_path: &str, content: &str) -> RhaiResult {
 	match file_save(file_path, content) {
 		Ok(_) => Ok(().into()),
 		Err(err) => Err(Box::new(rhai::EvalAltResult::ErrorRuntime(
-			format!("Failed to load file: {}", err).into(),
+			format!("Failed to save file: {}", err).into(),
 			rhai::Position::NONE,
 		))),
 	}

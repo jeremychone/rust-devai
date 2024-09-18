@@ -19,12 +19,12 @@ impl CmdConfig {
 
 impl From<AppArgs> for CmdConfig {
 	fn from(args: AppArgs) -> Self {
-		// -- When simple name
+		// -- When a simple name is provided
 		let on_file_globs = if let Some(on_files) = args.on_files {
 			let on_files_globs = on_files
 				.into_iter()
 				.map(|s| {
-					// The goal of this logic is to make a simple name a wider glob so that the user does not have to specify the exact file name.
+					// The goal of this logic is to make a simple name into a wider glob so that the user does not have to specify the exact file name.
 					// TODO: This branch can be improved to handle any absolute or relative path.
 					if s.contains('*') || s.starts_with("./") || s.starts_with("/") {
 						s

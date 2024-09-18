@@ -20,14 +20,14 @@ impl AgentDoc {
 		#[derive(Debug)]
 		enum CaptureMode {
 			None,
-			// below the data heading (perhaps not is code block)
+			// Below the data heading (perhaps not in a code block)
 			DataSection,
-			// inside the code block
+			// Inside the code block
 			DataCodeBlock,
 			Inst,
-			// below the output heading (perhaps not is code block)
+			// Below the output heading (perhaps not in a code block)
 			OutputSection,
-			// inside the code block
+			// Inside the code block
 			OutputCodeBlock,
 		}
 
@@ -38,10 +38,10 @@ impl AgentDoc {
 		let mut output_script = String::new();
 
 		// -- The actual parsing
-		// NOTE: For now custom parsing. `markdown` and `pulldown-cmark` are loosing information
-		//       and therefore not appropriate for this usecase
+		// NOTE: For now custom parsing. `markdown` and `pulldown-cmark` are losing information
+		//       and therefore not appropriate for this use case
 		for line in self.raw_content.lines() {
-			// if heading we decide the capture mode
+			// If heading we decide the capture mode
 			if line.starts_with('#') && !line.starts_with("##") {
 				let header = line[1..].trim().to_lowercase();
 				if header == "data" {
@@ -110,7 +110,7 @@ impl AgentDoc {
 
 fn push_line(content: &mut String, line: &str) {
 	content.push_str(line);
-	// only add new line if line is not empty.
+	// Only add a new line if the line is not empty.
 	// Otherwise, it was a new line, no need to add another one
 	if !line.trim().is_empty() {
 		content.push('\n');
@@ -154,7 +154,7 @@ mod tests {
 		);
 		let output_script = agent.output_script.ok_or("Should have output_script")?;
 		assert!(
-			output_script.contains("/// optional output processing."),
+			output_script.contains("/// Optional output processing."),
 			"output_script"
 		);
 
