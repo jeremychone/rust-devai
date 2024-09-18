@@ -1,5 +1,10 @@
 //! String utils
 
+/// unescape code (sometime chatgpt encode the < and such)
+pub fn code_escape_decode(content: &str) -> String {
+	html_escape::decode_html_entities(&content).to_string()
+}
+
 pub fn adjust_single_ending_newline(mut s: String) -> String {
 	if s.is_empty() {
 		s.push('\n'); // If the string is empty, just add a newline

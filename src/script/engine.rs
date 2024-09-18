@@ -1,4 +1,4 @@
-use crate::support::md;
+use crate::support::{code_escape_decode, md};
 use crate::types::FileRecord;
 use crate::Result;
 use rhai::{Dynamic, Engine};
@@ -17,6 +17,7 @@ static ENGINE: LazyLock<Arc<Engine>> = LazyLock::new(|| {
 	engine.register_fn("file_load", file_load_rhai);
 	engine.register_fn("file_save", file_save_rhai);
 	engine.register_fn("md_extract_first_rust", md_extract_first_rust_rhai);
+	engine.register_fn("text_escape_decode", text_escape_decode_rhai);
 
 	engine.into()
 });
@@ -24,6 +25,16 @@ static ENGINE: LazyLock<Arc<Engine>> = LazyLock::new(|| {
 pub(super) fn rhai_engine() -> Result<Arc<Engine>> {
 	Ok(ENGINE.clone())
 }
+
+// region:    --- txt_fns
+
+// html-escape
+fn text_escape_decode_rhai(content: &str) -> RhaiResult {
+	let decoded = code_escape_decode(content);
+	Ok(decoded.into())
+}
+
+// endregion: --- txt_fns
 
 // region:    --- md_extract_first_rust
 

@@ -6,22 +6,22 @@ use simple_fs::SFile;
 use std::fs::read_to_string;
 use std::path::Path;
 
-/// FileRecord has the metadata information about the file (name, ext, etc.) as well as the content.
+/// FileRecord contains the metadata information about the file (name, ext, etc.) as well as the content.
 #[derive(Serialize)]
 pub struct FileRecord {
-	/// The name of the file with extension e.g., &#x60;main.rs&#x60;
+	/// The name of the file with extension e.g., `main.rs`
 	pub name: String,
 	/// The path, might and will probably be relative
 	pub path: String,
-	/// empty if no extension
+	/// Empty if there is no extension
 	pub ext: String,
-	/// stem
+	/// Stem
 	pub stem: String,
 	/// The full text content of the file
 	pub content: String,
 }
 
-/// constructors
+/// Constructors
 impl FileRecord {
 	pub fn new(path: impl AsRef<Path>) -> Result<Self> {
 		let sfile = SFile::from_path(path.as_ref())?;
