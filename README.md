@@ -24,8 +24,11 @@ Right now, we only have `proof-comments.md`, and the command line logic is primi
 
 ## Future Plan
 
-- Incorporate `rhai` to allow scripting in the **Command Agent Files**.
-- Support "structured" Markdown for the **Command Agent Files** to provide more customizability.
+- Support the `# Items` section with `yaml` or `Rhai`
+- Support for `config.toml` in the `.devai/` with the genai table with the model
+- Support for `# Config` to override some `config.toml` properties (e.g., model)
+- More `Rhai` modules/functions
+- Support for `# Before All`  `# Before` and `# After` and `# After All` (all `Rhai`)
 - `--dry-req` will do a dry run of the request by just saving the content of the request in a file.
 - `--dry-res` will do a real AI request but just capture the AI response in a file (request will be captured as well).
 - `--capture` will do the normal run but will capture the req and response in the req/response file.
