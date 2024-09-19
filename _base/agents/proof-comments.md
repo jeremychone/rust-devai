@@ -21,8 +21,8 @@ Make sure to not change the code. Only typo within strings.
 
 ```rhai
 let rust_blocks = md::extract_blocks(ai_output, "rust");
-let first_rust_block = blocks[0];
-let rust_code = text::escape_decode_if_needed(rust_code);
+let first_rust_block = rust_blocks[0];
+let rust_code = text::escape_decode_if_needed(first_rust_block);
 
 file::save(data.file.path, rust_code);
 

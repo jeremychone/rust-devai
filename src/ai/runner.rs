@@ -27,7 +27,6 @@ pub async fn run_agent(client: &Client, agent: &Agent, scope_value: Option<Value
 
 	let chat_res = client.exec_chat(MODEL, chat_req, None).await?;
 	let ai_output = chat_res.content_text_into_string().unwrap_or_default();
-	println!("->> ai_output\n{ai_output}");
 
 	let response_value: Value = if let Some(output_script) = agent.output_script.as_ref() {
 		let mut value = Value::x_new_object();
