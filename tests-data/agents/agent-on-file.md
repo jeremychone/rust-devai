@@ -1,7 +1,7 @@
 # Data
 
 ```rhai
-let file = file_load(item.path);
+let file = file::load(item.path);
 
 // return the file (with .name, .path, .content)
 return #{ file: file };
@@ -18,8 +18,8 @@ Correct english in the comments of the rust content below, while preserving ever
 # Output
 
 ```rhai
-let rust_code = md_extract_first_rust(ai_output);
-file_save(data.file.path, rust_code);
+let rust_code = md::extract_blocks(ai_output, "rust")[0];
+file::save(data.file.path, rust_code);
 
 return data.file.path
 ```

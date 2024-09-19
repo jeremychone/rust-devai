@@ -1,0 +1,5 @@
+[genai]
+model = "gpt-4o-mini"
+
+[runtime]
+items_concurrency = 1 # not supported yet 

@@ -1,4 +1,4 @@
-const AGENT_MD_PROOF_COMMENTS: &str = include_str!("../../agents/proof-comments.md");
+const AGENT_MD_PROOF_COMMENTS: &str = include_str!("../../_base/agents/proof-comments.md");
 
 pub(super) struct EmbeddedAgentFile {
 	pub name: &'static str,

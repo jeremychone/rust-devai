@@ -33,8 +33,8 @@ mod tests {
 	fn test_hbs_with_rhai_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let script = r#"
-        let file1 = file_load("src/main.rs");
-        let file2 = file_load("src/error.rs");
+        let file1 = file::load("src/main.rs");
+        let file2 = file::load("src/error.rs");
         [file1, file2]  // Return an array of File structs
     "#;
 		let tmpl = r#"

@@ -29,7 +29,7 @@ async fn main() -> Result<()> {
 	// -- Initialize the default agent files
 	init_agent_files()?;
 
-	// -- Get AI client and agent
+	// -- Get the AI client and agent
 	let client = ai::get_genai_client()?;
 	let agent = find_agent(cmd_config.cmd_agent())?;
 

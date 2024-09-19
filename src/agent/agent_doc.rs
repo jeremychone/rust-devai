@@ -155,7 +155,7 @@ mod tests {
 		let output_script = agent.output_script.ok_or("Should have output_script")?;
 		assert!(
 			output_script.contains("/// Optional output processing."),
-			"output_script"
+			"output_script does not contain."
 		);
 
 		Ok(())

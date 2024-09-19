@@ -3,6 +3,7 @@
 !.gitignore
 
 _*
+!_base/
 # '_' in src dir, ok.
 !**/src/**/_*
 

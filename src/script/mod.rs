@@ -3,6 +3,7 @@
 mod dynamic_support;
 mod engine;
 mod helpers;
+mod rhai_modules;
 
 mod rhai_eval;
 

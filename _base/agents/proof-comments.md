@@ -2,7 +2,7 @@
 
 ```rhai
 let path = item.path;
-let file = file_load(path);
+let file = file::load(path);
 
 return #{file: file};
 ```
@@ -12,7 +12,6 @@ return #{file: file};
 The user will provide you with a Rust programming file's content, and you will correct the English in the comments while leaving everything else unchanged.
 Only change comment if they have a spelling or grammar mistake.
 Make sure to not change the code. Only typo within strings.
-Do not escape any angle bracket and such.
 
 ```rust
 {{data.file.content}}
@@ -21,9 +20,11 @@ Do not escape any angle bracket and such.
 # Output
 
 ```rhai
-let rust_code = md_extract_first_rust(ai_output);
-let rust_code = text_escape_decode(rust_code);
-file_save(data.file.path, rust_code);
+let rust_blocks = md::extract_blocks(ai_output, "rust");
+let first_rust_block = blocks[0];
+let rust_code = text::escape_decode_if_needed(rust_code);
+
+file::save(data.file.path, rust_code);
 
 let message = "File processed: " + data.file.path;
 return message
