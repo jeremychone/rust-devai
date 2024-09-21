@@ -1,25 +1,17 @@
 use crate::Result;
 use keyring::Entry;
-use std::env;
 use std::io::{self, Write};
 
-const KEY_SERVICE: &str = "jc_secrets";
-const KEY_NAME: &str = "OPENAI_API_KEY";
+const KEY_SERVICE: &str = "devai_secrets";
 
 // NOT USED NOW
-fn _clear_api_key() -> Result<()> {
-	_clear_key(KEY_SERVICE, KEY_NAME)?;
+fn _clear_api_key(key_name: &str) -> Result<()> {
+	_clear_key(KEY_SERVICE, key_name)?;
 	Ok(())
 }
 
-pub fn get_or_prompt_api_key() -> Result<String> {
-	let api_key = env::var(KEY_NAME);
-
-	if let Ok(api_key) = api_key {
-		return Ok(api_key);
-	}
-
-	let api_key = get_and_save_pwd(KEY_SERVICE, KEY_NAME)?;
+pub fn get_or_prompt_api_key(key_name: &str) -> Result<String> {
+	let api_key = get_and_save_pwd(KEY_SERVICE, key_name)?;
 
 	Ok(api_key)
 }

@@ -1,11 +1,11 @@
-use crate::cli::AppArgs;
+use crate::cli::RunArgs;
 
-pub struct CmdConfig {
+pub struct RunConfig {
 	cmd_agent: String,
 	on_file_globs: Option<Vec<String>>,
 }
 
-impl CmdConfig {
+impl RunConfig {
 	pub fn cmd_agent(&self) -> &str {
 		&self.cmd_agent
 	}
@@ -17,8 +17,8 @@ impl CmdConfig {
 
 // region:    --- From AppArgs
 
-impl From<AppArgs> for CmdConfig {
-	fn from(args: AppArgs) -> Self {
+impl From<RunArgs> for RunConfig {
+	fn from(args: RunArgs) -> Self {
 		// -- When a simple name is provided
 		let on_file_globs = if let Some(on_files) = args.on_files {
 			let on_files_globs = on_files
@@ -39,7 +39,7 @@ impl From<AppArgs> for CmdConfig {
 		};
 
 		Self {
-			cmd_agent: args.cmd,
+			cmd_agent: args.cmd_agent_name,
 			on_file_globs,
 		}
 	}

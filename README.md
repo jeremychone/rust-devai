@@ -6,7 +6,7 @@ Cherry-pick the code and make it work for yourself.
 
 _P.S. If possible, try to refrain from publishing `devai-custom` type crates, as this might be more confusing than helpful. However, any other name is great._
 
-Usage: `devai _command_name_ -f "**/mod.rs"`
+Usage: `devai run _command_agent_name_ -f "**/mod.rs"`
 
 It's very rudimentary at this stage and will change significantly between `0.0.z` releases.
 

@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::agent::{Agent, AgentInner};
 use crate::Result;
 use simple_fs::read_to_string;
 use std::path::Path;
@@ -95,14 +95,14 @@ impl AgentDoc {
 
 		// -- Returning the data
 
-		let agent = Agent {
+		let agent = AgentInner {
 			inst,
 			data_script: string_as_option_if_empty(data_script),
 			output_script: string_as_option_if_empty(output_script),
 			messages: None,
 		};
 
-		Ok(agent)
+		Ok(agent.into())
 	}
 }
 
@@ -146,13 +146,13 @@ mod tests {
 		let agent = doc.into_agent()?;
 
 		// -- Check
-		assert!(agent.inst.contains("Some paragraph for instruction"), "instruction");
-		let data_script = agent.data_script.ok_or("Should have data_script")?;
+		assert!(agent.inst().contains("Some paragraph for instruction"), "instruction");
+		let data_script = agent.data_script().ok_or("Should have data_script")?;
 		assert!(
 			data_script.contains("// Some scripts that load the data"),
 			"data_script"
 		);
-		let output_script = agent.output_script.ok_or("Should have output_script")?;
+		let output_script = agent.output_script().ok_or("Should have output_script")?;
 		assert!(
 			output_script.contains("/// Optional output processing."),
 			"output_script does not contain."

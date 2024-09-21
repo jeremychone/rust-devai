@@ -10,7 +10,6 @@ keywords = ["generative-ai","openai","genai","ai-coding"]
 homepage = "https://github.com/jeremychone/rust-devai"
 repository = "https://github.com/jeremychone/rust-devai"
 
-
 [lints.rust]
 unsafe_code = "forbid"
 # unused = { level = "allow", priority = -1 } # For exploratory dev.
