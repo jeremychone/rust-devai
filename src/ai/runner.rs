@@ -4,23 +4,29 @@ use crate::tmpl::hbs_render;
 use crate::Result;
 use genai::chat::ChatRequest;
 use genai::Client;
-use serde_json::Value;
+use serde::Serialize;
+use serde_json::{json, Value};
 use std::collections::HashMap;
-use value_ext::JsonValueExt;
 
 const MODEL: &str = "gpt-4o-mini";
 
-pub async fn run_agent(client: &Client, agent: &Agent, scope_value: Option<Value>) -> Result<Value> {
-	// -- Get the script data (evaluate script if present)
+pub async fn run_agent(client: &Client, agent: &Agent, item: impl Serialize) -> Result<Value> {
+	// -- prepare the scope_item
+	let item = serde_json::to_value(item)?;
+	let scope_item = json!({
+		"item": item.clone(), // clone because item is reused later
+	});
+
+	// -- Execuated data
 	let data = if let Some(data_script) = agent.data_script.as_ref() {
-		rhai_eval(data_script, scope_value)?
+		rhai_eval(data_script, Some(scope_item))?
 	} else {
 		Value::Null
 	};
-	let hbs_scope = HashMap::from([("data".to_string(), data.clone())]);
+	let data_scope = HashMap::from([("data".to_string(), data.clone())]);
 
 	// -- Execute the handlebars on instruction
-	let inst = hbs_render(&agent.inst, &hbs_scope)?;
+	let inst = hbs_render(&agent.inst, &data_scope)?;
 
 	// -- Execute genai
 	let chat_req = ChatRequest::from_system(inst);
@@ -29,10 +35,13 @@ pub async fn run_agent(client: &Client, agent: &Agent, scope_value: Option<Value
 	let ai_output = chat_res.content_text_into_string().unwrap_or_default();
 
 	let response_value: Value = if let Some(output_script) = agent.output_script.as_ref() {
-		let mut value = Value::x_new_object();
-		value.x_insert("ai_output", ai_output)?;
-		value.x_insert("data", data)?;
-		rhai_eval(output_script, Some(value))?
+		let scope_output = json!({
+			"item": item,
+			"data": data,
+			"ai_output": ai_output,
+		});
+
+		rhai_eval(output_script, Some(scope_output))?
 	} else {
 		ai_output.into()
 	};
@@ -50,7 +59,9 @@ mod tests {
 	use super::*;
 	use crate::agent::AgentDoc;
 	use crate::ai::get_genai_client;
+	use crate::types::FileRef;
 	use simple_fs::SFile;
+	use value_ext::JsonValueExt;
 
 	#[tokio::test]
 	async fn test_run_agent_simple_ok() -> Result<()> {
@@ -60,7 +71,7 @@ mod tests {
 		let agent = doc.into_agent()?;
 
 		// -- Execute
-		run_agent(&client, &agent, None).await?;
+		run_agent(&client, &agent, Value::Null).await?;
 
 		// -- Check
 
@@ -75,18 +86,17 @@ mod tests {
 		let agent = doc.into_agent()?;
 
 		// -- Execute
-		let mut root = Value::x_new_object();
 		let on_file = SFile::new("./src/main.rs")?;
-		let mut on_file_ref = Value::x_new_object();
-		on_file_ref.x_insert("name", on_file.file_name())?;
-		on_file_ref.x_insert("path", on_file.path())?;
-		on_file_ref.x_insert("stem", on_file.file_stem())?;
-		on_file_ref.x_insert("ext", on_file.ext())?;
-		root.x_insert("item", on_file_ref)?;
+		let file_ref = FileRef::from(on_file);
 
-		run_agent(&client, &agent, Some(root)).await?;
+		let run_output = run_agent(&client, &agent, file_ref).await?;
 
 		// -- Check
+		// The output return the {data_path: data.file.path, item_name: item.name}
+		assert_eq!(run_output.x_get::<String>("data_path")?, "./src/main.rs");
+		assert_eq!(run_output.x_get::<String>("item_name")?, "main.rs");
+		let ai_content = run_output.x_get::<String>("ai_content")?;
+		assert!(ai_content.len() > 300, "The AI response should have some content");
 
 		Ok(())
 	}

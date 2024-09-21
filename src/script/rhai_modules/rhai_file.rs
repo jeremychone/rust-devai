@@ -1,8 +1,8 @@
-use crate::types::FileRecord;
+use crate::types::{FileRecord, FileRef};
 use crate::Result;
 use rhai::plugin::RhaiResult;
-use rhai::{FuncRegistration, Module};
-use simple_fs::ensure_file_dir;
+use rhai::{Dynamic, EvalAltResult, FuncRegistration, Module};
+use simple_fs::{ensure_file_dir, list_files};
 use std::fs::write;
 use std::path::Path;
 
@@ -18,16 +18,35 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, save);
 
+	FuncRegistration::new("list")
+		.in_global_namespace()
+		.set_into_module(&mut module, list_with_glob);
+
 	module
 }
 
 // region:    --- Rhai Functions
 
+fn list_with_glob(include_glob: &str) -> RhaiResult {
+	let sfiles = list_files("./", Some(&[include_glob]), None).map_err(|err| {
+		EvalAltResult::ErrorRuntime(
+			format!("Failed to list files with glob: {include_glob}. Cause: {}", err).into(),
+			rhai::Position::NONE,
+		)
+	})?;
+
+	let file_refs: Vec<FileRef> = sfiles.into_iter().map(FileRef::from).collect();
+	let file_dynamics: Vec<Dynamic> = file_refs.into_iter().map(FileRef::into_dynamic).collect();
+	let res_dynamic = Dynamic::from_array(file_dynamics);
+
+	Ok(res_dynamic)
+}
+
 fn load(file_path: &str) -> RhaiResult {
 	let file_record = FileRecord::new(file_path);
 	match file_record {
 		Ok(file) => Ok(file.into()),
-		Err(err) => Err(Box::new(rhai::EvalAltResult::ErrorRuntime(
+		Err(err) => Err(Box::new(EvalAltResult::ErrorRuntime(
 			format!("Failed to load file: {}", err).into(),
 			rhai::Position::NONE,
 		))),
@@ -46,7 +65,7 @@ fn save(file_path: &str, content: &str) -> RhaiResult {
 
 	match file_save_inner(file_path, content) {
 		Ok(_) => Ok(().into()),
-		Err(err) => Err(Box::new(rhai::EvalAltResult::ErrorRuntime(
+		Err(err) => Err(Box::new(EvalAltResult::ErrorRuntime(
 			format!("Failed to save file: {}", err).into(),
 			rhai::Position::NONE,
 		))),

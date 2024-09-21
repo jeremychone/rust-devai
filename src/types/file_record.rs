@@ -25,6 +25,10 @@ pub struct FileRecord {
 impl FileRecord {
 	pub fn new(path: impl AsRef<Path>) -> Result<Self> {
 		let sfile = SFile::from_path(path.as_ref())?;
+		Self::from_sfile(sfile)
+	}
+
+	pub fn from_sfile(sfile: SFile) -> Result<Self> {
 		let content = read_to_string(&sfile)?;
 		Ok(FileRecord {
 			name: sfile.file_name().to_string(),
@@ -44,6 +48,7 @@ impl From<FileRecord> for Dynamic {
 		let mut map = rhai::Map::new();
 		map.insert("name".into(), file.name.into());
 		map.insert("path".into(), file.path.into());
+		map.insert("stem".into(), file.stem.into());
 		map.insert("content".into(), file.content.into());
 		Dynamic::from_map(map)
 	}
