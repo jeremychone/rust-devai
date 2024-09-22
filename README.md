@@ -1,19 +1,36 @@
 # **devai** - **Command Agent File Runner**
 
-Gain full control over how to apply a reusable **Command Agent** on multiple files at once.
+```sh
+
+# install
+cargo install devai
+
+# Will fix all code comment in all matching file
+devai run proof-comments -f "./src/m*.rs" 
+
+# How: It will run the installed Command Agent file ".devai/defaults/proof-comments.md" on all source files matching "./src/m*.rs"
+
+# IMPORTANT: Make sure everything is committed before usage.
+```
 
 ONE **Command Agent Markdown File** that defines the full agent flow:
-- `items` to simply run the same **Command Agent** on multiple files at once.
+- `items` get expanded from the `-f` file matches (more ways to generate items later).
 - `-> Data` **scripting** for getting full control over what data to put in the context.
 - `-> Instruction` templating (Handlebars) to have full control over the prompt layout.
 - `-> Output` **scripting** to get full control over how to manage the AI output.
+
+`Data`, `Instruction`, `Output` (and more later) are all defined in a single file (see below), which is called the **Command Agent File** 
+
+Supports all models/providers supported by the [genai crate](https://crates.io/crates/genai) (see below for more information).
+
+You can customize the model and concurrency in `.devai/config.toml`.
+
 
 **IMPORTANT**: Make sure to run this command line when everything is committed, so that overwritten files can be reverted easily.
 
 STILL IN HEAVY DEVELOPMENT... But it's starting to get pretty cool.
 
 _P.S. If possible, try to refrain from publishing `devai-custom` type crates, as this might be more confusing than helpful. However, any other name is great._
-
 
 ## Usage & Concept
 
@@ -22,8 +39,8 @@ _P.S. If possible, try to refrain from publishing `devai-custom` type crates, as
 Usage: `devai run proof-comments -f "./src/main.rs"`
 
 (or have any glob like `-f "./src/**/*.rs"` )
-
 - This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-comments.md` (see [.devai/defaults/proof-comments.md`](./_base/agents/proof-comments.md)) and run it with genai as follows: 
+    - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "item" for each file, which can then be accessed in the `# Data` scripting section.
     - `# Data`, which contains a ```rhai``` block that will get executed with the `item` value (the file reference in our example above).
         - With `rhai`, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
     - `# Instruction`, which is a Handlebars template section, has access to `item` as well as the output of the `# Data` section, accessible as the `data` variable. 
@@ -31,11 +48,15 @@ Usage: `devai run proof-comments -f "./src/main.rs"`
     - `# Output`, which now executes another ```rhai``` block, using the `item`, `data`, and `ai_output`, which is the string returned by the AI. 
         - It can save files in place or create new files. 
         - Later, it will even be able to queue new devai work.
-
+- By default, this will run with `gpt-4o-mini` and look for the `OPENAI_API_KEY` environment variable.
+- It supports all AI providers supported by the [genai crate](https://crates.io/crates/genai).
+    - Here are the environment variable names per provider: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COHERE_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`.
+    - On Mac, if the environment variable is not present, it will attempt to prompt and get/save it from the keychain, under the devai group.
 
 ## Example of a Agent Command File
 
 `.devai/defaults/proof-comments.md` (see [.devai/defaults/proof-comments.md`](./_base/agents/proof-comments.md))
+
 ``````md
 # Data
 
