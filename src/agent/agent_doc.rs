@@ -1,5 +1,6 @@
 use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentInner};
+use crate::support::tomls::parse_toml;
 use crate::Result;
 use simple_fs::{read_to_string, SFile};
 use std::path::Path;
@@ -19,14 +20,21 @@ impl AgentDoc {
 		Ok(Self { raw_content, sfile })
 	}
 
-	pub fn into_agent(self, config: AgentConfig) -> Result<Agent> {
+	pub fn into_agent(self, mut config: AgentConfig) -> Result<Agent> {
 		#[derive(Debug)]
 		enum CaptureMode {
 			None,
+
+			// Bellow the # Config section
+			ConfigSection,
+			// inside the ConfigTomlBlock
+			ConfigTomlBlock,
+
 			// Below the data heading (perhaps not in a code block)
 			DataSection,
 			// Inside the code block
 			DataCodeBlock,
+
 			Inst,
 			// Below the output heading (perhaps not in a code block)
 			OutputSection,
@@ -36,8 +44,9 @@ impl AgentDoc {
 
 		let mut capture_mode = CaptureMode::None;
 
-		let mut inst = String::new();
+		let mut config_toml = String::new();
 		let mut data_script = String::new();
+		let mut inst = String::new();
 		let mut output_script = String::new();
 
 		// -- The actual parsing
@@ -47,7 +56,9 @@ impl AgentDoc {
 			// If heading we decide the capture mode
 			if line.starts_with('#') && !line.starts_with("##") {
 				let header = line[1..].trim().to_lowercase();
-				if header == "data" {
+				if header == "config" {
+					capture_mode = CaptureMode::ConfigSection;
+				} else if header == "data" {
 					capture_mode = CaptureMode::DataSection;
 				} else if header == "inst" || header == "instruction" {
 					capture_mode = CaptureMode::Inst;
@@ -62,6 +73,23 @@ impl AgentDoc {
 
 			match capture_mode {
 				CaptureMode::None => {}
+
+				CaptureMode::ConfigSection => {
+					if line.starts_with("```toml") {
+						capture_mode = CaptureMode::ConfigTomlBlock;
+						continue;
+					}
+				}
+
+				CaptureMode::ConfigTomlBlock => {
+					if line.starts_with("```") {
+						capture_mode = CaptureMode::None;
+						continue;
+					} else {
+						push_line(&mut config_toml, line);
+					}
+				}
+
 				CaptureMode::DataSection => {
 					if line.starts_with("```rhai") {
 						capture_mode = CaptureMode::DataCodeBlock;
@@ -97,6 +125,10 @@ impl AgentDoc {
 		}
 
 		// -- Returning the data
+		if !config_toml.is_empty() {
+			let value = parse_toml(&config_toml)?;
+			config = config.merge(value)?;
+		}
 
 		let agent = AgentInner {
 			config,
@@ -156,6 +188,35 @@ mod tests {
 		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Check
+		assert!(agent.inst().contains("Some paragraph for instruction"), "instruction");
+		let data_script = agent.data_script().ok_or("Should have data_script")?;
+		assert!(
+			data_script.contains("// Some scripts that load the data"),
+			"data_script"
+		);
+		let output_script = agent.output_script().ok_or("Should have output_script")?;
+		assert!(
+			output_script.contains("/// Optional output processing."),
+			"output_script does not contain."
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_agent_doc_config_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let agent_doc_path = "./tests-data/agents/agent-demo.md";
+
+		// -- Exec
+		let doc = AgentDoc::from_file(agent_doc_path)?;
+		let agent = doc.into_agent(default_agent_config_for_test())?;
+
+		// -- Check config
+		assert_eq!(agent.config().model_name(), Some("test_model_for_demo"));
+		assert_eq!(agent.config().items_concurrency(), Some(8));
+
+		// -- Check Other
 		assert!(agent.inst().contains("Some paragraph for instruction"), "instruction");
 		let data_script = agent.data_script().ok_or("Should have data_script")?;
 		assert!(

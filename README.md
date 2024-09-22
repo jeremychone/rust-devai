@@ -113,7 +113,6 @@ items_concurrency = 1
 ## Future Plan
 
 - Support for the `# Items` section with `yaml` or `Rhai`.
-- Support for `# Config` to override some `config.toml` properties (e.g., model).
 - More `Rhai` modules/functions.
 - Support for `# Before All`, `# Before`, `# After`, and `# After All` (all `Rhai`).
 - `--dry-req` will perform a dry run of the request by just saving the content of the request in a file.

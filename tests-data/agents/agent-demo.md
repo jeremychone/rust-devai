@@ -1,3 +1,13 @@
+# Config
+
+```toml
+[genai]
+model = "test_model_for_demo"
+
+[runtime]
+items_concurrency = 8
+```
+
 # Data
 
 ```rhai
