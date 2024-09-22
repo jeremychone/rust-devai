@@ -1,5 +1,8 @@
 [genai]
-model = "gpt-4o-mini" # Required (any model rust genai crate support)
+# Required (any model rust genai crate support)
+# e.g., "gpt-4o", "gpt-4o-2024-08-06", "gpt-4o-mini", "claude-3-5-sonnet-20240620"
+model = "gpt-4o-mini"
 
 [runtime]
-items_concurrency = 1 # Default to 1 if absent
+# Default to 1 if absent
+items_concurrency = 1 

@@ -13,7 +13,7 @@ const MODEL: &str = "gpt-4o-mini";
 
 const DEFAULT_CONCURRENCY: usize = 1;
 
-pub async fn run_agent_items(client: Client, agent: Agent, items: Vec<impl Serialize>) -> Result<()> {
+pub async fn run_agent_items(client: Client, agent: Agent, items: Option<Vec<Value>>) -> Result<()> {
 	use tokio::task::JoinSet;
 	let model_name = agent.config().model_name().ok_or(Error::CannotRunMissingModel)?;
 	let model_name = ModelName::from(model_name);
@@ -24,52 +24,60 @@ pub async fn run_agent_items(client: Client, agent: Agent, items: Vec<impl Seria
 	println!("                 from: {}", agent.file_path());
 	println!("           with model: {}\n", model_name);
 
+	// -- Get the Items as Vec<Value>
 	let items: Vec<Value> = items
 		.into_iter()
 		.map(|v| serde_json::to_value(v).map_err(Error::custom))
 		.collect::<Result<Vec<_>>>()?;
 
-	let mut join_set = JoinSet::new();
-	let mut in_progress = 0;
+	// If no items, have one with Value::null
+	if items.is_empty() {
+		run_agent_item(&client, &agent, Value::Null).await?;
+	}
+	// If we have items, we run them per concurrency rules
+	else {
+		let mut join_set = JoinSet::new();
+		let mut in_progress = 0;
 
-	for (item_idx, item) in items.into_iter().enumerate() {
-		let client_clone = client.clone();
-		let agent_clone = agent.clone();
+		for (item_idx, item) in items.into_iter().enumerate() {
+			let client_clone = client.clone();
+			let agent_clone = agent.clone();
 
-		// get the eventual "._label" property of the item
-		// try to get the path, name
-		let label = get_item_label(&item).unwrap_or_else(|| format!("{item_idx}"));
+			// get the eventual "._label" property of the item
+			// try to get the path, name
+			let label = get_item_label(&item).unwrap_or_else(|| format!("{item_idx}"));
 
-		println!("Running item: {}", label);
+			println!("Running item: {}", label);
 
-		// Spawn tasks up to the concurrency limit
-		join_set.spawn(async move { run_agent_item(&client_clone, &agent_clone, item).await });
+			// Spawn tasks up to the concurrency limit
+			join_set.spawn(async move { run_agent_item(&client_clone, &agent_clone, item).await });
 
-		in_progress += 1;
+			in_progress += 1;
 
-		// If we've reached the concurrency limit, wait for one task to complete
-		if in_progress >= concurrency {
+			// If we've reached the concurrency limit, wait for one task to complete
+			if in_progress >= concurrency {
+				if let Some(res) = join_set.join_next().await {
+					in_progress -= 1;
+					match res {
+						Ok(result) => {
+							result?;
+						}
+						Err(e) => return Err(Error::custom(format!("Error while running item. Cause {e}"))),
+					}
+				}
+			}
+		}
+
+		// Wait for the remaining tasks to complete
+		while in_progress > 0 {
 			if let Some(res) = join_set.join_next().await {
 				in_progress -= 1;
 				match res {
 					Ok(result) => {
 						result?;
 					}
-					Err(e) => return Err(Error::custom(format!("Error while running item. Cause {e}"))),
+					Err(e) => return Err(Error::custom(format!("Error while remaining item. Cause {e}"))),
 				}
-			}
-		}
-	}
-
-	// Wait for the remaining tasks to complete
-	while in_progress > 0 {
-		if let Some(res) = join_set.join_next().await {
-			in_progress -= 1;
-			match res {
-				Ok(result) => {
-					result?;
-				}
-				Err(e) => return Err(Error::custom(format!("Error while remaining item. Cause {e}"))),
 			}
 		}
 	}
@@ -100,6 +108,8 @@ async fn run_agent_item(client: &Client, agent: &Agent, item: impl Serialize) ->
 
 	let chat_res = client.exec_chat(MODEL, chat_req, None).await?;
 	let ai_output = chat_res.content_text_into_string().unwrap_or_default();
+
+	println!("->> ai_output\n{ai_output}\n");
 
 	let response_value: Value = if let Some(output_script) = agent.output_script() {
 		let scope_output = json!({

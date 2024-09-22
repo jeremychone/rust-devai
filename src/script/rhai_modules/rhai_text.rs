@@ -16,10 +16,86 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, escape_decode_if_needed);
 
+	FuncRegistration::new("remove_first_line")
+		.in_global_namespace()
+		.set_into_module(&mut module, remove_first_line);
+
+	FuncRegistration::new("remove_first_lines")
+		.in_global_namespace()
+		.set_into_module(&mut module, remove_first_lines);
+
+	FuncRegistration::new("remove_last_lines")
+		.in_global_namespace()
+		.set_into_module(&mut module, remove_last_lines);
+
+	FuncRegistration::new("remove_last_line")
+		.in_global_namespace()
+		.set_into_module(&mut module, remove_last_line);
+
 	module
 }
 
-// region:    --- Rhai Functions
+// region:    --- Strings
+
+fn remove_first_line(content: &str) -> &str {
+	remove_first_lines(content, 1)
+}
+
+fn remove_first_lines(content: &str, num_of_lines: usize) -> &str {
+	let mut start_idx = 0;
+	let mut newline_count = 0;
+
+	// Iterate over the bytes of the string to find the `num_of_lines`-th newline character
+	for (i, c) in content.char_indices() {
+		if c == '\n' {
+			newline_count += 1;
+			if newline_count == num_of_lines {
+				start_idx = i + 1; // The start of the remaining content
+				break;
+			}
+		}
+	}
+
+	// If num_of_lines is greater than the total number of lines, return an empty string
+	if newline_count < num_of_lines {
+		return "";
+	}
+
+	// Return the remaining content from `start_idx` to the end of the string
+	&content[start_idx..]
+}
+
+fn remove_last_line(content: &str) -> &str {
+	remove_last_lines(content, 1)
+}
+
+fn remove_last_lines(content: &str, num_of_lines: usize) -> &str {
+	let mut end_idx = content.len(); // Start with the end of the string
+	let mut newline_count = 0;
+
+	// Iterate over the characters of the string in reverse
+	for (i, c) in content.char_indices().rev() {
+		if c == '\n' {
+			newline_count += 1;
+			if newline_count == num_of_lines {
+				end_idx = i; // Set end index to the beginning of the last `n` lines
+				break;
+			}
+		}
+	}
+
+	// If num_of_lines is greater than the total number of lines, return an empty string
+	if newline_count < num_of_lines {
+		return "";
+	}
+
+	// Return the content from the start up to `end_idx`
+	&content[..end_idx]
+}
+
+// endregion: --- Strings
+
+// region:    --- Escape Fns
 
 /// Only escape if needed. right now, the test only test `&lt;`
 fn escape_decode_if_needed(content: &str) -> RhaiResult {
@@ -36,4 +112,4 @@ fn escape_decode(content: &str) -> RhaiResult {
 	Ok(decoded.into())
 }
 
-// endregion: --- Rhai Functions
+// endregion: --- Escape Fns

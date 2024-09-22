@@ -1,20 +1,32 @@
 use crate::support::adjust_single_ending_newline;
+use crate::types::MdBlock;
+use std::mem;
 
-pub fn extract_blocks(content: &str, lang_name: Option<&str>) -> Vec<String> {
+pub fn extract_blocks(content: &str, with_lang_name: Option<&str>) -> Vec<MdBlock> {
 	let mut blocks = Vec::new();
 	let mut current_block = String::new();
+	let mut current_lang: Option<String> = None;
 
+	let mut inside_block = false;
 	let mut start_capture = false;
 	let mut first_code_line = true;
 	let mut matching_lang = false;
 
-	let lang_prefix = lang_name.map(|lang| format!("```{}", lang));
-
+	// TODO: Add support for `````` the six ticks scheme
 	for line in content.lines() {
-		if !start_capture && line.starts_with("```") {
+		// Will be inside at first ``` of the pair, and the closing one will be false
+		if line.starts_with("```") {
+			inside_block = !inside_block;
+		}
+
+		// if we are not in a block pair
+		if inside_block && line.starts_with("```") {
+			let lang_name = line.trim_start_matches("```").trim();
+			current_lang = Some(lang_name.to_string());
+
 			// If we have a language name specified, check if the current block matches
-			if let Some(ref prefix) = lang_prefix {
-				if line.starts_with(prefix) {
+			if let Some(with_lang_name) = with_lang_name {
+				if with_lang_name == lang_name {
 					start_capture = true;
 					matching_lang = true;
 					continue;
@@ -27,20 +39,26 @@ pub fn extract_blocks(content: &str, lang_name: Option<&str>) -> Vec<String> {
 			}
 		}
 
-		if start_capture && line.starts_with("```") {
+		// -- if second block tick pair
+		if !inside_block && line.starts_with("```") {
 			if matching_lang {
-				// End the capture and store the block
-				blocks.push(adjust_single_ending_newline(current_block.clone()));
+				// take and clear the current_block
+				let content = mem::take(&mut current_block);
+				let content = adjust_single_ending_newline(content);
+				// create bloxk
+				let block = MdBlock::new(current_lang.take(), content);
+				blocks.push(block);
 			}
 			// Reset flags for next block
 			current_block.clear();
+			current_lang = None;
 			start_capture = false;
 			first_code_line = true;
 			matching_lang = false;
 			continue;
 		}
 
-		if start_capture {
+		if inside_block && start_capture {
 			if !first_code_line {
 				current_block.push('\n');
 			}
@@ -75,7 +93,8 @@ More text
 
 		let blocks = extract_blocks(content, Some("rust"));
 		assert_eq!(blocks.len(), 1);
-		assert_eq!(blocks[0], "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
+		assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "rust");
+		assert_eq!(blocks[0].content, "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
 	}
 
 	#[test]
@@ -95,8 +114,10 @@ def hello():
 
 		let blocks = extract_blocks(content, None);
 		assert_eq!(blocks.len(), 2);
-		assert_eq!(blocks[0], "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
-		assert_eq!(blocks[1], "def hello():\n\t\tprint(\"Hello, world!\")\n");
+		assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "rust");
+		assert_eq!(blocks[0].content, "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
+		assert_eq!(blocks[1].lang.as_ref().expect("should have lang"), "python");
+		assert_eq!(blocks[1].content, "def hello():\n\t\tprint(\"Hello, world!\")\n");
 	}
 
 	#[test]
@@ -116,7 +137,8 @@ def hello():
 
 		let blocks = extract_blocks(content, Some("python"));
 		assert_eq!(blocks.len(), 1);
-		assert_eq!(blocks[0], "def hello():\n\t\tprint(\"Hello, world!\")\n");
+		assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "python");
+		assert_eq!(blocks[0].content, "def hello():\n\t\tprint(\"Hello, world!\")\n");
 	}
 
 	#[test]
@@ -132,6 +154,32 @@ fn main() {
 
 		let blocks = extract_blocks(content, Some("python"));
 		assert_eq!(blocks.len(), 0);
+	}
+
+	#[test]
+	fn test_extract_blocks_match_empty_lang() {
+		let content = r#"
+Some text
+
+```
+Some content of empty lang block
+```
+
+```rust
+fn main() {
+		println!("Hello, world!");
+}
+```
+
+
+
+
+        "#;
+
+		let blocks = extract_blocks(content, Some(""));
+		assert_eq!(blocks.len(), 1);
+		assert_eq!(blocks[0].lang.as_deref(), Some(""));
+		assert_eq!(blocks[0].content, "Some content of empty lang block\n");
 	}
 
 	#[test]
@@ -153,8 +201,10 @@ fn greet() {
 
 		let blocks = extract_blocks(content, Some("rust"));
 		assert_eq!(blocks.len(), 2);
-		assert_eq!(blocks[0], "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
-		assert_eq!(blocks[1], "fn greet() {\n\t\tprintln!(\"Greetings!\");\n}\n");
+		assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "rust");
+		assert_eq!(blocks[0].content, "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
+		assert_eq!(blocks[1].lang.as_ref().expect("should have lang"), "rust");
+		assert_eq!(blocks[1].content, "fn greet() {\n\t\tprintln!(\"Greetings!\");\n}\n");
 	}
 
 	#[test]
@@ -171,7 +221,7 @@ def hello():
 
 		let blocks = extract_blocks(content, Some("rust"));
 		assert_eq!(blocks.len(), 1);
-		assert_eq!(blocks[0], "\n"); // Expecting an empty block
+		assert_eq!(blocks[0].content, "\n"); // Expecting an empty block
 	}
 
 	#[test]

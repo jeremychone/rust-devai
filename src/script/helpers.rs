@@ -13,7 +13,7 @@ pub fn rhai_dynamic_to_serde_value(dynamic: Dynamic) -> Result<Value> {
 	} else if dynamic.is::<String>() {
 		Value::String(dynamic.into_string()?)
 	} else if dynamic.is::<Array>() {
-		let arr = dynamic.into_array().unwrap();
+		let arr = dynamic.into_array()?;
 		let serde_array = arr
 			.into_iter()
 			.map(rhai_dynamic_to_serde_value)
