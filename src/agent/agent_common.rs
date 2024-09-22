@@ -1,14 +1,19 @@
+use crate::agent::agent_config::AgentConfig;
 use genai::chat::ChatMessage;
 use std::sync::Arc;
 
 /// A sync efficient & friendly Agent containing the AgentInner
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Agent {
 	pub inner: Arc<AgentInner>,
 }
 
 /// Getters
 impl Agent {
+	pub fn config(&self) -> &AgentConfig {
+		&self.inner.config
+	}
+
 	pub fn name(&self) -> &str {
 		&self.inner.name
 	}
@@ -41,8 +46,10 @@ impl Agent {
 // region:    --- AgentInner
 
 /// AgentInner is ok to be public to allow user-code to build Agent simply.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct AgentInner {
+	pub config: AgentConfig,
+
 	pub name: String,
 	pub file_name: String,
 	pub file_path: String,

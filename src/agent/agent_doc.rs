@@ -1,3 +1,4 @@
+use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentInner};
 use crate::Result;
 use simple_fs::{read_to_string, SFile};
@@ -18,7 +19,7 @@ impl AgentDoc {
 		Ok(Self { raw_content, sfile })
 	}
 
-	pub fn into_agent(self) -> Result<Agent> {
+	pub fn into_agent(self, config: AgentConfig) -> Result<Agent> {
 		#[derive(Debug)]
 		enum CaptureMode {
 			None,
@@ -98,6 +99,8 @@ impl AgentDoc {
 		// -- Returning the data
 
 		let agent = AgentInner {
+			config,
+
 			name: self.sfile.file_stem().to_string(),
 			file_name: self.sfile.file_name().to_string(),
 			file_path: self.sfile.to_str().to_string(),
@@ -141,6 +144,7 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
+	use crate::test_support::default_agent_config_for_test;
 
 	#[test]
 	fn test_agent_doc_demo_ok() -> Result<()> {
@@ -149,7 +153,7 @@ mod tests {
 
 		// -- Exec
 		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent()?;
+		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Check
 		assert!(agent.inst().contains("Some paragraph for instruction"), "instruction");

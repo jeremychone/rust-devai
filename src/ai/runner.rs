@@ -11,11 +11,14 @@ use value_ext::JsonValueExt;
 
 const MODEL: &str = "gpt-4o-mini";
 
-const CONCURRENCY: usize = 8;
+const DEFAULT_CONCURRENCY: usize = 1;
 
 pub async fn run_agent_items(client: Client, agent: Agent, items: Vec<impl Serialize>) -> Result<()> {
 	use tokio::task::JoinSet;
-	let model_name = ModelName::from(MODEL);
+	let model_name = agent.config().model_name().ok_or(Error::CannotRunMissingModel)?;
+	let model_name = ModelName::from(model_name);
+
+	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
 	println!("Running agent command: {}", agent.name());
 	println!("                 from: {}", agent.file_path());
@@ -45,7 +48,7 @@ pub async fn run_agent_items(client: Client, agent: Agent, items: Vec<impl Seria
 		in_progress += 1;
 
 		// If we've reached the concurrency limit, wait for one task to complete
-		if in_progress >= CONCURRENCY {
+		if in_progress >= concurrency {
 			if let Some(res) = join_set.join_next().await {
 				in_progress -= 1;
 				match res {
@@ -137,6 +140,7 @@ mod tests {
 	use super::*;
 	use crate::agent::AgentDoc;
 	use crate::ai::get_genai_client;
+	use crate::test_support::default_agent_config_for_test;
 	use crate::types::FileRef;
 	use simple_fs::SFile;
 	use value_ext::JsonValueExt;
@@ -146,7 +150,7 @@ mod tests {
 		// -- Setup & Fixtures
 		let client = get_genai_client()?;
 		let doc = AgentDoc::from_file("./tests-data/agents/agent-simple.md")?;
-		let agent = doc.into_agent()?;
+		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Execute
 		run_agent_item(&client, &agent, Value::Null).await?;
@@ -161,7 +165,7 @@ mod tests {
 		// -- Setup & Fixtures
 		let client = get_genai_client()?;
 		let doc = AgentDoc::from_file("./tests-data/agents/agent-on-file.md")?;
-		let agent = doc.into_agent()?;
+		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Execute
 		let on_file = SFile::new("./src/main.rs")?;

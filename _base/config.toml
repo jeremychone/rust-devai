@@ -1,5 +1,5 @@
 [genai]
-model = "gpt-4o-mini"
+model = "gpt-4o-mini" # Required (any model rust genai crate support)
 
 [runtime]
-items_concurrency = 1 # not supported yet  (always 1)
+items_concurrency = 1 # Default to 1 if absent

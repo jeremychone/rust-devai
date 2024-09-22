@@ -9,10 +9,13 @@ mod script;
 mod support;
 mod types;
 
+#[cfg(test)]
+mod test_support;
+
 use crate::agent::init_agent_files;
 use crate::cli::AppArgs;
 use clap::Parser;
-pub use error::{Error, Result};
+use error::{Error, Result};
 
 // endregion: --- Modules
 

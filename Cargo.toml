@@ -19,13 +19,14 @@ unsafe_code = "forbid"
 tokio = { version = "1", features = ["full"] }
 # -- AI
 genai = "0.1.9"
-# -- Json
+# -- Json & Data Files
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 value-ext = "0.0.3"
+toml = "0.8"
 # -- Template & Scripting
 rhai = {version = "1.19", features = ["sync"]}
-handlebars = "4"
+handlebars = "6"
 # -- Cli
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 # -- Files
