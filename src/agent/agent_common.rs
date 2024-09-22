@@ -9,6 +9,18 @@ pub struct Agent {
 
 /// Getters
 impl Agent {
+	pub fn name(&self) -> &str {
+		&self.inner.name
+	}
+
+	pub fn file_name(&self) -> &str {
+		&self.inner.file_name
+	}
+
+	pub fn file_path(&self) -> &str {
+		&self.inner.file_path
+	}
+
 	pub fn inst(&self) -> &str {
 		&self.inner.inst
 	}
@@ -31,6 +43,10 @@ impl Agent {
 /// AgentInner is ok to be public to allow user-code to build Agent simply.
 #[derive(Debug, Clone, Default)]
 pub struct AgentInner {
+	pub name: String,
+	pub file_name: String,
+	pub file_path: String,
+
 	/// The agent's instruction
 	pub inst: String,
 	/// Script

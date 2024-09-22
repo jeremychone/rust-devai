@@ -22,14 +22,14 @@ genai = "0.1.9"
 # -- Json
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-value-ext = "0.0.2"
+value-ext = "0.0.3"
 # -- Template & Scripting
 rhai = {version = "1.19", features = ["sync"]}
 handlebars = "4"
 # -- Cli
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 # -- Files
-simple-fs = { version = "=0.1.4" }
+simple-fs = { version = "=0.1.5" }
 # -- Others
 derive_more = {version = "1.0.0-beta", features = ["from"] }
 keyring = {version = "3", features = ["apple-native"]}

@@ -3,17 +3,23 @@ use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::{Error, Result};
 use genai::chat::ChatRequest;
-use genai::Client;
+use genai::{Client, ModelName};
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use value_ext::JsonValueExt;
 
 const MODEL: &str = "gpt-4o-mini";
 
-const CONCURRENCY: usize = 2;
+const CONCURRENCY: usize = 8;
 
 pub async fn run_agent_items(client: Client, agent: Agent, items: Vec<impl Serialize>) -> Result<()> {
 	use tokio::task::JoinSet;
+	let model_name = ModelName::from(MODEL);
+
+	println!("Running agent command: {}", agent.name());
+	println!("                 from: {}", agent.file_path());
+	println!("           with model: {}\n", model_name);
 
 	let items: Vec<Value> = items
 		.into_iter()
@@ -23,9 +29,15 @@ pub async fn run_agent_items(client: Client, agent: Agent, items: Vec<impl Seria
 	let mut join_set = JoinSet::new();
 	let mut in_progress = 0;
 
-	for item in items {
+	for (item_idx, item) in items.into_iter().enumerate() {
 		let client_clone = client.clone();
 		let agent_clone = agent.clone();
+
+		// get the eventual "._label" property of the item
+		// try to get the path, name
+		let label = get_item_label(&item).unwrap_or_else(|| format!("{item_idx}"));
+
+		println!("Running item: {}", label);
 
 		// Spawn tasks up to the concurrency limit
 		join_set.spawn(async move { run_agent_item(&client_clone, &agent_clone, item).await });
@@ -100,6 +112,20 @@ async fn run_agent_item(client: &Client, agent: &Agent, item: impl Serialize) ->
 
 	Ok(response_value)
 }
+
+// region:    --- Support
+
+fn get_item_label(item: &Value) -> Option<String> {
+	const LABEL_KEYS: &[&str] = &["path", "name", "label", "_label"];
+	for &key in LABEL_KEYS {
+		if let Ok(value) = item.x_get::<String>(key) {
+			return Some(value);
+		}
+	}
+	None
+}
+
+// endregion: --- Support
 
 // region:    --- Tests
 

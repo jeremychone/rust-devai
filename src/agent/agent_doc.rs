@@ -1,10 +1,11 @@
 use crate::agent::{Agent, AgentInner};
 use crate::Result;
-use simple_fs::read_to_string;
+use simple_fs::{read_to_string, SFile};
 use std::path::Path;
 
 #[derive(Debug)]
 pub struct AgentDoc {
+	sfile: SFile,
 	raw_content: String,
 }
 
@@ -12,8 +13,9 @@ pub struct AgentDoc {
 impl AgentDoc {
 	pub fn from_file(path: impl AsRef<Path>) -> Result<Self> {
 		let path = path.as_ref();
+		let sfile = SFile::new(path)?;
 		let raw_content = read_to_string(path)?;
-		Ok(Self { raw_content })
+		Ok(Self { raw_content, sfile })
 	}
 
 	pub fn into_agent(self) -> Result<Agent> {
@@ -96,6 +98,10 @@ impl AgentDoc {
 		// -- Returning the data
 
 		let agent = AgentInner {
+			name: self.sfile.file_stem().to_string(),
+			file_name: self.sfile.file_name().to_string(),
+			file_path: self.sfile.to_str().to_string(),
+
 			inst,
 			data_script: string_as_option_if_empty(data_script),
 			output_script: string_as_option_if_empty(output_script),
