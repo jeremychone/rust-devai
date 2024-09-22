@@ -2,6 +2,7 @@ use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentInner};
 use crate::support::tomls::parse_toml;
 use crate::Result;
+use genai::ModelName;
 use simple_fs::{read_to_string, SFile};
 use std::path::Path;
 
@@ -130,12 +131,16 @@ impl AgentDoc {
 			config = config.merge(value)?;
 		}
 
+		let genai_model_name = config.model().map(ModelName::from);
+
 		let agent = AgentInner {
 			config,
 
 			name: self.sfile.file_stem().to_string(),
 			file_name: self.sfile.file_name().to_string(),
 			file_path: self.sfile.to_str().to_string(),
+
+			genai_model_name,
 
 			inst,
 			data_script: string_as_option_if_empty(data_script),
@@ -213,7 +218,7 @@ mod tests {
 		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Check config
-		assert_eq!(agent.config().model_name(), Some("test_model_for_demo"));
+		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
 		assert_eq!(agent.config().items_concurrency(), Some(8));
 
 		// -- Check Other

@@ -1,6 +1,7 @@
 use crate::cli::RunArgs;
 
 pub struct RunConfig {
+	watch: bool,
 	cmd_agent: String,
 	on_file_globs: Option<Vec<String>>,
 }
@@ -12,6 +13,10 @@ impl RunConfig {
 
 	pub fn on_file_globs(&self) -> Option<Vec<&str>> {
 		self.on_file_globs.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
+	}
+
+	pub fn watch(&self) -> bool {
+		self.watch
 	}
 }
 
@@ -39,6 +44,7 @@ impl From<RunArgs> for RunConfig {
 		};
 
 		Self {
+			watch: args.watch,
 			cmd_agent: args.cmd_agent_name,
 			on_file_globs,
 		}

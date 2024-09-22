@@ -3,39 +3,24 @@ use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::{Error, Result};
 use genai::chat::ChatRequest;
-use genai::{Client, ModelName};
+use genai::Client;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use tokio::task::JoinSet;
 use value_ext::JsonValueExt;
-
-const MODEL: &str = "gpt-4o-mini";
 
 const DEFAULT_CONCURRENCY: usize = 1;
 
-pub async fn run_agent_items(client: Client, agent: Agent, items: Option<Vec<Value>>) -> Result<()> {
-	use tokio::task::JoinSet;
-	let model_name = agent.config().model_name().ok_or(Error::CannotRunMissingModel)?;
-	let model_name = ModelName::from(model_name);
-
+pub async fn run_agent_items(client: &Client, agent: &Agent, items: Option<Vec<Value>>) -> Result<()> {
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
+	let model_name = agent.genai_model_name()?;
 
 	println!("Running agent command: {}", agent.name());
 	println!("                 from: {}", agent.file_path());
 	println!("           with model: {}\n", model_name);
 
-	// -- Get the Items as Vec<Value>
-	let items: Vec<Value> = items
-		.into_iter()
-		.map(|v| serde_json::to_value(v).map_err(Error::custom))
-		.collect::<Result<Vec<_>>>()?;
-
-	// If no items, have one with Value::null
-	if items.is_empty() {
-		run_agent_item(&client, &agent, Value::Null).await?;
-	}
-	// If we have items, we run them per concurrency rules
-	else {
+	if let Some(items) = items {
 		let mut join_set = JoinSet::new();
 		let mut in_progress = 0;
 
@@ -43,14 +28,8 @@ pub async fn run_agent_items(client: Client, agent: Agent, items: Option<Vec<Val
 			let client_clone = client.clone();
 			let agent_clone = agent.clone();
 
-			// get the eventual "._label" property of the item
-			// try to get the path, name
-			let label = get_item_label(&item).unwrap_or_else(|| format!("{item_idx}"));
-
-			println!("Running item: {}", label);
-
 			// Spawn tasks up to the concurrency limit
-			join_set.spawn(async move { run_agent_item(&client_clone, &agent_clone, item).await });
+			join_set.spawn(async move { run_agent_item(item_idx, &client_clone, &agent_clone, item).await });
 
 			in_progress += 1;
 
@@ -81,13 +60,26 @@ pub async fn run_agent_items(client: Client, agent: Agent, items: Option<Vec<Val
 			}
 		}
 	}
+	// If no items, have one with Value::null
+	else {
+		run_agent_item(0, client, agent, Value::Null).await?;
+	}
 
 	Ok(())
 }
 
-async fn run_agent_item(client: &Client, agent: &Agent, item: impl Serialize) -> Result<Value> {
+/// Run the agent for one item
+async fn run_agent_item(item_idx: usize, client: &Client, agent: &Agent, item: impl Serialize) -> Result<Value> {
+	let model_name = agent.genai_model_name()?;
+
 	// -- prepare the scope_item
 	let item = serde_json::to_value(item)?;
+
+	// get the eventual "._label" property of the item
+	// try to get the path, name
+	let label = get_item_label(&item).unwrap_or_else(|| format!("{item_idx}"));
+	println!("\n==== Running item: {}", label);
+
 	let scope_item = json!({
 		"item": item.clone(), // clone because item is reused later
 	});
@@ -106,10 +98,8 @@ async fn run_agent_item(client: &Client, agent: &Agent, item: impl Serialize) ->
 	// -- Execute genai
 	let chat_req = ChatRequest::from_system(inst);
 
-	let chat_res = client.exec_chat(MODEL, chat_req, None).await?;
+	let chat_res = client.exec_chat(model_name.as_ref(), chat_req, None).await?;
 	let ai_output = chat_res.content_text_into_string().unwrap_or_default();
-
-	println!("->> ai_output\n{ai_output}\n");
 
 	let response_value: Value = if let Some(output_script) = agent.output_script() {
 		let scope_output = json!({
@@ -123,6 +113,11 @@ async fn run_agent_item(client: &Client, agent: &Agent, item: impl Serialize) ->
 		ai_output.into()
 	};
 
+	// if the response value is a String, then, print it
+	if let Some(response_txt) = response_value.as_str() {
+		println!("-- Agent Output:");
+		println!("{response_txt}");
+	}
 	Ok(response_value)
 }
 
@@ -163,7 +158,7 @@ mod tests {
 		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Execute
-		run_agent_item(&client, &agent, Value::Null).await?;
+		run_agent_item(0, &client, &agent, Value::Null).await?;
 
 		// -- Check
 
@@ -181,7 +176,7 @@ mod tests {
 		let on_file = SFile::new("./src/main.rs")?;
 		let file_ref = FileRef::from(on_file);
 
-		let run_output = run_agent_item(&client, &agent, file_ref).await?;
+		let run_output = run_agent_item(0, &client, &agent, file_ref).await?;
 
 		// -- Check
 		// The output return the {data_path: data.file.path, item_name: item.name}

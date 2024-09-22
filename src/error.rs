@@ -7,8 +7,10 @@ pub enum Error {
 	// -- Cli Command
 	AgentNotFound(String),
 
-	// -- Run
-	CannotRunMissingModel,
+	// -- Agent
+	ModelMissing {
+		agent_path: String,
+	},
 
 	// -- Sub Modules
 	#[from]

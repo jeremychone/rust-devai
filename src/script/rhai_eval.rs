@@ -17,11 +17,11 @@ pub fn rhai_eval(script: &str, scope_value: Option<Value>) -> Result<Value> {
 	};
 
 	// Evaluate the script with the provided scope
+
 	let result = engine.eval_with_scope::<Dynamic>(&mut scope, script)?;
 
 	// Convert the result to a serde_json::Value
 	let result_json = rhai_dynamic_to_serde_value(result)?;
-
 	Ok(result_json)
 }
 

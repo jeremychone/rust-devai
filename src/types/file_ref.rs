@@ -2,7 +2,7 @@ use rhai::Dynamic;
 use serde::Serialize;
 use simple_fs::SFile;
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct FileRef {
 	name: String,
 	path: String,

@@ -1,11 +1,14 @@
-use crate::agent::find_agent;
+use crate::agent::{find_agent, Agent};
 use crate::ai::{get_genai_client, run_agent_items};
 use crate::exec::RunConfig;
 use crate::support::ValuesExt;
 use crate::types::FileRef;
 use crate::Result;
-use simple_fs::list_files;
+use genai::Client;
+use simple_fs::{list_files, watch, SEventKind};
 
+/// Main exec for the Run command
+/// Might do a single run or a watch
 pub async fn exec_run(run_config: impl Into<RunConfig>) -> Result<()> {
 	let run_config = run_config.into();
 
@@ -13,6 +16,45 @@ pub async fn exec_run(run_config: impl Into<RunConfig>) -> Result<()> {
 	let client = get_genai_client()?;
 	let agent = find_agent(run_config.cmd_agent())?;
 
+	do_run(&run_config, &client, &agent).await?;
+
+	if run_config.watch() {
+		let watcher = watch(agent.file_path())?;
+		// Continuously listen for events
+		loop {
+			// Block until a message is received
+			match watcher.rx.recv() {
+				Ok(events) => {
+					// Process each event in the vector
+					for event in events {
+						match event.skind {
+							SEventKind::Modify => {
+								println!("\n==== Agent file modified, running agent again\n");
+								do_run(&run_config, &client, &agent).await?;
+								// Handle the modify event here
+								println!("File modified: {:?}", event.spath);
+							}
+							_ => {
+								// Handle other event kinds if needed
+								println!("Other event: {:?}", event);
+							}
+						}
+					}
+				}
+				Err(e) => {
+					// Handle any errors related to receiving the message
+					eprintln!("Error receiving event: {:?}", e);
+					break;
+				}
+			}
+		}
+	}
+
+	Ok(())
+}
+
+/// Do one run
+async fn do_run(run_config: &RunConfig, client: &Client, agent: &Agent) -> Result<()> {
 	// -- Execute the command
 	let on_file_globs = run_config.on_file_globs();
 	// If we have the on_file_globs, they become the items

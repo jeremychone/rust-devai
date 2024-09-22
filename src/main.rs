@@ -28,12 +28,12 @@ async fn main() -> Result<()> {
 	match args.cmd {
 		// Run an agent command
 		cli::Commands::Run(run_args) => {
-			// Note: Every run will init the files
+			// Note: Every run will initialize the files
 			init_agent_files()?;
-			// exec the command
+			// Execute the command
 			exec::exec_run(run_args).await?;
 		}
-		// Init devai for this folder
+		// Initialize the device for this folder
 		cli::Commands::Init => {
 			init_agent_files()?;
 		}

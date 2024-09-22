@@ -21,11 +21,11 @@ Make sure to not change the code. Only typo within strings.
 
 ```rhai
 let rust_blocks = md::extract_blocks(ai_output, "rust");
-let first_rust_block = rust_blocks[0];
+let first_rust_block = rust_blocks[0].content;
 let rust_code = text::escape_decode_if_needed(first_rust_block);
 
 file::save(data.file.path, rust_code);
 
-let message = "File processed: " + data.file.path;
-return message
+// This will be printed
+return "File processed: " + data.file.path
 ```

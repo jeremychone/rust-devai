@@ -26,10 +26,14 @@ pub enum Commands {
 pub struct RunArgs {
 	/// The name of the Command Agent to execute, required.
 	/// This should be the name of the markdown file under `.devai/customs` or `.devai/defaults` (without extension),
-	/// or thhe filename initial `proof-comments.md` will match to `proof-comments` or `pc`
+	/// or the filename initial `proof-comments.md` will match to `proof-comments` or `pc`
 	pub cmd_agent_name: String,
 
 	/// Optional file parameter, allowing multiple files
 	#[arg(short = 'f', long = "on-files")]
 	pub on_files: Option<Vec<String>>,
+
+	/// Optional watch flag
+	#[arg(short = 'w', long = "watch")]
+	pub watch: bool,
 }

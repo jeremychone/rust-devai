@@ -1,5 +1,7 @@
 use crate::agent::agent_config::AgentConfig;
+use crate::{Error, Result};
 use genai::chat::ChatMessage;
+use genai::ModelName;
 use std::sync::Arc;
 
 /// A sync efficient & friendly Agent containing the AgentInner
@@ -43,6 +45,19 @@ impl Agent {
 	}
 }
 
+/// Compute Getters
+impl Agent {
+	/// Return the genai ModelName
+	/// (return error if missing)
+	pub fn genai_model_name(&self) -> Result<ModelName> {
+		let model_name = self.inner.genai_model_name.clone().ok_or_else(|| Error::ModelMissing {
+			agent_path: self.file_path().to_string(),
+		})?;
+
+		Ok(model_name)
+	}
+}
+
 // region:    --- AgentInner
 
 /// AgentInner is ok to be public to allow user-code to build Agent simply.
@@ -53,6 +68,10 @@ pub struct AgentInner {
 	pub name: String,
 	pub file_name: String,
 	pub file_path: String,
+
+	/// The resolved genai ModelName from the config.name
+	/// Stored, since it can be used many time during request flow.
+	pub genai_model_name: Option<ModelName>,
 
 	/// The agent's instruction
 	pub inst: String,
