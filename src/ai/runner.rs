@@ -143,7 +143,6 @@ async fn run_agent_item(
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = response_value.as_str() {
 		println!("\n-- Agent Output:\n\n{response_txt}");
-		println!("{response_txt}");
 	}
 	Ok(response_value)
 }

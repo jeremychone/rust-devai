@@ -9,8 +9,11 @@ use std::sync::{Arc, LazyLock};
 // endregion: --- Modules
 
 static HANDLEBARS: LazyLock<Arc<Handlebars>> = LazyLock::new(|| {
-	let handlebars = Arc::new(Handlebars::new());
-	handlebars
+	let mut handlebars = Handlebars::new();
+	// Disable escaping globally
+	handlebars.register_escape_fn(|s| s.to_string());
+
+	Arc::new(handlebars)
 });
 
 pub fn hbs_render(hbs_tmpl: &str, data_root: &HashMap<String, Value>) -> Result<String> {
