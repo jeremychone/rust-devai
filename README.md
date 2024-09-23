@@ -69,12 +69,9 @@ return #{file: file};
 
 # Instruction
 
-The user will provide you with the content of a Rust programming file, and you will correct the English in the comments while leaving everything else unchanged.
-
-Very important: 
-- Only change comments if they have spelling or grammar mistakes.
-- Make sure to NOT change the code. Only correct typos within strings.
-- Do not change the whitespace like tabs or spaces.
+The user will provide you with a Rust programming file's content, and you will correct the English in the comments while leaving everything else unchanged.
+Only change comment if they have a spelling or grammar mistake.
+Make sure to not change the code. Only typo within strings.
 
 ```rust
 {{data.file.content}}
@@ -84,15 +81,14 @@ Very important:
 
 ```rhai
 let rust_blocks = md::extract_blocks(ai_output, "rust");
-let first_rust_block = rust_blocks[0];
+let first_rust_block = rust_blocks[0].content;
 let rust_code = text::escape_decode_if_needed(first_rust_block);
 
 file::save(data.file.path, rust_code);
 
-let message = "File processed: " + data.file.path;
-return message;
+// This will be printed
+return "File processed: " + data.file.path
 ```
-
 ``````
 
 ## Config

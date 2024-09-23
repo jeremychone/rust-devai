@@ -9,9 +9,11 @@ return #{file: file};
 
 # Instruction
 
-The user will provide you with a Rust programming file's content, and you will correct the English in the comments while leaving everything else unchanged.
-Only change comment if they have a spelling or grammar mistake.
-Make sure to not change the code. Only typo within strings.
+- The user will provide you with the content of a Rust programming file. 
+- You will correct the English in the comments, but leave everything else unchanged. 
+- Only modify comments if there is a spelling or grammar mistake. 
+- Make sure not to change the code, except for typos within strings.
+- Do not change the code itself, only comments.
 
 ```rust
 {{data.file.content}}
