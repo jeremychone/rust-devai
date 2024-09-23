@@ -43,6 +43,15 @@ impl AgentDoc {
 			OutputCodeBlock,
 		}
 
+		impl CaptureMode {
+			fn is_inside_code_block(&self) -> bool {
+				matches!(
+					self,
+					CaptureMode::ConfigTomlBlock | CaptureMode::DataCodeBlock | CaptureMode::OutputCodeBlock
+				)
+			}
+		}
+
 		let mut capture_mode = CaptureMode::None;
 
 		let mut config_toml = String::new();
@@ -55,7 +64,7 @@ impl AgentDoc {
 		//       and therefore not appropriate for this use case
 		for line in self.raw_content.lines() {
 			// If heading we decide the capture mode
-			if line.starts_with('#') && !line.starts_with("##") {
+			if !capture_mode.is_inside_code_block() && line.starts_with('#') && !line.starts_with("##") {
 				let header = line[1..].trim().to_lowercase();
 				if header == "config" {
 					capture_mode = CaptureMode::ConfigSection;
