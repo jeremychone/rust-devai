@@ -30,13 +30,19 @@ pub async fn exec_run(run_config: impl Into<ExecRunConfig>) -> Result<()> {
 						match event.skind {
 							SEventKind::Modify => {
 								println!("\n==== Agent file modified, running agent again\n");
+								// Make sure to change reloade the agent
+								let agent = find_agent(run_config.cmd_agent())?;
+
+								// Note: No need to get a new genai client, as it is static for now. However, this might be needed later
+								//       if we introduce customizable genai properties (which we should avoid).
+
 								do_run(&run_config, &client, &agent).await?;
 								// Handle the modify event here
-								println!("File modified: {:?}", event.spath);
+								// println!("File modified: {:?}", event.spath);
 							}
 							_ => {
 								// Handle other event kinds if needed
-								println!("Other event: {:?}", event);
+								// println!("Other event: {:?}", event);
 							}
 						}
 					}
