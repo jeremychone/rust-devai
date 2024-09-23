@@ -32,9 +32,22 @@ STILL IN HEAVY DEVELOPMENT... But it's starting to get pretty cool.
 
 _P.S. If possible, try to refrain from publishing `devai-custom` type crates, as this might be more confusing than helpful. However, any other name is great._
 
-## Usage & Concept
+## API Keys
 
-**IMPORTANT**: Make sure all is commited before usage. 
+**devai** uses the [genai crate](https://crates.io/crates/genai), and therefore the simplest way to provide the API keys for each provider is via environment variables in the terminal when running devai.
+
+Here are the environment variable names used:
+
+```
+OPENAI_API_KEY
+ANTHROPIC_API_KEY
+MODEL_GEMINI
+GEMINI_API_KEY
+GROQ_API_KEY
+COHERE_API_KEY
+```
+
+## Usage & Concept
 
 Usage: `devai run proof-comments -f "./src/main.rs"`
 
@@ -57,40 +70,6 @@ Usage: `devai run proof-comments -f "./src/main.rs"`
 
 `.devai/defaults/proof-comments.md` (see [.devai/defaults/proof-comments.md`](./_base/agents/proof-comments.md))
 
-``````md
-# Data
-
-```rhai
-let path = item.path;
-let file = file::load(path);
-
-return #{file: file};
-```
-
-# Instruction
-
-The user will provide you with a Rust programming file's content, and you will correct the English in the comments while leaving everything else unchanged.
-Only change comment if they have a spelling or grammar mistake.
-Make sure to not change the code. Only typo within strings.
-
-```rust
-{{data.file.content}}
-```
-
-# Output
-
-```rhai
-let rust_blocks = md::extract_blocks(ai_output, "rust");
-let first_rust_block = rust_blocks[0].content;
-let rust_code = text::escape_decode_if_needed(first_rust_block);
-
-file::save(data.file.path, rust_code);
-
-// This will be printed
-return "File processed: " + data.file.path
-```
-``````
-
 ## Config
 
 On `devai run` or `devai init` a `.devai/config.toml` will be created with the following:
@@ -105,7 +84,6 @@ model = "gpt-4o-mini"
 items_concurrency = 1 
 ```
 
-
 ## Future Plan
 
 - Support for the `# Items` section with `yaml` or `Rhai`.
@@ -114,6 +92,3 @@ items_concurrency = 1
 - `--dry-req` will perform a dry run of the request by just saving the content of the request in a file.
 - `--dry-res` will perform a real AI request but just capture the AI response in a file (the request will be captured as well).
 - `--capture` will perform the normal run but capture the request and response in the request/response file.
-
-## Future Command Agent File
-
