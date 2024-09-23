@@ -1,8 +1,10 @@
 // region:    --- Modules
 
+mod ai_run_config;
 mod client;
 mod runner;
 
+pub use ai_run_config::*;
 pub use client::*;
 pub use runner::*;
 

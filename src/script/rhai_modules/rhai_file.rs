@@ -59,14 +59,14 @@ fn save(file_path: &str, content: &str) -> RhaiResult {
 		let path = Path::new(file_path);
 		ensure_file_dir(path)?;
 		write(path, content)?;
-		println!("File saved: {}", file_path);
+		println!("\n-- Rhai file::save called on: {}\n", file_path);
 		Ok(())
 	}
 
 	match file_save_inner(file_path, content) {
 		Ok(_) => Ok(().into()),
 		Err(err) => Err(Box::new(EvalAltResult::ErrorRuntime(
-			format!("Failed to save file: {}", err).into(),
+			format!(" Rhai file::save Failed for file: {}", err).into(),
 			rhai::Position::NONE,
 		))),
 	}

@@ -1,12 +1,13 @@
 use crate::cli::RunArgs;
 
-pub struct RunConfig {
+pub struct ExecRunConfig {
 	watch: bool,
+	verbose: bool,
 	cmd_agent: String,
 	on_file_globs: Option<Vec<String>>,
 }
 
-impl RunConfig {
+impl ExecRunConfig {
 	pub fn cmd_agent(&self) -> &str {
 		&self.cmd_agent
 	}
@@ -18,11 +19,15 @@ impl RunConfig {
 	pub fn watch(&self) -> bool {
 		self.watch
 	}
+
+	pub fn verbose(&self) -> bool {
+		self.verbose
+	}
 }
 
 // region:    --- From AppArgs
 
-impl From<RunArgs> for RunConfig {
+impl From<RunArgs> for ExecRunConfig {
 	fn from(args: RunArgs) -> Self {
 		// -- When a simple name is provided
 		let on_file_globs = if let Some(on_files) = args.on_files {
@@ -44,6 +49,7 @@ impl From<RunArgs> for RunConfig {
 		};
 
 		Self {
+			verbose: args.verbose,
 			watch: args.watch,
 			cmd_agent: args.cmd_agent_name,
 			on_file_globs,

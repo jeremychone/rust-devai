@@ -1,6 +1,6 @@
 use crate::agent::{find_agent, Agent};
 use crate::ai::{get_genai_client, run_agent_items};
-use crate::exec::RunConfig;
+use crate::exec::ExecRunConfig;
 use crate::support::ValuesExt;
 use crate::types::FileRef;
 use crate::Result;
@@ -9,7 +9,7 @@ use simple_fs::{list_files, watch, SEventKind};
 
 /// Main exec for the Run command
 /// Might do a single run or a watch
-pub async fn exec_run(run_config: impl Into<RunConfig>) -> Result<()> {
+pub async fn exec_run(run_config: impl Into<ExecRunConfig>) -> Result<()> {
 	let run_config = run_config.into();
 
 	// -- Get the AI client and agent
@@ -54,16 +54,16 @@ pub async fn exec_run(run_config: impl Into<RunConfig>) -> Result<()> {
 }
 
 /// Do one run
-async fn do_run(run_config: &RunConfig, client: &Client, agent: &Agent) -> Result<()> {
+async fn do_run(run_config: &ExecRunConfig, client: &Client, agent: &Agent) -> Result<()> {
 	// -- Execute the command
 	let on_file_globs = run_config.on_file_globs();
 	// If we have the on_file_globs, they become the items
 	if let Some(on_file_globs) = on_file_globs {
 		let files = list_files("./", Some(&on_file_globs), None)?;
 		let file_refs = files.into_iter().map(FileRef::from).collect::<Vec<_>>();
-		run_agent_items(client, agent, Some(file_refs.x_into_values()?)).await?;
+		run_agent_items(client, agent, Some(file_refs.x_into_values()?), run_config.into()).await?;
 	} else {
-		run_agent_items(client, agent, None).await?;
+		run_agent_items(client, agent, None, run_config.into()).await?;
 	}
 
 	Ok(())

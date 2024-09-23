@@ -1,4 +1,5 @@
 use crate::agent::Agent;
+use crate::ai::AiRunConfig;
 use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::{Error, Result};
@@ -12,7 +13,12 @@ use value_ext::JsonValueExt;
 
 const DEFAULT_CONCURRENCY: usize = 1;
 
-pub async fn run_agent_items(client: &Client, agent: &Agent, items: Option<Vec<Value>>) -> Result<()> {
+pub async fn run_agent_items(
+	client: &Client,
+	agent: &Agent,
+	items: Option<Vec<Value>>,
+	ai_run_config: AiRunConfig,
+) -> Result<()> {
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 	let model_name = agent.genai_model_name()?;
 
@@ -27,9 +33,12 @@ pub async fn run_agent_items(client: &Client, agent: &Agent, items: Option<Vec<V
 		for (item_idx, item) in items.into_iter().enumerate() {
 			let client_clone = client.clone();
 			let agent_clone = agent.clone();
+			let ai_run_config_clone = ai_run_config.clone();
 
 			// Spawn tasks up to the concurrency limit
-			join_set.spawn(async move { run_agent_item(item_idx, &client_clone, &agent_clone, item).await });
+			join_set.spawn(async move {
+				run_agent_item(item_idx, &client_clone, &agent_clone, item, &ai_run_config_clone).await
+			});
 
 			in_progress += 1;
 
@@ -62,14 +71,20 @@ pub async fn run_agent_items(client: &Client, agent: &Agent, items: Option<Vec<V
 	}
 	// If no items, have one with Value::null
 	else {
-		run_agent_item(0, client, agent, Value::Null).await?;
+		run_agent_item(0, client, agent, Value::Null, &ai_run_config).await?;
 	}
 
 	Ok(())
 }
 
 /// Run the agent for one item
-async fn run_agent_item(item_idx: usize, client: &Client, agent: &Agent, item: impl Serialize) -> Result<Value> {
+async fn run_agent_item(
+	item_idx: usize,
+	client: &Client,
+	agent: &Agent,
+	item: impl Serialize,
+	ai_run_config: &AiRunConfig,
+) -> Result<Value> {
 	let model_name = agent.genai_model_name()?;
 
 	// -- prepare the scope_item
@@ -96,10 +111,22 @@ async fn run_agent_item(item_idx: usize, client: &Client, agent: &Agent, item: i
 	let inst = hbs_render(agent.inst(), &data_scope)?;
 
 	// -- Execute genai
+
+	if ai_run_config.verbose() {
+		println!("\n-- Instruction:\n\n{inst}\n")
+	}
 	let chat_req = ChatRequest::from_system(inst);
 
 	let chat_res = client.exec_chat(model_name.as_ref(), chat_req, None).await?;
+	let chat_res_mode_iden = chat_res.model_iden.clone();
 	let ai_output = chat_res.content_text_into_string().unwrap_or_default();
+
+	if ai_run_config.verbose() {
+		println!(
+			"\n-- AI Output (model: {} | adapter: {})\n\n{ai_output}\n",
+			chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
+		)
+	}
 
 	let response_value: Value = if let Some(output_script) = agent.output_script() {
 		let scope_output = json!({
@@ -115,7 +142,7 @@ async fn run_agent_item(item_idx: usize, client: &Client, agent: &Agent, item: i
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = response_value.as_str() {
-		println!("-- Agent Output:");
+		println!("\n-- Agent Output:\n\n{response_txt}");
 		println!("{response_txt}");
 	}
 	Ok(response_value)
@@ -158,7 +185,7 @@ mod tests {
 		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Execute
-		run_agent_item(0, &client, &agent, Value::Null).await?;
+		run_agent_item(0, &client, &agent, Value::Null, &AiRunConfig::default()).await?;
 
 		// -- Check
 
@@ -176,7 +203,7 @@ mod tests {
 		let on_file = SFile::new("./src/main.rs")?;
 		let file_ref = FileRef::from(on_file);
 
-		let run_output = run_agent_item(0, &client, &agent, file_ref).await?;
+		let run_output = run_agent_item(0, &client, &agent, file_ref, &AiRunConfig::default()).await?;
 
 		// -- Check
 		// The output return the {data_path: data.file.path, item_name: item.name}

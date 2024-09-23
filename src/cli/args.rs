@@ -36,4 +36,8 @@ pub struct RunArgs {
 	/// Optional watch flag
 	#[arg(short = 'w', long = "watch")]
 	pub watch: bool,
+
+	/// Verbose mode
+	#[arg(short = 'v', long = "verbose")]
+	pub verbose: bool,
 }
