@@ -1,6 +1,7 @@
 [genai]
-# Required (any model rust genai crate support)
+# Required (any model supported by the Rust genai crate)
 # e.g., "gpt-4o", "gpt-4o-2024-08-06", "gpt-4o-mini", "claude-3-5-sonnet-20240620"
+#       Local Ollama: "llama3.1:70b" (or any locally installed Ollama)
 model = "gpt-4o-mini"
 
 [runtime]
