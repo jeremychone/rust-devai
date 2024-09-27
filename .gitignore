@@ -1,6 +1,7 @@
 # -- Base
 .*
 !.gitignore
+!.github
 
 _*
 !_base/
