@@ -74,7 +74,7 @@ Usage: `devai run proof-comments -f "./src/main.rs"`
     - Here are the environment variable names per provider: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COHERE_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`.
     - On Mac, if the environment variable is not present, it will attempt to prompt and get/save it from the keychain, under the devai group.
 
-## Example of a Agent Command File
+## Example of a Command Agent File
 
 `.devai/defaults/proof-comments.md` (see [.devai/defaults/proof-comments.md`](./_base/agents/proof-comments.md))
 
