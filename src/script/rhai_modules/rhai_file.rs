@@ -18,7 +18,6 @@ use simple_fs::{ensure_file_dir, list_files};
 use std::fs::write;
 use std::path::Path;
 
-/// Define the `file` module and register functions
 pub fn rhai_module() -> Module {
 	// Create a module for text functions
 	let mut module = Module::new();

@@ -155,6 +155,7 @@ fn escape_decode_if_needed(content: &str) -> RhaiResult {
 	}
 }
 
+// html-escape
 /// ## RHAI Documentation
 /// ```rhai
 /// escape_decode(content: string) -> string
