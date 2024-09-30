@@ -1,5 +1,6 @@
 use crate::agent::Agent;
 use crate::ai::AiRunConfig;
+use crate::exec::DryMode;
 use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::{Error, Result};
@@ -99,7 +100,7 @@ async fn run_agent_item(
 		"item": item.clone(), // clone because item is reused later
 	});
 
-	// -- Execuated data
+	// -- Execute data
 	let data = if let Some(data_script) = agent.data_script().as_ref() {
 		rhai_eval(data_script, Some(scope_item))?
 	} else {
@@ -115,6 +116,12 @@ async fn run_agent_item(
 	if ai_run_config.verbose() {
 		println!("\n-- Instruction:\n\n{inst}\n")
 	}
+
+	// if dry_mode req, we stop
+	if matches!(ai_run_config.dry_mode(), DryMode::Req) {
+		return Ok(Value::Null);
+	}
+
 	let chat_req = ChatRequest::from_system(inst);
 
 	let chat_res = client.exec_chat(model_name.as_ref(), chat_req, None).await?;
@@ -126,6 +133,11 @@ async fn run_agent_item(
 			"\n-- AI Output (model: {} | adapter: {})\n\n{ai_output}\n",
 			chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
 		)
+	}
+
+	// if dry_mode req, we stop
+	if matches!(ai_run_config.dry_mode(), DryMode::Res) {
+		return Ok(Value::Null);
 	}
 
 	let response_value: Value = if let Some(output_script) = agent.output_script() {

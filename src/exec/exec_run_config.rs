@@ -1,8 +1,19 @@
 use crate::cli::RunArgs;
 
+/// The Dry mode of the content.
+///
+/// > Note: Might want to move this out of the exec sub module as it is used in ai one (code-clean)
+#[derive(Debug, Clone)]
+pub enum DryMode {
+	Req,
+	Res,
+	None, // not dry mode
+}
+
 pub struct ExecRunConfig {
 	watch: bool,
 	verbose: bool,
+	dry_mode: DryMode,
 	cmd_agent: String,
 	on_file_globs: Option<Vec<String>>,
 }
@@ -22,6 +33,10 @@ impl ExecRunConfig {
 
 	pub fn verbose(&self) -> bool {
 		self.verbose
+	}
+
+	pub fn dry_mode(&self) -> DryMode {
+		self.dry_mode.clone()
 	}
 }
 
@@ -48,9 +63,16 @@ impl From<RunArgs> for ExecRunConfig {
 			None
 		};
 
+		let dry_mode = match args.dry_mode.as_deref() {
+			Some("req") => DryMode::Req,
+			Some("res") => DryMode::Res,
+			_ => DryMode::None,
+		};
+
 		Self {
 			verbose: args.verbose,
 			watch: args.watch,
+			dry_mode,
 			cmd_agent: args.cmd_agent_name,
 			on_file_globs,
 		}

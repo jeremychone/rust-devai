@@ -74,6 +74,41 @@ Usage: `devai run proof-comments -f "./src/main.rs"`
     - Here are the environment variable names per provider: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `COHERE_API_KEY`, `GEMINI_API_KEY`, `GROQ_API_KEY`.
     - On Mac, if the environment variable is not present, it will attempt to prompt and get/save it from the keychain, under the devai group.
 
+## `devai` command arguments
+
+```sh
+
+# Will create/update the .devai/ settings folder (not required, automatically runs on "run")
+devai init
+
+# Will execute the proof-comments.md from `.devai/customs/` or `.devai/defaults/` on 
+# any file matching `./**/mod.rs` (those will become 'items' in the data section)
+devai run proof-comments -f mod.rs
+
+# Verbose mode, will print in the console what is sent to the AI, the AI response, and # output return if string-like
+devai run proof-comments -f mod.rs --verbose 
+
+# Verbose and watch mode. Every time proof-comments is updated, will run it again
+devai run proof-comments -f main.rs -v -w
+
+# Will do the verbose, watch, but in dry mode request, will print only the rendered instruction
+devai run proof-comments -f main.rs -v -w --dry req
+
+# Will do the verbose, watch, but in dry mode response, will print rendered instruction, AI response
+# and will NOT execute the data
+devai run proof-comments -f main.rs -v -w --dry req
+
+# happy coding!
+```
+
+- `init` sub-command - initialize or update the `.devai/` folder (non destructive, only add files missing)
+- `run` sub-command
+    - First arg is the command name. 
+    - `-f` the file name or glob input files as items. Can have multiple `-f`
+    - `--verbose` (`-v`) will print in the command line the rendered , 
+    - `--dry req` will perform a dry run of the request by just running the **data** and **instruction** sections. Use `--verbose` to print out the sections.
+    - `--dry res` will perform a dry run of the request, send it to the AI, and return the AI output (does not return data). Use `--verbose` to see what has been sent and returned.
+
 ## Example of a Command Agent File
 
 `.devai/defaults/proof-comments.md` (see [.devai/defaults/proof-comments.md`](./_base/agents/proof-comments.md))
@@ -97,6 +132,4 @@ items_concurrency = 1
 - Support for the `# Items` section with `yaml` or `Rhai`.
 - More `Rhai` modules/functions.
 - Support for `# Before All`, `# Before`, `# After`, and `# After All` (all `Rhai`).
-- `--dry-req` will perform a dry run of the request by just saving the content of the request in a file.
-- `--dry-res` will perform a real AI request but just capture the AI response in a file (the request will be captured as well).
 - `--capture` will perform the normal run but capture the request and response in the request/response file.

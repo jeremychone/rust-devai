@@ -40,4 +40,8 @@ pub struct RunArgs {
 	/// Verbose mode
 	#[arg(short = 'v', long = "verbose")]
 	pub verbose: bool,
+
+	/// Dry mode, takes either 'req' or 'res'
+	#[arg(long = "dry", value_parser = ["req", "res"])]
+	pub dry_mode: Option<String>,
 }
