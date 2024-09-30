@@ -1,3 +1,14 @@
+//! Defines the `git` module, used in the rhai engine.
+//! 
+//! ---
+//! 
+//! ## RHAI documentation
+//! 
+//! The `git` module exposes functions that call `git` commands.
+//! 
+//! ### Functions
+//! * `restore(file_path: string) -> string`
+
 use rhai::plugin::RhaiResult;
 use rhai::{FuncRegistration, Module};
 
@@ -14,6 +25,13 @@ pub fn rhai_module() -> Module {
 
 // region:    --- Functions
 
+/// ## RHAI Documentation
+/// ```rhai
+/// restore(file_path: string) -> string
+/// ```
+/// 
+/// Calls `git restore {file_path}` and returns the output (stdout) of that 
+/// call.
 fn git_restore(path: &str) -> RhaiResult {
 	let output = std::process::Command::new("git")
 		.arg("restore")

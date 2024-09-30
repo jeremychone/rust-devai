@@ -1,3 +1,18 @@
+//! Defines the `text` module, used in the rhai engine
+//! 
+//! ---
+//! 
+//! ## RHAI documentation
+//! This module exposes functions that process text.
+//! 
+//! ### Functions
+//! * `escape_decode(content: string) -> string`
+//! * `escape_decode_if_needed(content: string) -> string`
+//! * `remove_first_line(content: string) -> string`
+//! * `remove_first_lines(content: string, n: int) -> string`
+//! * `remove_last_line(content: string) -> string`
+//! * `remove_last_lines(content: string, n: int) -> string`
+
 use crate::support::decode_html_entities;
 use rhai::plugin::RhaiResult;
 use rhai::{FuncRegistration, Module};
@@ -37,10 +52,22 @@ pub fn rhai_module() -> Module {
 
 // region:    --- Strings
 
+///  ## RHAI Documentation
+/// ```rhai
+/// remove_first_line(content: string) -> string
+/// ```
+/// 
+/// Returns `content` with the first line removed.
 fn remove_first_line(content: &str) -> &str {
 	remove_first_lines(content, 1)
 }
 
+///  ## RHAI Documentation
+/// ```rhai
+/// remove_first_lines(content: string, n: int) -> string
+/// ```
+/// 
+/// Returns `content` with the first `n` lines removed.
 fn remove_first_lines(content: &str, num_of_lines: usize) -> &str {
 	let mut start_idx = 0;
 	let mut newline_count = 0;
@@ -65,10 +92,22 @@ fn remove_first_lines(content: &str, num_of_lines: usize) -> &str {
 	&content[start_idx..]
 }
 
+///  ## RHAI Documentation
+/// ```rhai
+/// remove_last_line(content: string) -> string
+/// ```
+/// 
+/// Returns `content` with the last line removed.
 fn remove_last_line(content: &str) -> &str {
 	remove_last_lines(content, 1)
 }
 
+///  ## RHAI Documentation
+/// ```rhai
+/// remove_last_lines(content: string, n: int) -> string
+/// ```
+/// 
+/// Returns `content` with the last `n` lines removed.
 fn remove_last_lines(content: &str, num_of_lines: usize) -> &str {
 	let mut end_idx = content.len(); // Start with the end of the string
 	let mut newline_count = 0;
@@ -98,6 +137,16 @@ fn remove_last_lines(content: &str, num_of_lines: usize) -> &str {
 // region:    --- Escape Fns
 
 /// Only escape if needed. right now, the test only test `&lt;`
+/// 
+/// ## RHAI Documentation
+/// ```rhai
+/// escape_decode(content: string) -> string
+/// ```
+/// 
+/// Some LLMs HTML-encode their responses. This function returns `content` 
+/// after selectively decoding certain HTML tags. 
+/// 
+/// Right now, the only tag that gets decoded is `&lt;`.
 fn escape_decode_if_needed(content: &str) -> RhaiResult {
 	if !content.contains("&lt;") {
 		Ok(content.into())
@@ -107,6 +156,13 @@ fn escape_decode_if_needed(content: &str) -> RhaiResult {
 }
 
 // html-escape
+/// ## RHAI Documentation
+/// ```rhai
+/// escape_decode(content: string) -> string
+/// ```
+/// 
+/// Some LLMs HTML-encode their responses. This function returns `content`, 
+/// HTML-decoded.
 fn escape_decode(content: &str) -> RhaiResult {
 	let decoded = decode_html_entities(content);
 	Ok(decoded.into())

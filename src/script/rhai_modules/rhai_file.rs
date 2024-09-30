@@ -1,3 +1,15 @@
+//! Defines the `file` module, used in the rhai engine. 
+//! 
+//! ---
+//! 
+//! ## RHAI documentation
+//! The `file` module exposes functions used to read, write, or modify files.
+//! 
+//! ### Functions
+//! * `load(file_path: string) -> FileRecord`
+//! * `save(file_path: string, content: string)`
+//! * `list(glob: string) -> Vec<FileRef>`
+
 use crate::types::{FileRecord, FileRef};
 use crate::Result;
 use rhai::plugin::RhaiResult;
@@ -27,6 +39,13 @@ pub fn rhai_module() -> Module {
 
 // region:    --- Rhai Functions
 
+/// ## RHAI Documentation
+/// ```rhai
+/// list(glob: string) -> Vec<FileRef>
+/// ```
+/// 
+/// Expands `glob`, returning a list of all matching file paths along with
+/// helpful metadata.
 fn list_with_glob(include_glob: &str) -> RhaiResult {
 	let sfiles = list_files("./", Some(&[include_glob]), None).map_err(|err| {
 		EvalAltResult::ErrorRuntime(
@@ -42,6 +61,13 @@ fn list_with_glob(include_glob: &str) -> RhaiResult {
 	Ok(res_dynamic)
 }
 
+/// ## RHAI Documentation
+/// ```rhai
+/// load(file_path: string) -> FileRecord
+/// ```
+/// 
+/// Reads the file specified by `path`, returning the contents of the file
+/// along with helpful metadata.
 fn load(file_path: &str) -> RhaiResult {
 	let file_record = FileRecord::new(file_path);
 	match file_record {
@@ -53,6 +79,12 @@ fn load(file_path: &str) -> RhaiResult {
 	}
 }
 
+/// ## RHAI Documentation
+/// ```rhai
+/// save(file_path: string, content: string)
+/// ```
+/// 
+/// Writes `content` to the specified `file_path`.
 fn save(file_path: &str, content: &str) -> RhaiResult {
 	fn file_save_inner(file_path: &str, content: &str) -> Result<()> {
 		// let sfile = SFile::from_path(file_path)?;
