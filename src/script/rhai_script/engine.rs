@@ -1,4 +1,4 @@
-use crate::script::rhai_modules::{rhai_file, rhai_git, rhai_md, rhai_text};
+use super::rhai_modules::{rhai_file, rhai_git, rhai_md, rhai_text};
 use crate::Result;
 use rhai::Engine;
 use std::sync::{Arc, LazyLock};

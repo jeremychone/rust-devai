@@ -1,6 +1,5 @@
 use super::engine::rhai_engine;
-use super::helpers::rhai_dynamic_to_serde_value;
-use crate::script::helpers::serde_value_to_scope;
+use super::helpers::{rhai_dynamic_to_serde_value, serde_value_to_scope};
 use crate::Result;
 use rhai::{Dynamic, Scope};
 use serde_json::Value;
@@ -33,7 +32,6 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
-	use crate::script::engine::rhai_engine;
 	use value_ext::JsonValueExt;
 
 	#[test]
