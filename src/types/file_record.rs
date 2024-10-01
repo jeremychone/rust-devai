@@ -9,14 +9,14 @@ use std::path::Path;
 /// FileRecord contains the metadata information about the file (name, ext, etc.) as well as the content.
 #[derive(Serialize)]
 pub struct FileRecord {
-	/// The name of the file with extension e.g., `main.rs`
-	pub name: String,
 	/// The path, might and will probably be relative
 	pub path: String,
-	/// Empty if there is no extension
-	pub ext: String,
+	/// The name of the file with extension e.g., `main.rs`
+	pub name: String,
 	/// Stem
 	pub stem: String,
+	/// Empty if there is no extension
+	pub ext: String,
 	/// The full text content of the file
 	pub content: String,
 }
@@ -31,8 +31,8 @@ impl FileRecord {
 	pub fn from_sfile(sfile: SFile) -> Result<Self> {
 		let content = read_to_string(&sfile)?;
 		Ok(FileRecord {
-			name: sfile.file_name().to_string(),
 			path: sfile.to_string(),
+			name: sfile.file_name().to_string(),
 			stem: sfile.file_stem().to_string(),
 			ext: sfile.ext().to_string(),
 			content,
@@ -49,6 +49,7 @@ impl From<FileRecord> for Dynamic {
 		map.insert("name".into(), file.name.into());
 		map.insert("path".into(), file.path.into());
 		map.insert("stem".into(), file.stem.into());
+		map.insert("ext".into(), file.ext.into());
 		map.insert("content".into(), file.content.into());
 		Dynamic::from_map(map)
 	}

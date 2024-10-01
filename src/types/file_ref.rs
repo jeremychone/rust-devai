@@ -29,8 +29,8 @@ impl FileRef {
 	/// Implementing `From` for `Dynamic` was confusing.
 	pub fn into_dynamic(self) -> Dynamic {
 		let mut map = rhai::Map::new();
-		map.insert("name".into(), self.name.into());
 		map.insert("path".into(), self.path.into());
+		map.insert("name".into(), self.name.into());
 		map.insert("stem".into(), self.stem.into());
 		map.insert("ext".into(), self.ext.into());
 		Dynamic::from_map(map)
