@@ -36,7 +36,10 @@ pub async fn exec_run(run_config: impl Into<ExecRunConfig>) -> Result<()> {
 								// Note: No need to get a new genai client, as it is static for now. However, this might be needed later
 								//       if we introduce customizable genai properties (which we should avoid).
 
-								do_run(&run_config, &client, &agent).await?;
+								match do_run(&run_config, &client, &agent).await {
+									Ok(_) => (),
+									Err(err) => println!("ERROR: {err}"),
+								}
 								// Handle the modify event here
 								// println!("File modified: {:?}", event.spath);
 							}
