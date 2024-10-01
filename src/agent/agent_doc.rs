@@ -165,11 +165,7 @@ impl AgentDoc {
 
 fn push_line(content: &mut String, line: &str) {
 	content.push_str(line);
-	// Only add a new line if the line is not empty.
-	// Otherwise, it was a new line, no need to add another one
-	if !line.trim().is_empty() {
-		content.push('\n');
-	}
+	content.push('\n');
 }
 
 fn string_as_option_if_empty(content: String) -> Option<String> {
