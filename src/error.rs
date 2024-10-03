@@ -12,6 +12,11 @@ pub enum Error {
 		agent_path: String,
 	},
 
+	// -- Run
+	BeforeAllFailWrongReturn {
+		cause: String,
+	},
+
 	// -- Sub Modules
 	#[from]
 	DynamicSupport(crate::script::DynamicSupportError),

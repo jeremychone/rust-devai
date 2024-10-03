@@ -33,6 +33,11 @@ impl AgentDoc {
 		enum CaptureMode {
 			None,
 
+			// Below the output heading (perhaps not in a code block)
+			BeforeAllSection,
+			// Inside the code block
+			BeforeAllCodeBlock,
+
 			// Bellow the # Config section
 			ConfigSection,
 			// inside the ConfigTomlBlock
@@ -48,6 +53,11 @@ impl AgentDoc {
 			OutputSection,
 			// Inside the code block
 			OutputCodeBlock,
+
+			// Below the output heading (perhaps not in a code block)
+			AfterAllSection,
+			// Inside the code block
+			AfterAllCodeBlock,
 		}
 
 		impl CaptureMode {
@@ -62,9 +72,11 @@ impl AgentDoc {
 		let mut capture_mode = CaptureMode::None;
 
 		let mut config_toml = String::new();
+		let mut before_all_script = String::new();
 		let mut data_script = String::new();
 		let mut inst = String::new();
 		let mut output_script = String::new();
+		let mut after_all_script = String::new();
 
 		// -- The actual parsing
 		// NOTE: For now custom parsing. `markdown` and `pulldown-cmark` are losing information
@@ -75,12 +87,16 @@ impl AgentDoc {
 				let header = line[1..].trim().to_lowercase();
 				if header == "config" {
 					capture_mode = CaptureMode::ConfigSection;
+				} else if header == "before all" {
+					capture_mode = CaptureMode::BeforeAllSection;
 				} else if header == "data" {
 					capture_mode = CaptureMode::DataSection;
 				} else if header == "inst" || header == "instruction" {
 					capture_mode = CaptureMode::Inst;
 				} else if header == "output" {
 					capture_mode = CaptureMode::OutputSection;
+				} else if header == "after all" {
+					capture_mode = CaptureMode::AfterAllSection;
 				} else {
 					// Stop processing current section if new top-level header
 					capture_mode = CaptureMode::None;
@@ -91,6 +107,7 @@ impl AgentDoc {
 			match capture_mode {
 				CaptureMode::None => {}
 
+				// -- Config
 				CaptureMode::ConfigSection => {
 					if line.starts_with("```toml") {
 						capture_mode = CaptureMode::ConfigTomlBlock;
@@ -107,6 +124,23 @@ impl AgentDoc {
 					}
 				}
 
+				// -- Before All
+				CaptureMode::BeforeAllSection => {
+					if line.starts_with("```rhai") {
+						capture_mode = CaptureMode::BeforeAllCodeBlock;
+						continue;
+					}
+				}
+				CaptureMode::BeforeAllCodeBlock => {
+					if line.starts_with("```") {
+						capture_mode = CaptureMode::None;
+						continue;
+					} else {
+						push_line(&mut before_all_script, line);
+					}
+				}
+
+				// -- Data
 				CaptureMode::DataSection => {
 					if line.starts_with("```rhai") {
 						capture_mode = CaptureMode::DataCodeBlock;
@@ -121,9 +155,13 @@ impl AgentDoc {
 						push_line(&mut data_script, line);
 					}
 				}
+
+				// -- Inst
 				CaptureMode::Inst => {
 					push_line(&mut inst, line);
 				}
+
+				// -- Output
 				CaptureMode::OutputSection => {
 					if line.starts_with("```rhai") {
 						capture_mode = CaptureMode::OutputCodeBlock;
@@ -136,6 +174,22 @@ impl AgentDoc {
 						continue;
 					} else {
 						push_line(&mut output_script, line);
+					}
+				}
+
+				// -- After All
+				CaptureMode::AfterAllSection => {
+					if line.starts_with("```rhai") {
+						capture_mode = CaptureMode::AfterAllCodeBlock;
+						continue;
+					}
+				}
+				CaptureMode::AfterAllCodeBlock => {
+					if line.starts_with("```") {
+						capture_mode = CaptureMode::None;
+						continue;
+					} else {
+						push_line(&mut after_all_script, line);
 					}
 				}
 			}
@@ -158,10 +212,11 @@ impl AgentDoc {
 
 			genai_model_name,
 
-			inst,
+			before_all_script: string_as_option_if_empty(before_all_script),
 			data_script: string_as_option_if_empty(data_script),
+			inst,
 			output_script: string_as_option_if_empty(output_script),
-			messages: None,
+			after_all_script: string_as_option_if_empty(after_all_script),
 		};
 
 		Ok(agent_inner)
@@ -244,6 +299,50 @@ mod tests {
 		assert!(
 			output_script.contains("/// Optional output processing."),
 			"output_script does not contain."
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_agent_doc_all_sections_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let agent_doc_path = "./tests-data/agents/agent-all-sections.md";
+
+		// -- Exec
+		let doc = AgentDoc::from_file(agent_doc_path)?;
+		let agent = doc.into_agent(default_agent_config_for_test())?;
+
+		// -- Check config
+		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
+		assert_eq!(agent.config().items_concurrency(), None);
+
+		// -- Check Sections
+		assert_eq!(
+			agent.before_all_script().ok_or("No before_all script")?,
+			"let before_all = \"before_all\";\n",
+		);
+
+		assert_eq!(
+			agent.data_script().ok_or("No data script")?,
+			"let some_data = \"Some Data\";\nreturn some_data;\n",
+		);
+
+		assert_eq!(agent.inst(), "\nSome instruction\n\n");
+
+		assert_eq!(
+			agent.data_script().ok_or("Data Script missing")?,
+			"let some_data = \"Some Data\";\nreturn some_data;\n",
+		);
+
+		assert_eq!(
+			agent.output_script().ok_or("No output script")?,
+			"let some_output = \"Some Output\";\n",
+		);
+
+		assert_eq!(
+			agent.after_all_script().ok_or("No after all script")?,
+			"let after_all = \"after_all\";\n",
 		);
 
 		Ok(())

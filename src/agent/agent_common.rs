@@ -1,6 +1,6 @@
 use crate::agent::agent_config::AgentConfig;
 use crate::{Error, Result};
-use genai::chat::{ChatMessage, ChatOptions};
+use genai::chat::ChatOptions;
 use genai::ModelName;
 use std::sync::Arc;
 
@@ -60,6 +60,10 @@ impl Agent {
 		&self.inner.file_path
 	}
 
+	pub fn before_all_script(&self) -> Option<&str> {
+		self.inner.before_all_script.as_deref()
+	}
+
 	pub fn inst(&self) -> &str {
 		&self.inner.inst
 	}
@@ -68,12 +72,12 @@ impl Agent {
 		self.inner.data_script.as_deref()
 	}
 
-	pub fn messages(&self) -> Option<&[ChatMessage]> {
-		self.inner.messages.as_deref()
-	}
-
 	pub fn output_script(&self) -> Option<&str> {
 		self.inner.output_script.as_deref()
+	}
+
+	pub fn after_all_script(&self) -> Option<&str> {
+		self.inner.after_all_script.as_deref()
 	}
 }
 
@@ -88,17 +92,14 @@ pub struct AgentInner {
 	pub file_name: String,
 	pub file_path: String,
 
-	/// The resolved genai ModelName from the config.name
-	/// Stored, since it can be used many time during request flow.
 	pub genai_model_name: Option<ModelName>,
 
+	pub before_all_script: Option<String>,
 	/// The agent's instruction
 	pub inst: String,
 	/// Script
 	pub data_script: Option<String>,
-	/// Messages
-	#[allow(unused)]
-	pub messages: Option<Vec<ChatMessage>>,
 	pub output_script: Option<String>,
+	pub after_all_script: Option<String>,
 }
 // endregion: --- AgentInner
