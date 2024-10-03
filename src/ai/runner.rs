@@ -21,11 +21,20 @@ pub async fn run_agent_items(
 	ai_run_config: AiRunConfig,
 ) -> Result<()> {
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
-	let model_name = agent.genai_model_name()?;
+
+	let mut genai_infos: Vec<String> = vec![];
+	if let Some(temp) = agent.config().temperature() {
+		genai_infos.push(format!("temperature: {temp}"));
+	}
+	let genai_infos = if genai_infos.is_empty() {
+		"".to_string()
+	} else {
+		format!(" ({})", genai_infos.join(", "))
+	};
 
 	println!("Running agent command: {}", agent.name());
 	println!("                 from: {}", agent.file_path());
-	println!("           with model: {}\n", model_name);
+	println!("           with model: {}{genai_infos}\n", agent.genai_model());
 
 	if let Some(items) = items {
 		let mut join_set = JoinSet::new();
@@ -86,8 +95,6 @@ async fn run_agent_item(
 	item: impl Serialize,
 	ai_run_config: &AiRunConfig,
 ) -> Result<Value> {
-	let model_name = agent.genai_model_name()?;
-
 	// -- prepare the scope_item
 	let item = serde_json::to_value(item)?;
 
@@ -124,7 +131,9 @@ async fn run_agent_item(
 
 	let chat_req = ChatRequest::from_system(inst);
 
-	let chat_res = client.exec_chat(model_name.as_ref(), chat_req, None).await?;
+	let chat_res = client
+		.exec_chat(agent.genai_model(), chat_req, Some(agent.genai_chat_options()))
+		.await?;
 	let chat_res_mode_iden = chat_res.model_iden.clone();
 	let ai_output = chat_res.content_text_into_string().unwrap_or_default();
 

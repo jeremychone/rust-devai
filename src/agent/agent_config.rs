@@ -11,8 +11,10 @@ pub struct AgentConfig {
 	// The raw model name of the configuration
 	model: Option<String>,
 
+	temperature: Option<f64>,
+
 	// Runtime settings
-	items_concurrency: Option<u32>,
+	items_concurrency: Option<usize>,
 }
 
 // Getters
@@ -22,7 +24,11 @@ impl AgentConfig {
 	}
 
 	pub fn items_concurrency(&self) -> Option<usize> {
-		self.items_concurrency.map(|v| v as usize)
+		self.items_concurrency
+	}
+
+	pub fn temperature(&self) -> Option<f64> {
+		self.temperature
 	}
 }
 
@@ -32,17 +38,21 @@ impl AgentConfig {
 	pub fn new(model_name: impl Into<String>) -> Self {
 		AgentConfig {
 			model: Some(model_name.into()),
+			temperature: None,
 			items_concurrency: None,
 		}
 	}
 
 	/// Creates a new `AgentConfig` from a Value document (either from `cargo.toml` or `# Config` section).
 	pub fn from_value(value: Value) -> Result<AgentConfig> {
-		let model_name = value.x_get("/genai/model").ok();
+		let model = value.x_get("/genai/model").ok();
+		let temperature: Option<f64> = value.x_get("/genai/temperature").ok();
+
 		let items_concurrency = value.x_get("/runtime/items_concurrency").ok();
 
 		Ok(AgentConfig {
-			model: model_name,
+			model,
+			temperature,
 			items_concurrency,
 		})
 	}
@@ -53,6 +63,7 @@ impl AgentConfig {
 
 		Ok(AgentConfig {
 			model: config_ov.model.or(self.model),
+			temperature: config_ov.temperature.or(self.temperature),
 			items_concurrency: config_ov.items_concurrency.or(self.items_concurrency),
 		})
 	}

@@ -1,17 +1,49 @@
 use crate::agent::agent_config::AgentConfig;
 use crate::{Error, Result};
-use genai::chat::ChatMessage;
+use genai::chat::{ChatMessage, ChatOptions};
 use genai::ModelName;
 use std::sync::Arc;
 
 /// A sync efficient & friendly Agent containing the AgentInner
 #[derive(Debug, Clone)]
 pub struct Agent {
-	pub inner: Arc<AgentInner>,
+	inner: Arc<AgentInner>,
+	genai_model: ModelName,
+	genai_chat_options: Arc<ChatOptions>,
+}
+
+/// Constructor from AgentInner
+impl Agent {
+	pub fn new(agent_inner: AgentInner) -> Result<Agent> {
+		let inner = Arc::new(agent_inner);
+
+		let genai_model = inner.genai_model_name.clone().ok_or_else(|| Error::ModelMissing {
+			agent_path: inner.file_path.to_string(),
+		})?;
+
+		let mut chat_options = ChatOptions::default();
+		if let Some(temp) = inner.config.temperature() {
+			chat_options.temperature = Some(temp);
+		}
+
+		Ok(Agent {
+			inner,
+			genai_model,
+			genai_chat_options: chat_options.into(),
+		})
+	}
 }
 
 /// Getters
 impl Agent {
+	pub fn genai_model(&self) -> &ModelName {
+		&self.genai_model
+	}
+
+	pub fn genai_chat_options(&self) -> &ChatOptions {
+		&self.genai_chat_options
+	}
+
 	pub fn config(&self) -> &AgentConfig {
 		&self.inner.config
 	}
@@ -45,19 +77,6 @@ impl Agent {
 	}
 }
 
-/// Compute Getters
-impl Agent {
-	/// Return the genai ModelName
-	/// (return error if missing)
-	pub fn genai_model_name(&self) -> Result<ModelName> {
-		let model_name = self.inner.genai_model_name.clone().ok_or_else(|| Error::ModelMissing {
-			agent_path: self.file_path().to_string(),
-		})?;
-
-		Ok(model_name)
-	}
-}
-
 // region:    --- AgentInner
 
 /// AgentInner is ok to be public to allow user-code to build Agent simply.
@@ -81,11 +100,5 @@ pub struct AgentInner {
 	#[allow(unused)]
 	pub messages: Option<Vec<ChatMessage>>,
 	pub output_script: Option<String>,
-}
-
-impl From<AgentInner> for Agent {
-	fn from(inner: AgentInner) -> Self {
-		Agent { inner: Arc::new(inner) }
-	}
 }
 // endregion: --- AgentInner

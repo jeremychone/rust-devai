@@ -21,7 +21,14 @@ impl AgentDoc {
 		Ok(Self { raw_content, sfile })
 	}
 
-	pub fn into_agent(self, mut config: AgentConfig) -> Result<Agent> {
+	pub fn into_agent(self, config: AgentConfig) -> Result<Agent> {
+		let agent_inner = self.into_agent_inner(config)?;
+		let agent = Agent::new(agent_inner)?;
+		Ok(agent)
+	}
+
+	/// Internal method to create the first part of the agent inner
+	fn into_agent_inner(self, mut config: AgentConfig) -> Result<AgentInner> {
 		#[derive(Debug)]
 		enum CaptureMode {
 			None,
@@ -142,7 +149,7 @@ impl AgentDoc {
 
 		let genai_model_name = config.model().map(ModelName::from);
 
-		let agent = AgentInner {
+		let agent_inner = AgentInner {
 			config,
 
 			name: self.sfile.file_stem().to_string(),
@@ -157,7 +164,7 @@ impl AgentDoc {
 			messages: None,
 		};
 
-		Ok(agent.into())
+		Ok(agent_inner)
 	}
 }
 
