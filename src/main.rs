@@ -8,6 +8,7 @@ mod exec;
 mod hub;
 mod script;
 mod support;
+mod tui;
 mod types;
 
 #[cfg(test)]
@@ -15,6 +16,7 @@ mod test_support;
 
 use crate::agent::init_agent_files;
 use crate::cli::AppArgs;
+use crate::tui::Tui;
 use clap::Parser;
 use error::{Error, Result};
 
@@ -24,6 +26,7 @@ use error::{Error, Result};
 async fn main() -> Result<()> {
 	// -- Command arguments
 	let args = AppArgs::parse(); // will fail early, but that’s okay.
+	let _tui = Tui::start_printer();
 
 	// -- match the run
 	match args.cmd {
