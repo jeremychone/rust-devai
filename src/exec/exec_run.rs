@@ -1,6 +1,7 @@
 use crate::agent::{find_agent, Agent};
 use crate::ai::{get_genai_client, run_agent_items};
 use crate::exec::ExecRunConfig;
+use crate::hub::get_hub; // Importing get_hub
 use crate::support::ValuesExt;
 use crate::types::FileRef;
 use crate::Result;
@@ -29,30 +30,27 @@ pub async fn exec_run(run_config: impl Into<ExecRunConfig>) -> Result<()> {
 					for event in events {
 						match event.skind {
 							SEventKind::Modify => {
-								println!("\n==== Agent file modified, running agent again\n");
-								// Make sure to change reloade the agent
+								get_hub().publish("\n==== Agent file modified, running agent again\n").await;
+								// Make sure to change reload the agent
 								let agent = find_agent(run_config.cmd_agent())?;
-
-								// Note: No need to get a new genai client, as it is static for now. However, this might be needed later
-								//       if we introduce customizable genai properties (which we should avoid).
 
 								match do_run(&run_config, &client, &agent).await {
 									Ok(_) => (),
-									Err(err) => println!("ERROR: {err}"),
+									Err(err) => get_hub().publish(format!("ERROR: {}", err)).await,
 								}
 								// Handle the modify event here
-								// println!("File modified: {:?}", event.spath);
+								// get_hub().publish(format!("File modified: {:?}", event.spath)).await; // Uncomment if needed
 							}
 							_ => {
 								// Handle other event kinds if needed
-								// println!("Other event: {:?}", event);
+								// get_hub().publish(format!("Other event: {:?}", event)).await; // Uncomment if needed
 							}
 						}
 					}
 				}
 				Err(e) => {
 					// Handle any errors related to receiving the message
-					eprintln!("Error receiving event: {:?}", e);
+					get_hub().publish(format!("Error receiving event: {:?}", e)).await;
 					break;
 				}
 			}
