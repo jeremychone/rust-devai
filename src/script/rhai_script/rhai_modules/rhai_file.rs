@@ -1,10 +1,10 @@
-//! Defines the `file` module, used in the rhai engine. 
-//! 
+//! Defines the `file` module, used in the rhai engine.
+//!
 //! ---
-//! 
+//!
 //! ## RHAI documentation
 //! The `file` module exposes functions used to read, write, or modify files.
-//! 
+//!
 //! ### Functions
 //! * `load(file_path: string) -> FileRecord`
 //! * `save(file_path: string, content: string)`
@@ -43,7 +43,7 @@ pub fn rhai_module() -> Module {
 /// ```rhai
 /// list(glob: string) -> Vec<FileRef>
 /// ```
-/// 
+///
 /// Expands `glob`, returning a list of all matching file paths along with
 /// helpful metadata.
 fn list_with_glob(include_glob: &str) -> RhaiResult {
@@ -65,7 +65,7 @@ fn list_with_glob(include_glob: &str) -> RhaiResult {
 /// ```rhai
 /// load(file_path: string) -> FileRecord
 /// ```
-/// 
+///
 /// Reads the file specified by `path`, returning the contents of the file
 /// along with helpful metadata.
 fn load(file_path: &str) -> RhaiResult {
@@ -83,7 +83,7 @@ fn load(file_path: &str) -> RhaiResult {
 /// ```rhai
 /// save(file_path: string, content: string)
 /// ```
-/// 
+///
 /// Writes `content` to the specified `file_path`.
 fn save(file_path: &str, content: &str) -> RhaiResult {
 	fn file_save_inner(file_path: &str, content: &str) -> Result<()> {

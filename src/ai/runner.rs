@@ -1,7 +1,7 @@
 use crate::agent::Agent;
 use crate::ai::AiRunConfig;
 use crate::exec::DryMode;
-use crate::script::rhai_eval;
+use crate::script::{rhai_eval, DevaiAction};
 use crate::support::hbs::hbs_render;
 use crate::{Error, Result};
 use genai::chat::ChatRequest;
@@ -148,7 +148,7 @@ async fn run_agent_item(
 
 	// get the eventual "._label" property of the item
 	// try to get the path, name
-	let label = get_item_label(&item).unwrap_or_else(|| format!("{item_idx}"));
+	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
 	println!("\n==== Running item: {}", label);
 
 	let data_rhai_scope = json!({
@@ -162,6 +162,15 @@ async fn run_agent_item(
 	} else {
 		Value::Null
 	};
+
+	// skip item if devai action is sent
+	if let Some(DevaiAction::Skip { reason }) = DevaiAction::from_value(&data) {
+		let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
+
+		println!("-- DevAI Skip item: {label}{reason_txt}");
+		return Ok(Value::Null);
+	}
+
 	let data_scope = HashMap::from([("data".to_string(), data.clone())]);
 
 	// -- Execute genai if we have an instruction
@@ -225,6 +234,8 @@ async fn run_agent_item(
 	if let Some(response_txt) = response_value.as_str() {
 		println!("\n-- Agent Output:\n\n{response_txt}");
 	}
+
+	println!("\n====    Done item: {}", label);
 	Ok(response_value)
 }
 
