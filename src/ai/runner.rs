@@ -311,11 +311,7 @@ mod tests {
 		run_agent_items(&client, &agent, Some(items), AiRunConfig::default()).await?;
 
 		// -- Check
-		// The output return the {data_path: data.file.path, item_name: item.name}
-		// assert_eq!(run_output.x_get::<String>("data_path")?, "./src/main.rs");
-		// assert_eq!(run_output.x_get::<String>("item_name")?, "main.rs");
-		// let ai_content = run_output.x_get::<String>("ai_content")?;
-		// assert!(ai_content.len() > 300, "The AI response should have some content");
+		// TODO: Need to do the check, but for this, we will need to have the "hub" implemented to get the messages
 
 		Ok(())
 	}

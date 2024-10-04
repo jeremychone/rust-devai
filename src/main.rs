@@ -5,6 +5,7 @@ mod ai;
 mod cli;
 mod error;
 mod exec;
+mod hub;
 mod script;
 mod support;
 mod types;
