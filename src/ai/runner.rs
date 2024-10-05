@@ -1,6 +1,7 @@
 use crate::agent::Agent;
 use crate::ai::AiRunConfig;
 use crate::exec::DryMode;
+use crate::hub::get_hub;
 use crate::script::{rhai_eval, DevaiAction};
 use crate::support::hbs::hbs_render;
 use crate::{Error, Result};
@@ -33,9 +34,14 @@ pub async fn run_agent_items(
 		format!(" ({})", genai_infos.join(", "))
 	};
 
-	println!("Running agent command: {}", agent.name());
-	println!("                 from: {}", agent.file_path());
-	println!("           with model: {}{genai_infos}\n", agent.genai_model());
+	get_hub()
+		.publish(format!(
+			"Running agent command: {}\n                 from: {}\n           with model: {}{genai_infos}\n",
+			agent.name(),
+			agent.file_path(),
+			agent.genai_model()
+		))
+		.await;
 
 	// -- Run the before all
 	let (items, before_all_data) = if let Some(before_all_script) = agent.before_all_script() {
@@ -149,7 +155,7 @@ async fn run_agent_item(
 	// get the eventual "._label" property of the item
 	// try to get the path, name
 	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
-	println!("\n==== Running item: {}", label);
+	get_hub().publish(format!("\n==== Running item: {}", label)).await;
 
 	let data_rhai_scope = json!({
 		"item": item.clone(), // clone because item is reused later
@@ -167,7 +173,7 @@ async fn run_agent_item(
 	if let Some(DevaiAction::Skip { reason }) = DevaiAction::from_value(&data) {
 		let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
 
-		println!("-- DevAI Skip item: {label}{reason_txt}");
+		get_hub().publish(format!("-- DevAI Skip item: {label}{reason_txt}")).await;
 		return Ok(Value::Null);
 	}
 
@@ -180,7 +186,7 @@ async fn run_agent_item(
 
 	// TODO: Might want to handle if no instruction.
 	if ai_run_config.verbose() {
-		println!("\n-- Instruction:\n\n{inst}\n")
+		get_hub().publish(format!("\n-- Instruction:\n\n{inst}\n")).await;
 	}
 
 	// if dry_mode req, we stop
@@ -199,10 +205,12 @@ async fn run_agent_item(
 		let ai_output = chat_res.content_text_into_string().unwrap_or_default();
 
 		if ai_run_config.verbose() {
-			println!(
-				"\n-- AI Output (model: {} | adapter: {})\n\n{ai_output}\n",
-				chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
-			)
+			get_hub()
+				.publish(format!(
+					"\n-- AI Output (model: {} | adapter: {})\n\n{ai_output}\n",
+					chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
+				))
+				.await;
 		}
 		Value::String(ai_output)
 	}
@@ -232,10 +240,10 @@ async fn run_agent_item(
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = response_value.as_str() {
-		println!("\n-- Agent Output:\n\n{response_txt}");
+		get_hub().publish(format!("\n-- Agent Output:\n\n{response_txt}")).await;
 	}
 
-	println!("\n====    Done item: {}", label);
+	get_hub().publish(format!("\n====    Done item: {}", label)).await;
 	Ok(response_value)
 }
 

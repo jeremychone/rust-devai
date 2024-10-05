@@ -10,13 +10,14 @@
 //! * `save(file_path: string, content: string)`
 //! * `list(glob: string) -> Vec<FileRef>`
 
+use crate::hub::get_hub;
 use crate::types::{FileRecord, FileRef};
 use crate::Result;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, EvalAltResult, FuncRegistration, Module};
 use simple_fs::{ensure_file_dir, list_files};
 use std::fs::write;
-use std::path::Path;
+use std::path::Path; // Importing get_hub as it is used in the code
 
 pub fn rhai_module() -> Module {
 	// Create a module for text functions
@@ -91,7 +92,7 @@ fn save(file_path: &str, content: &str) -> RhaiResult {
 		let path = Path::new(file_path);
 		ensure_file_dir(path)?;
 		write(path, content)?;
-		println!("\n-- Rhai file::save called on: {}\n", file_path);
+		get_hub().publish_sync(format!("\n-- Rhai file::save called on: {}\n", file_path));
 		Ok(())
 	}
 

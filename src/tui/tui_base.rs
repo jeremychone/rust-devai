@@ -11,7 +11,7 @@ impl Tui {
 			while let Ok(event) = rx.recv().await {
 				match event {
 					Event::Message(msg) => {
-						println!("Received:\n{}", msg);
+						println!("{msg}");
 					}
 				}
 			}
