@@ -60,8 +60,8 @@ pub async fn run_agent_items(
 					Some(Value::Null) => None,
 					Some(_) => {
 						return Err(Error::BeforeAllFailWrongReturn {
-						cause: "Before All script block, return `.items` is not type Array, must be an array (even Array of one if one item)".to_string()
-					});
+                        cause: "Before All script block, return `.items` is not type Array, must be an array (even Array of one if one item)".to_string()
+                    });
 					}
 					None => items,
 				};
@@ -69,8 +69,8 @@ pub async fn run_agent_items(
 				let keys: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
 				if !keys.is_empty() {
 					return Err(Error::BeforeAllFailWrongReturn {
-						cause: format!("Before All script block, can only return '.items' and/or '.before_all_data' but also returned {}", keys.join(", "))
-					});
+                        cause: format!("Before All script block, can only return '.items' and/or '.before_all_data' but also returned {}", keys.join(", "))
+                    });
 				}
 				(items, before_all_data)
 			}
@@ -87,8 +87,15 @@ pub async fn run_agent_items(
 	let mut join_set = JoinSet::new();
 	let mut in_progress = 0;
 
+	// -- Initialize outputs capture
+	let mut outputs: Option<Vec<(usize, Value)>> = if agent.after_all_script().is_some() {
+		Some(Vec::new())
+	} else {
+		None
+	};
+
 	// -- Run the items
-	for (item_idx, item) in items.into_iter().enumerate() {
+	for (item_idx, item) in items.clone().into_iter().enumerate() {
 		let client_clone = client.clone();
 		let agent_clone = agent.clone();
 		let before_all_data_clone = before_all_data.clone();
@@ -97,7 +104,7 @@ pub async fn run_agent_items(
 
 		// Spawn tasks up to the concurrency limit
 		join_set.spawn(async move {
-			run_agent_item(
+			let output = run_agent_item(
 				item_idx,
 				&client_clone,
 				&agent_clone,
@@ -105,7 +112,8 @@ pub async fn run_agent_items(
 				item,
 				&ai_run_config_clone,
 			)
-			.await
+			.await?;
+			Ok((item_idx, output))
 		});
 
 		in_progress += 1;
@@ -115,9 +123,12 @@ pub async fn run_agent_items(
 			if let Some(res) = join_set.join_next().await {
 				in_progress -= 1;
 				match res {
-					Ok(result) => {
-						result?;
+					Ok(Ok((item_idx, output))) => {
+						if let Some(outputs_vec) = &mut outputs {
+							outputs_vec.push((item_idx, output));
+						}
 					}
+					Ok(Err(e)) => return Err(e),
 					Err(e) => return Err(Error::custom(format!("Error while running item. Cause {e}"))),
 				}
 			}
@@ -129,12 +140,34 @@ pub async fn run_agent_items(
 		if let Some(res) = join_set.join_next().await {
 			in_progress -= 1;
 			match res {
-				Ok(result) => {
-					result?;
+				Ok(Ok((item_idx, output))) => {
+					if let Some(outputs_vec) = &mut outputs {
+						outputs_vec.push((item_idx, output));
+					}
 				}
+				Ok(Err(e)) => return Err(e),
 				Err(e) => return Err(Error::custom(format!("Error while remaining item. Cause {e}"))),
 			}
 		}
+	}
+
+	// -- Post-process outputs
+	let outputs_value = if let Some(mut outputs_vec) = outputs {
+		outputs_vec.sort_by_key(|(idx, _)| *idx);
+		let outputs_values: Vec<Value> = outputs_vec.into_iter().map(|(_, v)| v).collect();
+		Value::Array(outputs_values)
+	} else {
+		Value::Null
+	};
+
+	// -- Run the after all
+	if let Some(after_all_script) = agent.after_all_script() {
+		let scope_item = json!({
+			"items": items,
+			"outputs": outputs_value, // Will be Value::Null if outputs were not collected
+			"before_all_data": before_all_data,
+		});
+		let _after_all_res = rhai_eval(after_all_script, Some(scope_item))?;
 	}
 
 	Ok(())
@@ -196,7 +229,8 @@ async fn run_agent_item(
 
 	// Now execute the instruction
 	let ai_output = if !is_inst_empty {
-		let chat_req = ChatRequest::from_system(inst);
+		// NOTE: Put the instruction as user as with openai o1-... models does not seem to support system.
+		let chat_req = ChatRequest::from_user(inst);
 
 		let chat_res = client
 			.exec_chat(agent.genai_model(), chat_req, Some(agent.genai_chat_options()))
