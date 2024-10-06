@@ -7,6 +7,7 @@ use simple_fs::{ensure_dir, list_files, read_to_string, SFile};
 use std::collections::HashSet;
 use std::fs::write;
 use std::path::Path;
+use strsim::levenshtein;
 
 const DEVAI_DIR: &str = ".devai";
 const DEVAI_DEFAULTS_DIR: &str = ".devai/defaults";
@@ -42,31 +43,81 @@ pub fn init_agent_files() -> Result<()> {
 
 pub fn find_agent(name: &str) -> Result<Agent> {
 	let base_config = load_base_agent()?;
-	let custom_agent_doc = find_agent_doc_in_dir(name, Path::new(DEVAI_CUSTOMS_DIR))?;
-	if let Some(agent_doc) = custom_agent_doc {
+	let dirs = get_dirs();
+
+	// Attempt to find the agent in the specified directories
+	if let Some(agent_doc) = find_agent_doc_in_dir(name, &dirs)? {
 		return agent_doc.into_agent(base_config);
 	}
 
-	let default_agent_doc = find_agent_doc_in_dir(name, Path::new(DEVAI_DEFAULTS_DIR))?;
-	if let Some(agent_doc) = default_agent_doc {
-		return agent_doc.into_agent(base_config);
-	}
+	// If not found, return an error with potential similar agents
+	let similar_paths = find_similar_agent_paths(name, &dirs)?;
+	let error_msg = if !similar_paths.is_empty() {
+		format!(
+			"Agent '{}' not found.\nDid you mean one of these?\n{}",
+			name,
+			similar_paths
+				.iter()
+				.map(agent_sfile_as_bullet)
+				.collect::<Vec<String>>()
+				.join("\n")
+		)
+	} else {
+		let agent_files = list_all_agent_files()?;
+		format!(
+			"Agent '{}' not found.\nHere is the list of available command agents:\n{}",
+			name,
+			agent_files
+				.iter()
+				.map(agent_sfile_as_bullet)
+				.collect::<Vec<String>>()
+				.join("\n")
+		)
+	};
 
-	Err(format!("Agent '{}' not found.", name).into())
+	Err(error_msg.into())
 }
 
-// region:    --- Agent Finder Support
+/// Lists all agent files following the precedence rules (customs first, defaults second).
+/// Agent files already present in a higher priority directory are not included.
+pub fn list_all_agent_files() -> Result<Vec<SFile>> {
+	let dirs = get_dirs();
 
-fn find_agent_doc_in_dir(name: &str, dir: &Path) -> Result<Option<AgentDoc>> {
-	let default_files = list_files(dir, Some(&["*.md"]), None)?;
-	let found_file = default_files.into_iter().find(|f| match_agent(name, f));
-	if let Some(found_file) = found_file {
-		let doc = AgentDoc::from_file(found_file)?;
+	let mut sfiles = Vec::new();
 
-		Ok(Some(doc))
-	} else {
-		Ok(None)
+	let mut file_stems: HashSet<String> = HashSet::new();
+
+	for dir in dirs {
+		let files = list_files(dir, Some(&["*.md"]), None)?;
+		for file in files.into_iter() {
+			let stem = file.file_stem().to_string();
+			if file_stems.contains(&stem) {
+				continue;
+			}
+			sfiles.push(file);
+			file_stems.insert(stem);
+		}
 	}
+
+	Ok(sfiles)
+}
+
+// region:    --- Support
+
+fn get_dirs() -> Vec<&'static Path> {
+	vec![Path::new(DEVAI_CUSTOMS_DIR), Path::new(DEVAI_DEFAULTS_DIR)]
+}
+
+/// Finds the first matching AgentDoc in the provided directories.
+fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>> {
+	for dir in dirs {
+		let files = list_files(dir, Some(&["*.md"]), None)?;
+		if let Some(found_file) = files.into_iter().find(|f| match_agent(name, f)) {
+			let doc = AgentDoc::from_file(found_file)?;
+			return Ok(Some(doc));
+		}
+	}
+	Ok(None)
 }
 
 fn match_agent(name: &str, sfile: &SFile) -> bool {
@@ -84,10 +135,42 @@ fn get_initials(input: &str) -> String {
 		.collect() // Collect into a String
 }
 
-// endregion: --- Agent Finder Support
+/// Finds the top 3 most similar agent file paths based on Levenshtein distance.
+pub fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
+	let mut candidates = Vec::new();
 
-// region:    --- Config Loader Support
+	for dir in dirs {
+		let files = list_files(dir, Some(&["*.md"]), None)?;
+		for file in files {
+			candidates.push(file);
+		}
+	}
 
+	let mut scored_candidates: Vec<(SFile, usize)> = candidates
+		.into_iter()
+		.filter_map(|sfile| {
+			let file_stem = sfile.file_stem();
+			let distance = levenshtein(name, file_stem);
+			// note might need to change this one, seems to work ok
+			const MAX_DISTANCE: usize = 5;
+			if distance > MAX_DISTANCE {
+				None
+			} else {
+				Some((sfile, distance))
+			}
+		})
+		.collect();
+
+	// Sort by ascending distance
+	scored_candidates.sort_by_key(|&(_, distance)| distance);
+
+	// Take the top 3
+	let top_three = scored_candidates.into_iter().take(3).map(|(path, _)| path).collect();
+
+	Ok(top_three)
+}
+
+/// Loads the base agent configuration.
 fn load_base_agent() -> Result<AgentConfig> {
 	let config_path = Path::new(DEVAI_CONFIG_FILE_PATH);
 	let config_content = read_to_string(config_path)?;
@@ -96,19 +179,29 @@ fn load_base_agent() -> Result<AgentConfig> {
 	Ok(config)
 }
 
-// endregion: --- Config Loader Support
+fn agent_sfile_as_bullet(sfile: &SFile) -> String {
+	let stem = sfile.file_stem();
+	let initials = get_initials(stem);
+	let path = sfile.to_str();
+	let msg = format!("- {stem} ({initials})");
+	let msg = format!("{msg:<37} - for '{path}'");
+
+	msg
+}
+
+// endregion: --- Support
 
 // region:    --- Tests
 
 #[cfg(test)]
 mod tests {
-	type Error = Box<dyn std::error::Error>;
-	type Result<T> = core::result::Result<T, Error>; // For tests.
-
 	use super::*;
 
+	type Error = Box<dyn std::error::Error>;
+	type TestResult<T> = core::result::Result<T, Error>; // For tests.
+
 	#[test]
-	fn test_get_initials() -> Result<()> {
+	fn test_get_initials() -> TestResult<()> {
 		assert_eq!(get_initials("proof-read"), "pr");
 		assert_eq!(get_initials("proof-comment"), "pc");
 		assert_eq!(get_initials("proof"), "p");

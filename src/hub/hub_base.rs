@@ -53,10 +53,12 @@ mod tests {
 		let mut rx = hub.subscriber();
 		tokio::spawn(async move {
 			while let Ok(event) = rx.recv().await {
+				#[allow(clippy::single_match)]
 				match event {
 					Event::Message(msg) => {
-						println!("Received: {}", msg);
+						println!("Received Message: {}", msg);
 					}
+					_ => (),
 				}
 			}
 		});

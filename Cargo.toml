@@ -35,4 +35,5 @@ simple-fs = { version = "=0.1.5" }
 derive_more = {version = "1.0.0-beta", features = ["from"] }
 keyring = {version = "3", features = ["apple-native"]}
 html-escape = "0.2"
+strsim = "0.11"
 

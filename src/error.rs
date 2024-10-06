@@ -78,7 +78,10 @@ impl From<&str> for Error {
 
 impl core::fmt::Display for Error {
 	fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
-		write!(fmt, "{self:?}")
+		match self {
+			Error::Custom(custom) => write!(fmt, "{custom}"),
+			_ => write!(fmt, "{self:?}"),
+		}
 	}
 }
 

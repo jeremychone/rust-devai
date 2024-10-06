@@ -16,6 +16,7 @@ mod test_support;
 
 use crate::agent::init_agent_files;
 use crate::cli::AppArgs;
+use crate::hub::get_hub;
 use crate::tui::Tui;
 use clap::Parser;
 use error::{Error, Result};
@@ -26,8 +27,23 @@ use error::{Error, Result};
 async fn main() -> Result<()> {
 	// -- Command arguments
 	let args = AppArgs::parse(); // will fail early, but that’s okay.
-	let _tui = Tui::start_printer();
+	let tui = Tui;
+	tui.start_printer()?;
 
+	// Note: No need to print the error, the TUI will handle that
+	match main_inner(args).await {
+		Ok(_) => (),
+		Err(err) => get_hub().publish(err).await,
+	};
+
+	// Hack for now, to make sure the eventual error(s) get printed.
+	// TODO: Need to make this code more sound. Perhaps a .close.
+	tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+
+	Ok(())
+}
+
+async fn main_inner(args: AppArgs) -> Result<()> {
 	// -- match the run
 	match args.cmd {
 		// Run an agent command
