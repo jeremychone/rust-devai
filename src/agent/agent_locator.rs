@@ -102,6 +102,17 @@ pub fn list_all_agent_files() -> Result<Vec<SFile>> {
 	Ok(sfiles)
 }
 
+/// Note: For now, needs to be public because of `exec_list`
+pub fn agent_sfile_as_bullet(sfile: &SFile) -> String {
+	let stem = sfile.file_stem();
+	let initials = get_initials(stem);
+	let path = sfile.to_str();
+	let msg = format!("- {stem} ({initials})");
+	let msg = format!("{msg:<37} - for '{path}'");
+
+	msg
+}
+
 // region:    --- Support
 
 fn get_dirs() -> Vec<&'static Path> {
@@ -136,7 +147,7 @@ fn get_initials(input: &str) -> String {
 }
 
 /// Finds the top 3 most similar agent file paths based on Levenshtein distance.
-pub fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
+fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
 	let mut candidates = Vec::new();
 
 	for dir in dirs {
@@ -177,16 +188,6 @@ fn load_base_agent() -> Result<AgentConfig> {
 	let config_value = parse_toml(&config_content)?;
 	let config = AgentConfig::from_value(config_value)?;
 	Ok(config)
-}
-
-fn agent_sfile_as_bullet(sfile: &SFile) -> String {
-	let stem = sfile.file_stem();
-	let initials = get_initials(stem);
-	let path = sfile.to_str();
-	let msg = format!("- {stem} ({initials})");
-	let msg = format!("{msg:<37} - for '{path}'");
-
-	msg
 }
 
 // endregion: --- Support

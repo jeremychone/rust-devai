@@ -19,6 +19,9 @@ pub enum Commands {
 
 	/// Initialize the `.devai/` folder with the base setting files. Any file that already exists will not be touched.
 	Init,
+
+	/// List the available command agents
+	List,
 }
 
 /// Arguments for the `run` subcommand

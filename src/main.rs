@@ -53,9 +53,16 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 			// Execute the command
 			exec::exec_run(run_args).await?;
 		}
+
 		// Initialize the device for this folder
 		cli::Commands::Init => {
 			init_agent_files()?;
+		}
+
+		// List the available agents
+		cli::Commands::List => {
+			init_agent_files()?;
+			exec::exec_list().await?;
 		}
 	}
 
