@@ -1,9 +1,9 @@
-//! Defines the `md` module, used in the rhai engine. 
-//! 
+//! Defines the `md` module, used in the rhai engine.
+//!
 //! ## RHAI Documentation
 //! The `md` module exposes functions that process markdown content. Useful for
 //! processing LLM responses.
-//! 
+//!
 //! ### Functions
 //! * `extract_blocks(md_content: string) -> Vec<MdBlock>`
 //! * `extract_blocks(md_content: string, lang_name: string) -> Vec<MdBlock>`
@@ -34,11 +34,11 @@ pub fn rhai_module() -> Module {
 /// ```rhai
 /// extract_blocks(md_content: string) -> Vec<MdBlock>
 /// ```
-/// 
-/// Parses the markdown provided by `md_content` and extracts each code block, 
+///
+/// Parses the markdown provided by `md_content` and extracts each code block,
 /// returning a list of blocks.
 fn extract_blocks(md_content: &str) -> RhaiResult {
-	let blocks = md::extract_blocks(md_content, None);
+	let blocks: Vec<MdBlock> = md::MdBlocks::new(md_content, None).collect();
 	let blocks: Vec<Dynamic> = blocks.into_iter().map(MdBlock::into_dynamic).collect();
 	Ok(blocks.into())
 }
@@ -47,13 +47,13 @@ fn extract_blocks(md_content: &str) -> RhaiResult {
 /// ```rhai
 /// extract_blocks(md_content: &str, lang_name: &str) -> Vec<MdBlock>
 /// ```
-/// 
+///
 /// Parses the markdown provided by `md_content` and extracts each code block,
-/// returning only the blocks with a 
+/// returning only the blocks with a
 /// [language identifier](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks#syntax-highlighting)
 /// that matches `lang_name`.
 fn extract_blocks_with_name(md_content: &str, lang_name: &str) -> RhaiResult {
-	let blocks = md::extract_blocks(md_content, Some(lang_name));
+	let blocks: Vec<MdBlock> = md::MdBlocks::new(md_content, Some(lang_name)).collect();
 	let blocks: Vec<Dynamic> = blocks.into_iter().map(MdBlock::into_dynamic).collect();
 	Ok(blocks.into())
 }

@@ -6,7 +6,8 @@ pub fn decode_html_entities(content: &str) -> String {
 }
 
 /// Make sure that the text end with one and only one single newline
-pub fn adjust_single_ending_newline(mut text: String) -> String {
+/// NOT USED FOR NOW - not sure we need this
+pub fn _adjust_single_ending_newline(mut text: String) -> String {
 	if text.is_empty() {
 		text.push('\n'); // If the string is empty, just add a newline
 		return text;

@@ -1,7 +1,7 @@
 // region:    --- Modules
 
-mod extract_blocks;
+mod md_blocks;
 
-pub use extract_blocks::*;
+pub use md_blocks::*;
 
 // endregion: --- Modules
