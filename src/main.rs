@@ -6,6 +6,7 @@ mod cli;
 mod error;
 mod exec;
 mod hub;
+mod init;
 mod script;
 mod support;
 mod tui;
@@ -14,9 +15,9 @@ mod types;
 #[cfg(test)]
 mod test_support;
 
-use crate::agent::init_agent_files;
 use crate::cli::AppArgs;
 use crate::hub::get_hub;
+use crate::init::init_devai_files;
 use crate::tui::Tui;
 use clap::Parser;
 use error::{Error, Result};
@@ -49,19 +50,19 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 		// Run an agent command
 		cli::Commands::Run(run_args) => {
 			// Note: Every run will initialize the files
-			init_agent_files()?;
+			init_devai_files()?;
 			// Execute the command
 			exec::exec_run(run_args).await?;
 		}
 
 		// Initialize the device for this folder
 		cli::Commands::Init => {
-			init_agent_files()?;
+			init_devai_files()?;
 		}
 
 		// List the available agents
 		cli::Commands::List => {
-			init_agent_files()?;
+			init_devai_files()?;
 			exec::exec_list().await?;
 		}
 	}

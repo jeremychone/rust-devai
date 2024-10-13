@@ -47,6 +47,16 @@ pub fn rhai_module() -> Module {
 ///
 /// Expands `glob`, returning a list of all matching file paths along with
 /// helpful metadata.
+///
+/// Note: The `FileRef` has .path, .name, .stem, .ext, but does NOT have .content
+///
+/// To get the list of files with their content, do as follow:
+///
+/// ```rhai
+/// let file_list = file::list("your-glob-pattern");
+/// let file_records = file_list.map(|file_ref| file::load(file_ref.path));
+/// ```
+///
 fn list_with_glob(include_glob: &str) -> RhaiResult {
 	let sfiles = list_files("./", Some(&[include_glob]), None).map_err(|err| {
 		EvalAltResult::ErrorRuntime(

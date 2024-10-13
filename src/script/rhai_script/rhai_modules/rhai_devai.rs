@@ -20,6 +20,21 @@ pub fn rhai_module() -> Module {
 
 // region:    --- Rhai Functions
 
+/// ## RHAI Documentation
+/// ```rhai
+/// action_skip() -> SkipActionDict
+/// ```
+///
+/// This is to be used in the `# Data` section to return a devai skip action so that the item is not
+/// included in the next flow (instruction > AI > data)
+///
+/// for example, in # Data rhai code block:
+///
+/// ```rhai
+/// if item.name == "mod.rs" {
+///   return devai::action_skip();
+/// }
+/// ```
 fn action_skip() -> RhaiResult {
 	let res = json!({
 		"_devai_": {
@@ -31,6 +46,23 @@ fn action_skip() -> RhaiResult {
 	Ok(res)
 }
 
+/// ## RHAI Documentation
+/// ```rhai
+/// action_skip(reason: string) -> SkipActionDict
+/// ```
+///
+/// This is to be used in the `# Data` section to return a devai skip action so that the item is not
+/// included in the next flow (instruction > AI > data).
+///
+/// This `action_skip` function takes a reason so that it get printed.
+///
+/// for example, in # Data rhai code block:
+///
+/// ```rhai
+/// if item.name == "mod.rs" {
+///   return devai::action_skip("mod.rs does not need to be process by this agent");
+/// }
+/// ```
 fn action_skip_with_reason(reason: &str) -> RhaiResult {
 	let res = json!({
 		"_devai_": {
