@@ -1,3 +1,4 @@
+use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
 use crate::Result;
 use simple_fs::{ensure_dir, list_files};
 use std::collections::HashSet;
@@ -7,18 +8,18 @@ use std::path::Path;
 const DEVAI_DIR: &str = ".devai";
 
 // -- Agents
-pub const DEVAI_AGENT_DEFAULTS_DIR: &str = ".devai/defaults";
-pub const DEVAI_AGENT_CUSTOMS_DIR: &str = ".devai/customs";
-const AGENT_MD_PROOF_RUST_COMMENTS_CONTENT: &str = include_str!("../_base/agents/proof-rust-comments.md");
+pub const DEVAI_AGENT_DEFAULTS_DIR: &str = ".devai/default/command-agent";
+pub const DEVAI_AGENT_CUSTOMS_DIR: &str = ".devai/custom/command-agent";
+const AGENT_MD_PROOF_RUST_COMMENTS_CONTENT: &str = include_str!("../../_base/agents/proof-rust-comments.devai");
 
 // -- Config
 pub const DEVAI_CONFIG_FILE_PATH: &str = ".devai/config.toml";
-const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../_base/config.toml");
+const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_base/config.toml");
 
 // -- Doc
 pub const DEVAI_DOC_DIR: &str = ".devai/doc";
 pub const DEVAI_DOC_RHAI_PATH: &str = ".devai/doc/rhai.md";
-const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../_base/doc/rhai.md");
+const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_base/doc/rhai.md");
 
 pub fn init_devai_files() -> Result<()> {
 	ensure_dir(DEVAI_DIR)?;
@@ -27,7 +28,11 @@ pub fn init_devai_files() -> Result<()> {
 	ensure_dir(DEVAI_AGENT_DEFAULTS_DIR)?;
 	ensure_dir(DEVAI_AGENT_CUSTOMS_DIR)?;
 
-	let existing_files = list_files(DEVAI_AGENT_DEFAULTS_DIR, Some(&["*.md"]), None)?;
+	// -- migrate_devai_0_1_0_if_needed
+	migrate_devai_0_1_0_if_needed()?;
+
+	// -- create the default command agents if not present
+	let existing_files = list_files(DEVAI_AGENT_DEFAULTS_DIR, Some(&["*.devai"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.file_name()).collect();
 
 	for e_file in get_embedded_agent_files() {
@@ -62,7 +67,7 @@ pub(super) struct EmbeddedAgentFile {
 
 pub(super) fn get_embedded_agent_files() -> &'static [&'static EmbeddedAgentFile] {
 	&[&EmbeddedAgentFile {
-		name: "proof-rust-comments.md",
+		name: "proof-rust-comments.devai",
 		content: AGENT_MD_PROOF_RUST_COMMENTS_CONTENT,
 	}]
 }

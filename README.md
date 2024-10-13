@@ -13,10 +13,13 @@
 # install
 cargo install devai
 
-# Will fix all code comment in all matching file
-devai run proof-comments -f "./src/m*.rs" 
+# init (optional, will be executed on each run as well)
+devai init
 
-# How: It will run the installed Command Agent file ".devai/defaults/proof-comments.md" on all source files matching "./src/m*.rs"
+# Will fix all code comment in all matching file
+devai run proof-rust-comments -f "./src/m*.rs" 
+
+# How: It will run the installed Command Agent file ".devai/defaults/proof-rust-comments.md" on all source files matching "./src/m*.rs"
 
 # IMPORTANT: Make sure everything is committed before usage.
 ```
@@ -33,12 +36,13 @@ Supports all models/providers supported by the [genai crate](https://crates.io/c
 
 You can customize the model and concurrency in `.devai/config.toml`.
 
+**v0.1.1 Note:** New `.devai/` file structure with new `.devai` file extension. See [.devai/ folder structure](#devai-folder-structure)
+
+**IMPORTANT**: In VSCode or your editor, map the `*.devai` extension to `markdown` to benefit from markdown highlighting. Devai agent files are markdown files.
 
 **IMPORTANT**: Make sure to run this command line when everything is committed, so that overwritten files can be reverted easily.
 
-STILL IN HEAVY DEVELOPMENT... But it's starting to get pretty cool.
-
-_P.S. If possible, try to refrain from publishing `devai-custom` type crates, as this might be more confusing than helpful. However, any other name is great._
+_P.S. If possible, try to refrain from publishing `devai-custom` type crates on crates.io, as this might be more confusing than helpful. However._
 
 ## API Keys
 
@@ -57,10 +61,10 @@ COHERE_API_KEY
 
 ## Usage & Concept
 
-Usage: `devai run proof-comments -f "./src/main.rs"`
+Usage: `devai run proof-rust-comments -f "./src/main.rs"`
 
 (or have any glob like `-f "./src/**/*.rs"` )
-- This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-comments.md` (see [.devai/defaults/proof-comments.md`](./_base/agents/proof-comments.md)) and run it with genai as follows: 
+- This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rust-comments.md` (see [.devai/defaults/proof-rust-comments.md`](./_base/agents/proof-rust-comments.md)) and run it with genai as follows: 
     - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "item" for each file, which can then be accessed in the `# Data` scripting section.
     - `# Data`, which contains a ```rhai``` block that will get executed with the `item` value (the file reference in our example above).
         - With `rhai`, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
@@ -81,22 +85,22 @@ Usage: `devai run proof-comments -f "./src/main.rs"`
 # Will create/update the .devai/ settings folder (not required, automatically runs on "run")
 devai init
 
-# Will execute the proof-comments.md from `.devai/customs/` or `.devai/defaults/` on 
+# Will execute the proof-rust-comments.md from `.devai/customs/` or `.devai/defaults/` on 
 # any file matching `./**/mod.rs` (those will become 'items' in the data section)
-devai run proof-comments -f mod.rs
+devai run proof-rust-comments -f mod.rs
 
 # Verbose mode, will print in the console what is sent to the AI, the AI response, and # output return if string-like
-devai run proof-comments -f mod.rs --verbose 
+devai run proof-rust-comments -f mod.rs --verbose 
 
-# Verbose and watch mode. Every time proof-comments is updated, will run it again
-devai run proof-comments -f main.rs -v -w
+# Verbose and watch mode. Every time proof-rust-comments is updated, will run it again
+devai run proof-rust-comments -f main.rs -v -w
 
 # Will do the verbose, watch, but in dry mode request, will print only the rendered instruction
-devai run proof-comments -f main.rs -v -w --dry req
+devai run proof-rust-comments -f main.rs -v -w --dry req
 
 # Will do the verbose, watch, but in dry mode response, will print rendered instruction, AI response
 # and will NOT execute the data
-devai run proof-comments -f main.rs -v -w --dry req
+devai run proof-rust-comments -f main.rs -v -w --dry req
 
 # happy coding!
 ```
@@ -109,9 +113,26 @@ devai run proof-comments -f main.rs -v -w --dry req
     - `--dry req` will perform a dry run of the request by just running the **data** and **instruction** sections. Use `--verbose` to print out the sections.
     - `--dry res` will perform a dry run of the request, send it to the AI, and return the AI output (does not return data). Use `--verbose` to see what has been sent and returned.
 
+## devai folder structure
+
+(Updated in version `0.1.1` - migration from `0.1.0` implemented on `devai run` and `devai init`)
+
+- `.devai/` - The root folder of devai
+    - `custom/` - Where the user custom agents and templates. These will take precedence over the `.devai/default/...` matching files.
+        - `command-agent/` - The custom agents. 
+        - `new-template/` - Template(s) used to create new agents, e.g., `devai new my-new-cool-agent`
+            - `command-agent/` - The folder containing the custom templates for command agents.
+            - `solo-agent/` - The folder containing custom templates for solo agents (coming later)
+    - `default/` - The default command agents and templates provided by devai (these files will only be created if missing)
+        - `command-agent/` - The default command agents.
+        - `new-template/` - The default template(s) used to create new agents, e.g., `devai new my-new-cool-agent`
+            - `command-agent/` - The folder containing the default templates for command agents.
+            - `solo-agent/` - The folder containing the default templates for solo agents (coming later)
+        
+
 ## Example of a Command Agent File
 
-`.devai/defaults/proof-comments.md` (see [.devai/defaults/proof-comments.md`](./_base/agents/proof-comments.md))
+`.devai/defaults/proof-rust-comments.md` (see [.devai/defaults/proof-rust-comments.md`](./_base/agents/proof-rust-comments.md))
 
 ## Config
 

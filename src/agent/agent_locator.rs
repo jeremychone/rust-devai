@@ -3,9 +3,8 @@ use crate::agent::{Agent, AgentDoc};
 use crate::init::{DEVAI_AGENT_CUSTOMS_DIR, DEVAI_AGENT_DEFAULTS_DIR, DEVAI_CONFIG_FILE_PATH};
 use crate::support::tomls::parse_toml;
 use crate::Result;
-use simple_fs::{ensure_dir, list_files, read_to_string, SFile};
+use simple_fs::{list_files, read_to_string, SFile};
 use std::collections::HashSet;
-use std::fs::write;
 use std::path::Path;
 use strsim::levenshtein;
 
