@@ -47,6 +47,11 @@ async fn main() -> Result<()> {
 async fn main_inner(args: AppArgs) -> Result<()> {
 	// -- match the run
 	match args.cmd {
+		// Initialize the device for this folder
+		cli::Commands::Init => {
+			init_devai_files()?;
+		}
+
 		// Run an agent command
 		cli::Commands::Run(run_args) => {
 			// Note: Every run will initialize the files
@@ -55,15 +60,16 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 			exec::exec_run(run_args).await?;
 		}
 
-		// Initialize the device for this folder
-		cli::Commands::Init => {
-			init_devai_files()?;
-		}
-
 		// List the available agents
 		cli::Commands::List => {
 			init_devai_files()?;
 			exec::exec_list().await?;
+		}
+
+		// Create a new agent
+		cli::Commands::New(new_args) => {
+			init_devai_files()?;
+			exec::exec_new(new_args).await?;
 		}
 	}
 

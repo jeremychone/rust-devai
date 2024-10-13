@@ -10,7 +10,7 @@ pub enum DryMode {
 	None, // not dry mode
 }
 
-pub struct ExecRunConfig {
+pub struct RunConfig {
 	watch: bool,
 	verbose: bool,
 	dry_mode: DryMode,
@@ -18,7 +18,7 @@ pub struct ExecRunConfig {
 	on_file_globs: Option<Vec<String>>,
 }
 
-impl ExecRunConfig {
+impl RunConfig {
 	pub fn cmd_agent(&self) -> &str {
 		&self.cmd_agent
 	}
@@ -42,7 +42,7 @@ impl ExecRunConfig {
 
 // region:    --- From AppArgs
 
-impl From<RunArgs> for ExecRunConfig {
+impl From<RunArgs> for RunConfig {
 	fn from(args: RunArgs) -> Self {
 		// -- When a simple name is provided
 		let on_file_globs = if let Some(on_files) = args.on_files {

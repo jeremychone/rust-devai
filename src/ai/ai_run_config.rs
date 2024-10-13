@@ -1,4 +1,4 @@
-use crate::exec::{DryMode, ExecRunConfig};
+use crate::exec::{DryMode, RunConfig};
 
 #[derive(Debug, Clone)]
 pub struct AiRunConfig {
@@ -26,8 +26,8 @@ impl AiRunConfig {
 
 // region:    --- Froms
 
-impl From<ExecRunConfig> for AiRunConfig {
-	fn from(exec_run_config: ExecRunConfig) -> Self {
+impl From<RunConfig> for AiRunConfig {
+	fn from(exec_run_config: RunConfig) -> Self {
 		Self {
 			verbose: exec_run_config.verbose(),
 			dry_mode: exec_run_config.dry_mode(),
@@ -35,8 +35,8 @@ impl From<ExecRunConfig> for AiRunConfig {
 	}
 }
 
-impl From<&ExecRunConfig> for AiRunConfig {
-	fn from(exec_run_config: &ExecRunConfig) -> Self {
+impl From<&RunConfig> for AiRunConfig {
+	fn from(exec_run_config: &RunConfig) -> Self {
 		Self {
 			verbose: exec_run_config.verbose(),
 			dry_mode: exec_run_config.dry_mode(),

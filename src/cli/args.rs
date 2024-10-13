@@ -11,14 +11,14 @@ pub struct AppArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum Commands {
-	/// Run subcommand
-	#[command(
-		about = "Executes the Command Agent 'markdown' based on its name or short name (`proof-comments.md` will match `proof-comments` or `pc`)"
-	)]
-	Run(RunArgs),
-
 	/// Initialize the `.devai/` folder with the base setting files. Any file that already exists will not be touched.
 	Init,
+
+	/// Executes the Command Agent 'markdown' based on its name or short name (`proof-comments.md` will match `proof-comments` or `pc`)
+	Run(RunArgs),
+
+	/// New
+	New(NewArgs),
 
 	/// List the available command agents
 	List,
@@ -47,4 +47,13 @@ pub struct RunArgs {
 	/// Dry mode, takes either 'req' or 'res'
 	#[arg(long = "dry", value_parser = ["req", "res"])]
 	pub dry_mode: Option<String>,
+}
+
+/// Arguments for the `run` subcommand
+#[derive(Parser, Debug)]
+pub struct NewArgs {
+	/// The command agent name which will be created under
+	/// e.g., `devai new my-cool-agent`
+	///        will create `.devai/custom/command-agent/my-cool-agent.devai`
+	pub agent_path: String,
 }

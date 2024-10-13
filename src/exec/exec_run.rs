@@ -1,6 +1,6 @@
 use crate::agent::{find_agent, Agent};
 use crate::ai::{get_genai_client, run_agent_items};
-use crate::exec::ExecRunConfig;
+use crate::exec::RunConfig;
 use crate::hub::get_hub; // Importing get_hub
 use crate::support::ValuesExt;
 use crate::types::FileRef;
@@ -8,9 +8,9 @@ use crate::Result;
 use genai::Client;
 use simple_fs::{list_files, watch, SEventKind};
 
-/// Main exec for the Run command
+/// Exec for the Run command
 /// Might do a single run or a watch
-pub async fn exec_run(run_config: impl Into<ExecRunConfig>) -> Result<()> {
+pub async fn exec_run(run_config: impl Into<RunConfig>) -> Result<()> {
 	let run_config = run_config.into();
 
 	// -- Get the AI client and agent
@@ -61,7 +61,7 @@ pub async fn exec_run(run_config: impl Into<ExecRunConfig>) -> Result<()> {
 }
 
 /// Do one run
-async fn do_run(run_config: &ExecRunConfig, client: &Client, agent: &Agent) -> Result<()> {
+async fn do_run(run_config: &RunConfig, client: &Client, agent: &Agent) -> Result<()> {
 	// -- Execute the command
 	let on_file_globs = run_config.on_file_globs();
 	// If we have the on_file_globs, they become the items

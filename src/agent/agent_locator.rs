@@ -1,6 +1,6 @@
 use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentDoc};
-use crate::init::{DEVAI_AGENT_CUSTOMS_DIR, DEVAI_AGENT_DEFAULTS_DIR, DEVAI_CONFIG_FILE_PATH};
+use crate::init::{DEVAI_AGENT_CUSTOM_DIR, DEVAI_AGENT_DEFAULT_DIR, DEVAI_CONFIG_FILE_PATH};
 use crate::support::tomls::parse_toml;
 use crate::Result;
 use simple_fs::{list_files, read_to_string, SFile};
@@ -55,7 +55,7 @@ pub fn list_all_agent_files() -> Result<Vec<SFile>> {
 	let mut file_stems: HashSet<String> = HashSet::new();
 
 	for dir in dirs {
-		let files = list_files(dir, Some(&["*.md"]), None)?;
+		let files = list_files(dir, Some(&["*.devai"]), None)?;
 		for file in files.into_iter() {
 			let stem = file.file_stem().to_string();
 			if file_stems.contains(&stem) {
@@ -83,13 +83,13 @@ pub fn agent_sfile_as_bullet(sfile: &SFile) -> String {
 // region:    --- Support
 
 fn get_agent_dirs() -> Vec<&'static Path> {
-	vec![Path::new(DEVAI_AGENT_CUSTOMS_DIR), Path::new(DEVAI_AGENT_DEFAULTS_DIR)]
+	vec![Path::new(DEVAI_AGENT_CUSTOM_DIR), Path::new(DEVAI_AGENT_DEFAULT_DIR)]
 }
 
 /// Finds the first matching AgentDoc in the provided directories.
 fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>> {
 	for dir in dirs {
-		let files = list_files(dir, Some(&["*.md"]), None)?;
+		let files = list_files(dir, Some(&["*.devai"]), None)?;
 		if let Some(found_file) = files.into_iter().find(|f| match_agent(name, f)) {
 			let doc = AgentDoc::from_file(found_file)?;
 			return Ok(Some(doc));
@@ -118,7 +118,7 @@ fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
 	let mut candidates = Vec::new();
 
 	for dir in dirs {
-		let files = list_files(dir, Some(&["*.md"]), None)?;
+		let files = list_files(dir, Some(&["*.devai"]), None)?;
 		for file in files {
 			candidates.push(file);
 		}
