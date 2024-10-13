@@ -80,14 +80,14 @@ let rust_blocks = md::extract_blocks("# Title\n```rust\nfn main() {}\n```\n```js
 // ]
 ```
 
-### md::outer_delimited_block_content_or_raw(md_content: string) -> string
+### md::outer_block_content_or_raw(md_content: string) -> string
 
 Attempts to extract the content from the first triple backticks until the last triple backticks. If no backticks are found, returns the raw content.
 
 **Example:**
 
 ```rhai
-let content = md::outer_delimited_block_content_or_raw("Some text\n```python\ndef hello(): pass\n```");
+let content = md::outer_block_content_or_raw("Some text\n```python\ndef hello(): pass\n```");
 // content = "python\ndef hello(): pass"
 ```
 

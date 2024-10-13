@@ -10,7 +10,7 @@
 /// # Returns
 ///
 /// A `String` containing the extracted content between the first and last ```
-pub fn outer_delimited_block_content_or_raw(content: &str) -> String {
+pub fn outer_block_content_or_raw(content: &str) -> String {
 	// Split the input content into lines for line-by-line processing.
 	let lines: Vec<&str> = content.lines().collect();
 
@@ -40,7 +40,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn test_md_outer_delimited_block_content_simple() {
+	fn test_md_outer_block_content_simple() {
 		// -- Fixtures
 		let input = "\
 Here is some text before the code block.
@@ -55,14 +55,14 @@ Here is some text after the code block.";
 		let expected = "fn main() {\n    println!(\"Hello, world!\");\n}";
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(input);
+		let result = outer_block_content_or_raw(input);
 
 		// -- Check
 		assert_eq!(result, expected);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_with_language() {
+	fn test_md_outer_block_content_with_language() {
 		// -- Fixtures
 		let input = "\
 Start of the text.
@@ -76,14 +76,14 @@ End of the text.";
 		let expected = "def hello():\n    print(\"Hello, Python!\")";
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(input);
+		let result = outer_block_content_or_raw(input);
 
 		// -- Check
 		assert_eq!(result, expected);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_multiple_code_blocks() {
+	fn test_md_outer_block_content_multiple_code_blocks() {
 		// -- Fixtures
 		let fx_content = "
 console.log(\"First code block\");
@@ -109,27 +109,27 @@ End of the text."
 		);
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(&input);
+		let result = outer_block_content_or_raw(&input);
 
 		// -- Check
 		assert_eq!(result, fx_content);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_no_backticks() {
+	fn test_md_outer_block_content_no_backticks() {
 		// -- Fixtures
 		let input = "This is a regular text without any code blocks.";
 		let expected = "This is a regular text without any code blocks.";
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(input);
+		let result = outer_block_content_or_raw(input);
 
 		// -- Check
 		assert_eq!(result, expected);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_only_opening_backticks() {
+	fn test_md_outer_block_content_only_opening_backticks() {
 		// -- Fixtures
 		let input = "\
 Text before the code block.
@@ -147,14 +147,14 @@ fn incomplete() {
 }";
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(input);
+		let result = outer_block_content_or_raw(input);
 
 		// -- Check
 		assert_eq!(result, expected);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_only_closing_backticks() {
+	fn test_md_outer_block_content_only_closing_backticks() {
 		// -- Fixtures
 		let input = "\
 Missing opening backticks for this code block.
@@ -174,14 +174,14 @@ fn incomplete() {
 ";
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(input);
+		let result = outer_block_content_or_raw(input);
 
 		// -- Check
 		assert_eq!(result, expected);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_adjacent_backticks() {
+	fn test_md_outer_block_content_adjacent_backticks() {
 		// -- Fixtures
 		let input = "\
 Text before.
@@ -193,14 +193,14 @@ Text after.";
 		let expected = "";
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(input);
+		let result = outer_block_content_or_raw(input);
 
 		// -- Check
 		assert_eq!(result, expected);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_with_whitespace() {
+	fn test_md_outer_block_content_with_whitespace() {
 		// -- Fixtures
 		let fx_input = "
 Text before.
@@ -213,14 +213,14 @@ Text after.";
 		let expected = fx_input.to_string();
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(fx_input);
+		let result = outer_block_content_or_raw(fx_input);
 
 		// -- Check
 		assert_eq!(result, expected);
 	}
 
 	#[test]
-	fn test_md_outer_delimited_block_content_with_inner_backticks() {
+	fn test_md_outer_block_content_with_inner_backticks() {
 		// -- Fixtures
 		let fx_content = "Here is some code with backticks:
 let s = \"Hello, `world`!\";";
@@ -238,7 +238,7 @@ End text.",
 		let expected = fx_content;
 
 		// -- Exec
-		let result = outer_delimited_block_content_or_raw(&input);
+		let result = outer_block_content_or_raw(&input);
 
 		// -- Check
 		assert_eq!(result, expected);

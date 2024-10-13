@@ -25,9 +25,9 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, extract_blocks_with_lang);
 
-	FuncRegistration::new("outer_delimited_block_content_or_raw")
+	FuncRegistration::new("outer_block_content_or_raw")
 		.in_global_namespace()
-		.set_into_module(&mut module, outer_delimited_block_content_or_raw);
+		.set_into_module(&mut module, outer_block_content_or_raw);
 
 	module
 }
@@ -64,7 +64,7 @@ fn extract_blocks_with_lang(md_content: &str, lang_name: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// outer_delimited_block_content_or_raw(md_content: &str) -> Vec<MdBlock>
+/// outer_block_content_or_raw(md_content: &str) -> Vec<MdBlock>
 /// ```
 ///
 /// Without fully parsing the markdown, this function attempts to extract the content from the first triple backticks
@@ -74,8 +74,8 @@ fn extract_blocks_with_lang(md_content: &str, lang_name: &str) -> RhaiResult {
 /// > Note: This is useful in the genai context because often LLMs return a top block (e.g., markdown, Rust)
 /// >       which might have other ` ``` ` in the middle but should be interpreted as nested.
 /// >       (GenAI does not seem to know about the 6 ticks for top level)
-fn outer_delimited_block_content_or_raw(md_content: &str) -> String {
-	md::outer_delimited_block_content_or_raw(md_content)
+fn outer_block_content_or_raw(md_content: &str) -> String {
+	md::outer_block_content_or_raw(md_content)
 }
 
 // endregion: --- Rhai Functions
