@@ -1,3 +1,15 @@
+//! Defines the `devai` module, used in the rhai engine
+//! 
+//! ---
+//! 
+//! ## RHAI documentation
+//! The `devai` module exposes functions that modify the default flow of the
+//! devai parser and script runner.
+//! 
+//! ### Functions
+//! * `action_skip() -> SkipActionDict`
+//! * `action_skip(reason: string) -> SkipActionDict`
+
 use crate::script::rhai_script::helpers::serde_value_to_dynamic;
 use rhai::plugin::RhaiResult;
 use rhai::{FuncRegistration, Module};
