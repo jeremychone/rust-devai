@@ -31,13 +31,13 @@ async fn main() -> Result<()> {
 	let tui = Tui;
 	tui.start_printer()?;
 
-	// Note: No need to print the error, the TUI will handle that
+	// Note: No need to print the error; the TUI will handle that.
 	match main_inner(args).await {
 		Ok(_) => (),
 		Err(err) => get_hub().publish(err).await,
 	};
 
-	// Hack for now, to make sure the eventual error(s) get printed.
+	// A temporary measure to ensure that the eventual error(s) get printed.
 	// TODO: Need to make this code more sound. Perhaps a .close.
 	tokio::time::sleep(std::time::Duration::from_millis(100)).await;
 
@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
 }
 
 async fn main_inner(args: AppArgs) -> Result<()> {
-	// -- match the run
+	// -- Match the run
 	match args.cmd {
 		// Initialize the device for this folder
 		cli::Commands::Init => {

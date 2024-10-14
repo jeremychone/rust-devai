@@ -24,8 +24,8 @@ For the following mardown file file:
 
 - Correct english of all the comments if it is a code base (do not correct code)
 - Correct english all content if it is a markdown file
+- Preserve the whitespace (do not change tabs into spaces and vice versa)
 - Return the correct content without any explanation
-
 
 # Output
 
