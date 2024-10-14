@@ -27,7 +27,9 @@ pub fn outer_block_content_or_raw(content: &str) -> String {
 			// Extract the lines between the first and last backtick lines.
 			let extracted_lines = &lines[start + 1..end];
 			// Join the extracted lines back into a single string separated by newlines.
-			return extracted_lines.join("\n");
+			let mut content = extracted_lines.join("\n");
+			content.push('\n');
+			return content;
 		}
 	}
 
@@ -52,7 +54,7 @@ fn main() {
 ```
 
 Here is some text after the code block.";
-		let expected = "fn main() {\n    println!(\"Hello, world!\");\n}";
+		let expected = "fn main() {\n    println!(\"Hello, world!\");\n}\n";
 
 		// -- Exec
 		let result = outer_block_content_or_raw(input);
@@ -73,12 +75,12 @@ def hello():
 ```
 
 End of the text.";
-		let expected = "def hello():\n    print(\"Hello, Python!\")";
 
 		// -- Exec
 		let result = outer_block_content_or_raw(input);
 
 		// -- Check
+		let expected = "def hello():\n    print(\"Hello, Python!\")\n";
 		assert_eq!(result, expected);
 	}
 
@@ -112,7 +114,7 @@ End of the text."
 		let result = outer_block_content_or_raw(&input);
 
 		// -- Check
-		assert_eq!(result, fx_content);
+		assert_eq!(result, format!("{fx_content}\n"));
 	}
 
 	#[test]
@@ -190,7 +192,7 @@ Text before.
 ```
 
 Text after.";
-		let expected = "";
+		let expected = "\n";
 
 		// -- Exec
 		let result = outer_block_content_or_raw(input);
@@ -235,12 +237,11 @@ Start text.
 End text.",
 			fx_content
 		);
-		let expected = fx_content;
 
 		// -- Exec
 		let result = outer_block_content_or_raw(&input);
 
 		// -- Check
-		assert_eq!(result, expected);
+		assert_eq!(result, format!("{fx_content}\n"));
 	}
 }
