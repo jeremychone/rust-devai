@@ -6,16 +6,16 @@
 ```
 
 
-# DInstruction
+# Instruction
 
-Why is the sky red?
+Why is the sky blue? Make it super concise.
 
 
 # Output 
 
 ```rhai
 
-// ai_output is the variable in context of the eventual response of the AI.
+// ai_output is the variable in the context of the eventual response of the AI.
 
 return "Hello from simple.md.devai"
 ```

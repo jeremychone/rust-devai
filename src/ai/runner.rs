@@ -4,6 +4,7 @@ use crate::exec::DryMode;
 use crate::hub::get_hub;
 use crate::script::{rhai_eval, DevaiAction};
 use crate::support::hbs::hbs_render;
+use crate::support::truncate_with_ellipsis;
 use crate::{Error, Result};
 use genai::chat::ChatRequest;
 use genai::Client;
@@ -17,15 +18,16 @@ use value_ext::JsonValueExt;
 const DEFAULT_CONCURRENCY: usize = 1;
 
 pub async fn run_solo_agent(client: &Client, agent: &Agent, ai_solo_config: AiSoloConfig) -> Result<()> {
+	let hub = get_hub();
+
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);
-	get_hub()
-		.publish(format!(
-			"Running solo agent: {}\n        with model: {}{genai_info}",
-			agent.file_path(),
-			agent.genai_model()
-		))
-		.await;
+	hub.publish(format!(
+		"Running solo agent: {}\n        with model: {}{genai_info}",
+		agent.file_path(),
+		agent.genai_model()
+	))
+	.await;
 
 	// -- Run the agent
 	let label = agent.file_path();
@@ -35,10 +37,16 @@ pub async fn run_solo_agent(client: &Client, agent: &Agent, ai_solo_config: AiSo
 
 	if let Value::String(text) = res_value {
 		write(ai_solo_config.target_path(), text)?;
-		get_hub()
-			.publish(format!("-> Agent ouput saved to: {}", ai_solo_config.target_path()))
-			.await;
+		hub.publish(format!(
+			"-> Solo Agent ouput saved to: {}",
+			ai_solo_config.target_path()
+		))
+		.await;
+	} else {
+		hub.publish("-! Solo Agent return not text. Skipping saving to file.").await;
 	}
+
+	hub.publish("-- DONE").await;
 
 	Ok(())
 }
@@ -202,21 +210,24 @@ async fn run_command_agent_item(
 	item: impl Serialize,
 	ai_run_config: &AiRunConfig,
 ) -> Result<Value> {
+	let hub = get_hub();
+
 	// -- prepare the scope_item
 	let item = serde_json::to_value(item)?;
 	// get the eventual "._label" property of the item
 	// try to get the path, name
 	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
-	get_hub().publish(format!("\n==== Running item: {}", label)).await;
+	hub.publish(format!("\n==== Running item: {}", label)).await;
 
 	let res_value = run_agent_item(&label, client, agent, before_all_data, item, ai_run_config).await?;
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = res_value.as_str() {
-		get_hub().publish(format!("\n-- Agent Output:\n\n{response_txt}")).await;
+		let short_text = truncate_with_ellipsis(response_txt, 72);
+		hub.publish(format!("-> Agent Output: {short_text}")).await;
 	}
 
-	get_hub().publish(format!("\n====    Done item: {}", label)).await;
+	hub.publish(format!("-- DONE (item: {})", label)).await;
 
 	Ok(res_value)
 }
@@ -230,6 +241,8 @@ async fn run_agent_item(
 	item: Value,
 	ai_run_config: &AiRunConfig,
 ) -> Result<Value> {
+	let hub = get_hub();
+
 	let data_rhai_scope = json!({
 		"item": item.clone(), // clone because item is reused later
 		"before_all_data": before_all_data.clone()
@@ -246,7 +259,7 @@ async fn run_agent_item(
 	if let Some(DevaiAction::Skip { reason }) = DevaiAction::from_value(&data) {
 		let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
 
-		get_hub().publish(format!("-- DevAI Skip item: {label}{reason_txt}")).await;
+		hub.publish(format!("-- DevAI Skip item: {label}{reason_txt}")).await;
 		return Ok(Value::Null);
 	}
 
@@ -259,7 +272,7 @@ async fn run_agent_item(
 
 	// TODO: Might want to handle if no instruction.
 	if ai_run_config.verbose() {
-		get_hub().publish(format!("\n-- Instruction:\n\n{inst}\n")).await;
+		hub.publish(format!("\n-- Instruction:\n\n{inst}\n")).await;
 	}
 
 	// if dry_mode req, we stop
@@ -272,31 +285,31 @@ async fn run_agent_item(
 		// NOTE: Put the instruction as user as with openai o1-... models does not seem to support system.
 		let chat_req = ChatRequest::from_user(inst);
 
-		get_hub()
-			.publish(format!(
-				"-> Sending rendered instruction to {} ...",
-				agent.genai_model()
-			))
-			.await;
+		hub.publish(format!(
+			"-> Sending rendered instruction to {} ...",
+			agent.genai_model()
+		))
+		.await;
+
 		let chat_res = client
 			.exec_chat(agent.genai_model(), chat_req, Some(agent.genai_chat_options()))
 			.await?;
-		get_hub().publish("-> ai_output received").await;
+		hub.publish("<- ai_output received").await;
 		let chat_res_mode_iden = chat_res.model_iden.clone();
 		let ai_output = chat_res.content_text_into_string().unwrap_or_default();
 
 		if ai_run_config.verbose() {
-			get_hub()
-				.publish(format!(
-					"\n-- AI Output (model: {} | adapter: {})\n\n{ai_output}\n",
-					chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
-				))
-				.await;
+			hub.publish(format!(
+				"\n-- AI Output (model: {} | adapter: {})\n\n{ai_output}\n",
+				chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
+			))
+			.await;
 		}
 		Value::String(ai_output)
 	}
 	// if we do not have an instruction, just return null
 	else {
+		hub.publish("-! No instruction, skipping genai.").await;
 		Value::Null
 	};
 

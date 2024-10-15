@@ -102,7 +102,7 @@ fn save(file_path: &str, content: &str) -> RhaiResult {
 		let path = Path::new(file_path);
 		ensure_file_dir(path)?;
 		write(path, content)?;
-		get_hub().publish_sync(format!("\n-- Rhai file::save called on: {}\n", file_path));
+		get_hub().publish_sync(format!("-> Rhai file::save called on: {}", file_path));
 		Ok(())
 	}
 
