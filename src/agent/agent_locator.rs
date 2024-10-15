@@ -9,7 +9,7 @@ use std::path::Path;
 use strsim::levenshtein;
 
 pub fn find_agent(name: &str) -> Result<Agent> {
-	let base_config = load_base_agent()?;
+	let base_config = load_base_agent_config()?;
 	let dirs = get_agent_dirs();
 
 	// Attempt to find the agent in the specified directories
@@ -149,7 +149,7 @@ fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
 }
 
 /// Loads the base agent configuration.
-fn load_base_agent() -> Result<AgentConfig> {
+pub fn load_base_agent_config() -> Result<AgentConfig> {
 	let config_path = Path::new(DEVAI_CONFIG_FILE_PATH);
 	let config_content = read_to_string(config_path)?;
 	let config_value = parse_toml(&config_content)?;

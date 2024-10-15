@@ -1,5 +1,5 @@
 use crate::agent::Agent;
-use crate::ai::AiRunConfig;
+use crate::ai::{AiRunConfig, AiSoloConfig};
 use crate::exec::DryMode;
 use crate::hub::get_hub;
 use crate::script::{rhai_eval, DevaiAction};
@@ -10,12 +10,40 @@ use genai::Client;
 use serde::Serialize;
 use serde_json::{json, Value};
 use std::collections::HashMap;
+use std::fs::write;
 use tokio::task::JoinSet;
 use value_ext::JsonValueExt;
 
 const DEFAULT_CONCURRENCY: usize = 1;
 
-pub async fn run_agent_items(
+pub async fn run_solo_agent(client: &Client, agent: &Agent, ai_solo_config: AiSoloConfig) -> Result<()> {
+	// -- Print the run info
+	let genai_info = get_genai_info(agent);
+	get_hub()
+		.publish(format!(
+			"Running solo agent: {}\n        with model: {}{genai_info}",
+			agent.file_path(),
+			agent.genai_model()
+		))
+		.await;
+
+	// -- Run the agent
+	let label = agent.file_path();
+	let item = Value::Null; // For now, will be the target file
+	let before_all_data = Value::Null;
+	let res_value = run_agent_item(label, client, agent, before_all_data, item, &(&ai_solo_config).into()).await?;
+
+	if let Value::String(text) = res_value {
+		write(ai_solo_config.target_path(), text)?;
+		get_hub()
+			.publish(format!("-> Agent ouput saved to: {}", ai_solo_config.target_path()))
+			.await;
+	}
+
+	Ok(())
+}
+
+pub async fn run_command_agent(
 	client: &Client,
 	agent: &Agent,
 	items: Option<Vec<Value>>,
@@ -24,19 +52,10 @@ pub async fn run_agent_items(
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
 	// -- Print the run info
-	let mut genai_infos: Vec<String> = vec![];
-	if let Some(temp) = agent.config().temperature() {
-		genai_infos.push(format!("temperature: {temp}"));
-	}
-	let genai_infos = if genai_infos.is_empty() {
-		"".to_string()
-	} else {
-		format!(" ({})", genai_infos.join(", "))
-	};
-
+	let genai_info = get_genai_info(agent);
 	get_hub()
 		.publish(format!(
-			"Running agent command: {}\n                 from: {}\n           with model: {}{genai_infos}\n",
+			"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
 			agent.name(),
 			agent.file_path(),
 			agent.genai_model()
@@ -104,7 +123,7 @@ pub async fn run_agent_items(
 
 		// Spawn tasks up to the concurrency limit
 		join_set.spawn(async move {
-			let output = run_agent_item(
+			let output = run_command_agent_item(
 				item_idx,
 				&client_clone,
 				&agent_clone,
@@ -173,8 +192,9 @@ pub async fn run_agent_items(
 	Ok(())
 }
 
-/// Run the agent for one item
-async fn run_agent_item(
+/// Run the command agent item for the run_command_agent_items
+/// Not public by design, should be only used in the context of run_command_agent_items
+async fn run_command_agent_item(
 	item_idx: usize,
 	client: &Client,
 	agent: &Agent,
@@ -184,12 +204,32 @@ async fn run_agent_item(
 ) -> Result<Value> {
 	// -- prepare the scope_item
 	let item = serde_json::to_value(item)?;
-
 	// get the eventual "._label" property of the item
 	// try to get the path, name
 	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
 	get_hub().publish(format!("\n==== Running item: {}", label)).await;
 
+	let res_value = run_agent_item(&label, client, agent, before_all_data, item, ai_run_config).await?;
+
+	// if the response value is a String, then, print it
+	if let Some(response_txt) = res_value.as_str() {
+		get_hub().publish(format!("\n-- Agent Output:\n\n{response_txt}")).await;
+	}
+
+	get_hub().publish(format!("\n====    Done item: {}", label)).await;
+
+	Ok(res_value)
+}
+
+/// Run and agent item for command agent or solo agent.
+async fn run_agent_item(
+	label: &str,
+	client: &Client,
+	agent: &Agent,
+	before_all_data: Value,
+	item: Value,
+	ai_run_config: &AiRunConfig,
+) -> Result<Value> {
 	let data_rhai_scope = json!({
 		"item": item.clone(), // clone because item is reused later
 		"before_all_data": before_all_data.clone()
@@ -232,9 +272,16 @@ async fn run_agent_item(
 		// NOTE: Put the instruction as user as with openai o1-... models does not seem to support system.
 		let chat_req = ChatRequest::from_user(inst);
 
+		get_hub()
+			.publish(format!(
+				"-> Sending rendered instruction to {} ...",
+				agent.genai_model()
+			))
+			.await;
 		let chat_res = client
 			.exec_chat(agent.genai_model(), chat_req, Some(agent.genai_chat_options()))
 			.await?;
+		get_hub().publish("-> ai_output received").await;
 		let chat_res_mode_iden = chat_res.model_iden.clone();
 		let ai_output = chat_res.content_text_into_string().unwrap_or_default();
 
@@ -272,12 +319,6 @@ async fn run_agent_item(
 		ai_output
 	};
 
-	// if the response value is a String, then, print it
-	if let Some(response_txt) = response_value.as_str() {
-		get_hub().publish(format!("\n-- Agent Output:\n\n{response_txt}")).await;
-	}
-
-	get_hub().publish(format!("\n====    Done item: {}", label)).await;
 	Ok(response_value)
 }
 
@@ -293,6 +334,19 @@ fn get_item_label(item: &Value) -> Option<String> {
 	None
 }
 
+fn get_genai_info(agent: &Agent) -> String {
+	let mut genai_infos: Vec<String> = vec![];
+
+	if let Some(temp) = agent.config().temperature() {
+		genai_infos.push(format!("temperature: {temp}"));
+	}
+
+	if genai_infos.is_empty() {
+		"".to_string()
+	} else {
+		format!(" ({})", genai_infos.join(", "))
+	}
+}
 // endregion: --- Support
 
 // region:    --- Tests
@@ -318,7 +372,7 @@ mod tests {
 		let agent = doc.into_agent(default_agent_config_for_test())?;
 
 		// -- Execute
-		let res = run_agent_item(0, &client, &agent, Value::Null, Value::Null, &AiRunConfig::default()).await?;
+		let res = run_command_agent_item(0, &client, &agent, Value::Null, Value::Null, &AiRunConfig::default()).await?;
 
 		// -- Check
 		assert_eq!(res.as_str().ok_or("Should have output result")?, "./src/main.rs");
@@ -337,7 +391,8 @@ mod tests {
 		let on_file = SFile::new("./src/main.rs")?;
 		let file_ref = FileRef::from(on_file);
 
-		let run_output = run_agent_item(0, &client, &agent, Value::Null, file_ref, &AiRunConfig::default()).await?;
+		let run_output =
+			run_command_agent_item(0, &client, &agent, Value::Null, file_ref, &AiRunConfig::default()).await?;
 
 		// -- Check
 		// The output return the {data_path: data.file.path, item_name: item.name}
@@ -361,7 +416,7 @@ mod tests {
 		let file_ref = FileRef::from(on_file);
 		let items = vec![serde_json::to_value(file_ref)?];
 
-		run_agent_items(&client, &agent, Some(items), AiRunConfig::default()).await?;
+		run_command_agent(&client, &agent, Some(items), AiRunConfig::default()).await?;
 
 		// -- Check
 		// TODO: Need to do the check, but for this, we will need to have the "hub" implemented to get the messages

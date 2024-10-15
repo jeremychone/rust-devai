@@ -60,6 +60,14 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 			exec::exec_run(run_args).await?;
 		}
 
+		// Run a solo agent
+		cli::Commands::Solo(solo_args) => {
+			// Note: Every run will initialize the files
+			init_devai_files()?;
+			// Execute the command
+			exec::exec_solo(solo_args).await?;
+		}
+
 		// List the available agents
 		cli::Commands::List => {
 			init_devai_files()?;

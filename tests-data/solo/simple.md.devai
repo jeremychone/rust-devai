@@ -1,0 +1,21 @@
+# DData
+
+```rhai
+
+
+```
+
+
+# DInstruction
+
+Why is the sky red?
+
+
+# Output 
+
+```rhai
+
+// ai_output is the variable in context of the eventual response of the AI.
+
+return "Hello from simple.md.devai"
+```

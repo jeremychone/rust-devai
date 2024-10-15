@@ -1,5 +1,5 @@
 use crate::agent::{find_agent, Agent};
-use crate::ai::{get_genai_client, run_agent_items};
+use crate::ai::{get_genai_client, run_command_agent};
 use crate::exec::RunConfig;
 use crate::hub::get_hub; // Importing get_hub
 use crate::support::ValuesExt;
@@ -16,6 +16,7 @@ pub async fn exec_run(run_config: impl Into<RunConfig>) -> Result<()> {
 	// -- Get the AI client and agent
 	let client = get_genai_client()?;
 	let agent = find_agent(run_config.cmd_agent())?;
+	let hub = get_hub();
 
 	do_run(&run_config, &client, &agent).await?;
 
@@ -27,30 +28,31 @@ pub async fn exec_run(run_config: impl Into<RunConfig>) -> Result<()> {
 			match watcher.rx.recv() {
 				Ok(events) => {
 					// Process each event in the vector
+					// TODO: Here we probably do not need to loop through the event, just check that there is at least one Modify
 					for event in events {
 						match event.skind {
 							SEventKind::Modify => {
-								get_hub().publish("\n==== Agent file modified, running agent again\n").await;
+								hub.publish("\n==== Agent file modified, running agent again\n").await;
 								// Make sure to change reload the agent
 								let agent = find_agent(run_config.cmd_agent())?;
 
 								match do_run(&run_config, &client, &agent).await {
 									Ok(_) => (),
-									Err(err) => get_hub().publish(format!("ERROR: {}", err)).await,
+									Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 								}
 								// Handle the modify event here
-								// get_hub().publish(format!("File modified: {:?}", event.spath)).await; // Uncomment if needed
+								// hub.publish(format!("File modified: {:?}", event.spath)).await; // Uncomment if needed
 							}
 							_ => {
 								// Handle other event kinds if needed
-								// get_hub().publish(format!("Other event: {:?}", event)).await; // Uncomment if needed
+								// hub.publish(format!("Other event: {:?}", event)).await; // Uncomment if needed
 							}
 						}
 					}
 				}
 				Err(e) => {
 					// Handle any errors related to receiving the message
-					get_hub().publish(format!("Error receiving event: {:?}", e)).await;
+					hub.publish(format!("Error receiving event: {:?}", e)).await;
 					break;
 				}
 			}
@@ -68,9 +70,9 @@ async fn do_run(run_config: &RunConfig, client: &Client, agent: &Agent) -> Resul
 	if let Some(on_file_globs) = on_file_globs {
 		let files = list_files("./", Some(&on_file_globs), None)?;
 		let file_refs = files.into_iter().map(FileRef::from).collect::<Vec<_>>();
-		run_agent_items(client, agent, Some(file_refs.x_into_values()?), run_config.into()).await?;
+		run_command_agent(client, agent, Some(file_refs.x_into_values()?), run_config.into()).await?;
 	} else {
-		run_agent_items(client, agent, None, run_config.into()).await?;
+		run_command_agent(client, agent, None, run_config.into()).await?;
 	}
 
 	Ok(())

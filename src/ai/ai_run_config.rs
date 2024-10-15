@@ -1,3 +1,4 @@
+use crate::ai::AiSoloConfig;
 use crate::exec::{DryMode, RunConfig};
 
 #[derive(Debug, Clone)]
@@ -44,4 +45,12 @@ impl From<&RunConfig> for AiRunConfig {
 	}
 }
 
+impl From<&AiSoloConfig> for AiRunConfig {
+	fn from(value: &AiSoloConfig) -> Self {
+		Self {
+			verbose: value.verbose(),
+			dry_mode: DryMode::None,
+		}
+	}
+}
 // endregion: --- Froms
