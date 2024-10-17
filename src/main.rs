@@ -13,7 +13,7 @@ mod tui;
 mod types;
 
 #[cfg(test)]
-mod test_support;
+mod _test_support;
 
 use crate::cli::AppArgs;
 use crate::hub::get_hub;

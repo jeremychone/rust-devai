@@ -1,11 +1,11 @@
 //! Defines the `devai` module, used in the rhai engine
-//! 
+//!
 //! ---
-//! 
+//!
 //! ## RHAI documentation
 //! The `devai` module exposes functions that modify the default flow of the
 //! devai parser and script runner.
-//! 
+//!
 //! ### Functions
 //! * `action_skip() -> SkipActionDict`
 //! * `action_skip(reason: string) -> SkipActionDict`
@@ -48,9 +48,11 @@ pub fn rhai_module() -> Module {
 /// }
 /// ```
 fn action_skip() -> RhaiResult {
+	// TODO: need to create the Dynamic directly,
+	//       no need to passthrough json -> Dynamic -> json later
 	let res = json!({
 		"_devai_": {
-			"action": "skip"
+			"kind": "ActionSkip"
 		}
 	});
 	let res = serde_value_to_dynamic(&res);
@@ -78,7 +80,7 @@ fn action_skip() -> RhaiResult {
 fn action_skip_with_reason(reason: &str) -> RhaiResult {
 	let res = json!({
 		"_devai_": {
-			"action": "skip",
+			"action": "ActionSkip",
 			"data": {
 				"reason": reason
 			}

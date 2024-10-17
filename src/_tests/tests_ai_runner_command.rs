@@ -1,21 +1,17 @@
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 use super::*;
-use crate::agent::AgentDoc;
+use crate::_test_support::{load_test_agent, HubCapture};
 use crate::ai::get_genai_client;
-use crate::test_support::default_agent_config_for_test;
 use crate::types::FileRef;
-use simple_fs::{read_to_string, SFile};
+use simple_fs::SFile;
 use value_ext::JsonValueExt;
-
-// region:    --- Command Agent
 
 #[tokio::test]
 async fn test_run_agent_c_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let client = get_genai_client()?;
-	let doc = AgentDoc::from_file("./tests-data/agents/agent-simple.md")?;
-	let agent = doc.into_agent(default_agent_config_for_test())?;
+	let agent = load_test_agent("./tests-data/agents/agent-simple.md")?;
 
 	// -- Execute
 	let res = run_command_agent_item(0, &client, &agent, Value::Null, Value::Null, &AiRunConfig::default()).await?;
@@ -30,8 +26,7 @@ async fn test_run_agent_c_simple_ok() -> Result<()> {
 async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let client = get_genai_client()?;
-	let doc = AgentDoc::from_file("./tests-data/agents/agent-on-file.md")?;
-	let agent = doc.into_agent(default_agent_config_for_test())?;
+	let agent = load_test_agent("./tests-data/agents/agent-on-file.md")?;
 
 	// -- Execute
 	let on_file = SFile::new("./src/main.rs")?;
@@ -50,11 +45,11 @@ async fn test_run_agent_c_on_file_ok() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_run_agent_c_before_all() -> Result<()> {
+async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
 	let client = get_genai_client()?;
-	let doc = AgentDoc::from_file("./tests-data/agents/agent-before-all.md")?;
-	let agent = doc.into_agent(default_agent_config_for_test())?;
+	let agent = load_test_agent("./tests-data/agents/agent-before-all.md")?;
+	let hub_capture = HubCapture::new_and_start();
 
 	// -- Execute
 	let on_file = SFile::new("./src/main.rs")?;
@@ -64,29 +59,11 @@ async fn test_run_agent_c_before_all() -> Result<()> {
 	run_command_agent(&client, &agent, Some(items), AiRunConfig::default()).await?;
 
 	// -- Check
-	// TODO: Need to do the check, but for this, we will need to have the "hub" implemented to get the messages
-
-	Ok(())
-}
-
-// endregion: --- Command Agent
-
-#[tokio::test]
-async fn test_run_agent_s_simple_ok() -> Result<()> {
-	// -- Setup & Fixtures
-	let client = get_genai_client()?;
-	let doc = AgentDoc::from_file("./tests-data/solo/simple.md.devai")?;
-	let agent = doc.into_agent(default_agent_config_for_test())?;
-	let fx_target_path = "./tests-data/solo/simple.md";
-	let ai_solo_config = AiSoloConfig::from_target_path("./tests-data/solo/simple.md")?;
-
-	// -- Execute
-	run_solo_agent(&client, &agent, ai_solo_config).await?;
-
-	// -- Check
-	// assert_eq!(res.as_str().ok_or("Should have output result")?, "./src/main.rs");
-	let content = read_to_string(fx_target_path)?;
-	assert_eq!(content, "Hello from simple.md.devai");
+	let hub_content = hub_capture.into_content().await?;
+	assert!(
+		hub_content.contains("-> Agent Output: Some Before All - Some Data - ./src/main.rs"),
+		"Agent Output not matching!"
+	);
 
 	Ok(())
 }

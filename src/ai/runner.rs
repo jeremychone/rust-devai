@@ -2,7 +2,7 @@ use crate::agent::Agent;
 use crate::ai::{AiRunConfig, AiSoloConfig};
 use crate::exec::DryMode;
 use crate::hub::get_hub;
-use crate::script::{rhai_eval, DevaiAction};
+use crate::script::{rhai_eval, DevaiCustom};
 use crate::support::hbs::hbs_render;
 use crate::support::truncate_with_ellipsis;
 use crate::{Error, Result};
@@ -57,18 +57,18 @@ pub async fn run_command_agent(
 	items: Option<Vec<Value>>,
 	ai_run_config: AiRunConfig,
 ) -> Result<()> {
+	let hub = get_hub();
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);
-	get_hub()
-		.publish(format!(
-			"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
-			agent.name(),
-			agent.file_path(),
-			agent.genai_model()
-		))
-		.await;
+	hub.publish(format!(
+		"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
+		agent.name(),
+		agent.file_path(),
+		agent.genai_model()
+	))
+	.await;
 
 	// -- Run the before all
 	let (items, before_all_data) = if let Some(before_all_script) = agent.before_all_script() {
@@ -77,31 +77,22 @@ pub async fn run_command_agent(
 		});
 
 		let before_all_res = rhai_eval(before_all_script, Some(scope_item))?;
-		match before_all_res {
-			Value::Object(mut obj) => {
-				let after_all_items = obj.remove("items");
-				let items = match after_all_items {
-					Some(Value::Array(new_items)) => Some(new_items),
-					// if return items: Null, then will be None, which will have one item of Null below
-					// > Note to cancel run, we will allow return {_devai_: {action: "skip"}} (not supported for now)
-					Some(Value::Null) => None,
-					Some(_) => {
-						return Err(Error::BeforeAllFailWrongReturn {
-                        cause: "Before All script block, return `.items` is not type Array, must be an array (even Array of one if one item)".to_string()
-                    });
-					}
-					None => items,
-				};
-				let before_all_data = obj.remove("before_all_data");
-				let keys: Vec<String> = obj.keys().map(|k| k.to_string()).collect();
-				if !keys.is_empty() {
-					return Err(Error::BeforeAllFailWrongReturn {
-                        cause: format!("Before All script block, can only return '.items' and/or '.before_all_data' but also returned {}", keys.join(", "))
-                    });
+
+		if let Some(devai_custom) = DevaiCustom::from_value(&before_all_res)? {
+			match devai_custom {
+				DevaiCustom::ActionSkip { reason } => {
+					let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
+					hub.publish(format!("-- DevAI Skip items at Before All section{reason_msg}"))
+						.await;
+					return Ok(());
 				}
-				(items, before_all_data)
+				DevaiCustom::BeforeAll {
+					items: items_ov,
+					before_all,
+				} => (items_ov.or(items), before_all),
 			}
-			_ => (items, None),
+		} else {
+			(items, Some(before_all_res))
 		}
 	} else {
 		(items, None)
@@ -109,7 +100,7 @@ pub async fn run_command_agent(
 
 	// Normalize the items, so, if empty, we have one item of value Value::Null
 	let items = items.unwrap_or_else(|| vec![Value::Null]);
-	let before_all_data = before_all_data.unwrap_or_default();
+	let before_all = before_all_data.unwrap_or_default();
 
 	let mut join_set = JoinSet::new();
 	let mut in_progress = 0;
@@ -125,7 +116,7 @@ pub async fn run_command_agent(
 	for (item_idx, item) in items.clone().into_iter().enumerate() {
 		let client_clone = client.clone();
 		let agent_clone = agent.clone();
-		let before_all_data_clone = before_all_data.clone();
+		let before_all_clone = before_all.clone();
 
 		let ai_run_config_clone = ai_run_config.clone();
 
@@ -135,7 +126,7 @@ pub async fn run_command_agent(
 				item_idx,
 				&client_clone,
 				&agent_clone,
-				before_all_data_clone,
+				before_all_clone,
 				item,
 				&ai_run_config_clone,
 			)
@@ -192,7 +183,7 @@ pub async fn run_command_agent(
 		let scope_item = json!({
 			"items": items,
 			"outputs": outputs_value, // Will be Value::Null if outputs were not collected
-			"before_all_data": before_all_data,
+			"before_all": before_all,
 		});
 		let _after_all_res = rhai_eval(after_all_script, Some(scope_item))?;
 	}
@@ -206,7 +197,7 @@ async fn run_command_agent_item(
 	item_idx: usize,
 	client: &Client,
 	agent: &Agent,
-	before_all_data: Value,
+	before_all: Value,
 	item: impl Serialize,
 	ai_run_config: &AiRunConfig,
 ) -> Result<Value> {
@@ -219,7 +210,7 @@ async fn run_command_agent_item(
 	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
 	hub.publish(format!("\n==== Running item: {}", label)).await;
 
-	let res_value = run_agent_item(&label, client, agent, before_all_data, item, ai_run_config).await?;
+	let res_value = run_agent_item(&label, client, agent, before_all, item, ai_run_config).await?;
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = res_value.as_str() {
@@ -237,7 +228,7 @@ async fn run_agent_item(
 	label: &str,
 	client: &Client,
 	agent: &Agent,
-	before_all_data: Value,
+	before_all_result: Value,
 	item: Value,
 	ai_run_config: &AiRunConfig,
 ) -> Result<Value> {
@@ -245,7 +236,7 @@ async fn run_agent_item(
 
 	let data_rhai_scope = json!({
 		"item": item.clone(), // clone because item is reused later
-		"before_all_data": before_all_data.clone()
+		"before_all": before_all_result.clone()
 	});
 
 	// -- Execute data
@@ -256,7 +247,7 @@ async fn run_agent_item(
 	};
 
 	// skip item if devai action is sent
-	if let Some(DevaiAction::Skip { reason }) = DevaiAction::from_value(&data) {
+	if let Some(DevaiCustom::ActionSkip { reason }) = DevaiCustom::from_value(&data)? {
 		let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
 
 		hub.publish(format!("-- DevAI Skip item: {label}{reason_txt}")).await;
@@ -323,7 +314,7 @@ async fn run_agent_item(
 		let scope_output = json!({
 			"item": item,
 			"data": data,
-			"before_all_data": before_all_data,
+			"before_all": before_all_result,
 			"ai_output": ai_output,
 		});
 
@@ -365,7 +356,10 @@ fn get_genai_info(agent: &Agent) -> String {
 // region:    --- Tests
 
 #[cfg(test)]
-#[path = "../_tests/tests_ai_runner.rs"]
-mod tests;
+#[path = "../_tests/tests_ai_runner_command.rs"]
+mod tests_ai_runner_command;
 
+#[cfg(test)]
+#[path = "../_tests/tests_ai_runner_solo.rs"]
+mod tests_ai_runner_solo;
 // endregion: --- Tests

@@ -248,7 +248,7 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
-	use crate::test_support::default_agent_config_for_test;
+	use crate::_test_support::default_agent_config_for_test;
 
 	#[test]
 	fn test_agent_doc_demo_ok() -> Result<()> {
