@@ -4,7 +4,6 @@ use simple_fs::SPath;
 #[derive(Debug, Clone)]
 pub struct AiSoloConfig {
 	verbose: bool,
-	solo_path: SPath,
 	target_path: SPath,
 }
 
@@ -13,12 +12,21 @@ impl AiSoloConfig {
 		self.verbose
 	}
 
-	pub fn solo_path(&self) -> &SPath {
-		&self.solo_path
-	}
-
 	pub fn target_path(&self) -> &SPath {
 		&self.target_path
+	}
+}
+
+/// Constructor
+impl AiSoloConfig {
+	/// Just for text for now.
+	/// For normal path, the from SoloConfig is used
+	#[cfg(test)]
+	pub fn from_target_path(target_path: &str) -> crate::Result<Self> {
+		Ok(Self {
+			verbose: false,
+			target_path: SPath::new(target_path)?,
+		})
 	}
 }
 
@@ -28,7 +36,6 @@ impl From<&SoloConfig> for AiSoloConfig {
 	fn from(solo_config: &SoloConfig) -> Self {
 		Self {
 			verbose: solo_config.verbose(),
-			solo_path: solo_config.solo_path().clone(),
 			target_path: solo_config.target_path().clone(),
 		}
 	}
