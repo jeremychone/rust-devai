@@ -46,7 +46,9 @@ pub fn find_agent(name: &str) -> Result<Agent> {
 }
 
 /// Returns the (solo_path, target_path) tuple for a file path of either.
-/// - If the path ends with `.devai`, then it is the solo path.
+/// - If the path ends with `.devai`, then it is the solo path
+///   - If the solo stem has an extension, then, the target path is the path without .devai
+///   - If the solo stem does not have an extension, then, .md is added for the target path
 /// - Otherwise, add `.devai` to the file name in the same path.
 pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPath)> {
 	let path = SPath::new(path)?;
@@ -54,7 +56,14 @@ pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPat
 	// returns (solo_path, target_path)
 	// path is the solo_path
 	let solo_and_target_path = if path.ext() == "devai" {
-		let target_path = path.new_sibling(path.file_stem())?;
+		let target_file_stem = path.file_stem();
+		let target_file_name = if Path::new(target_file_stem).extension().is_some() {
+			target_file_stem.to_string()
+		} else {
+			format!("{target_file_stem}.md")
+		};
+
+		let target_path = path.new_sibling(target_file_name)?;
 		(path, target_path)
 	}
 	// path is the target_path
@@ -186,11 +195,10 @@ pub fn load_base_agent_config() -> Result<AgentConfig> {
 mod tests {
 	use super::*;
 
-	type Error = Box<dyn std::error::Error>;
-	type TestResult<T> = core::result::Result<T, Error>; // For tests.
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	#[test]
-	fn test_get_initials() -> TestResult<()> {
+	fn test_get_initials() -> Result<()> {
 		assert_eq!(get_initials("proof-read"), "pr");
 		assert_eq!(get_initials("proof-comment"), "pc");
 		assert_eq!(get_initials("proof"), "p");
@@ -198,6 +206,25 @@ mod tests {
 		assert_eq!(get_initials("proof-_comment-read"), "pcr");
 		assert_eq!(get_initials("_proof-_comment-_read"), "pcr");
 		assert_eq!(get_initials("a-b-c"), "abc");
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_get_solo_and_target_path() -> Result<()> {
+		let data = &[
+			// (path, expected_solo_path, expected_target_path)
+			("./some/file.md", "./some/file.md.devai", "./some/file.md"),
+			("./some/file.md.devai", "./some/file.md.devai", "./some/file.md"),
+			("./some/file.devai", "./some/file.devai", "./some/file.md"),
+		];
+
+		// -- Exec & Check
+		for (path, expected_solo_path, expected_target_path) in data {
+			let (solo_path, target_path) = get_solo_and_target_path(path)?;
+			assert_eq!(solo_path.to_str(), *expected_solo_path);
+			assert_eq!(target_path.to_str(), *expected_target_path);
+		}
 
 		Ok(())
 	}

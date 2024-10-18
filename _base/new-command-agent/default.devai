@@ -18,11 +18,11 @@ For the following mardown file file:
 
 {{data.file.path}}
 
-```
+```{{data.file.ext}}
 {{data.file.content}}
 ```
 
-- Correct english of all the comments if it is a code base (do not correct code)
+- Correct english of all the comments if it is a code file (do not correct code, just the comment)
 - Correct english all content if it is a markdown file
 - Preserve the whitespace (do not change tabs into spaces and vice versa)
 - Return the correct content without any explanation
