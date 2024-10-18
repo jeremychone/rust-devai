@@ -1,7 +1,6 @@
-use crate::agent::{load_base_agent_config, Agent, AgentDoc};
+use crate::agent::{get_solo_and_target_path, load_base_agent_config, Agent, AgentDoc};
 use crate::ai::{get_genai_client, run_solo_agent};
 use crate::cli::SoloArgs;
-use crate::exec::support::get_solo_and_target_path;
 use crate::hub::get_hub;
 use crate::{Error, Result};
 use simple_fs::{watch, SEventKind, SFile, SPath};

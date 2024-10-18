@@ -2,20 +2,29 @@ use crate::{Error, Result};
 use serde_json::Value;
 use value_ext::JsonValueExt;
 
+#[derive(strum::AsRefStr)]
 pub enum DevaiCustom {
 	ActionSkip {
 		reason: Option<String>,
 	},
 	BeforeAll {
-		items: Option<Vec<Value>>,
+		items_override: Option<Vec<Value>>,
 		before_all: Option<Value>,
 	},
 }
 
+/// Return of the `DevaiCustom::from_value` allowing to avoid cloning in case it's not a DevaiCustom.
+pub enum FromValue {
+	DevaiCustom(DevaiCustom),
+	OriginalValue(Value),
+}
+
 impl DevaiCustom {
-	/// A data structure returned by the Rhai script to perform some custom action or behavior.
+	/// Check if the value is a `_devai_` Custom.
 	///
-	/// - The formating of a action is as follow (example for skip action)
+	/// - if it is, it will parse and return the DevaiCusto
+	/// - Otherwise, will return the original value
+	/// - The formating of the `_devai_` action is as follow (example for skip action)
 	/// ```
 	/// {
 	///   _devai_: {
@@ -28,21 +37,23 @@ impl DevaiCustom {
 	/// ```
 	/// - For now, only support skip
 	///
-	/// TODO: Probably need to return `Result<Option<Self>>` to handle when the action is not valid
-	pub fn from_value(value: &Value) -> Result<Option<Self>> {
+	pub fn from_value(value: Value) -> Result<FromValue> {
 		let Some(kind) = value.x_get::<String>("/_devai_/kind").ok() else {
-			return Ok(None);
+			return Ok(FromValue::OriginalValue(value));
 		};
 
 		if kind == "ActionSkip" {
 			let reason: Option<String> = value.x_get("/_devai_/data/reason").ok();
-			Ok(Some(Self::ActionSkip { reason }))
+			Ok(FromValue::DevaiCustom(Self::ActionSkip { reason }))
 		} else if kind == "BeforeAll" {
 			let custom_data: Option<Value> = value.x_get("/_devai_/data").ok();
 			let (items, before_all) = extract_items_and_before_all(custom_data)?;
-			Ok(Some(DevaiCustom::BeforeAll { items, before_all }))
+			Ok(FromValue::DevaiCustom(DevaiCustom::BeforeAll {
+				items_override: items,
+				before_all,
+			}))
 		} else {
-			Ok(None)
+			Err(format!("_devai_ kind '{kind}' is not known.").into())
 		}
 	}
 }

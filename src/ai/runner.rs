@@ -2,7 +2,8 @@ use crate::agent::Agent;
 use crate::ai::{AiRunConfig, AiSoloConfig};
 use crate::exec::DryMode;
 use crate::hub::get_hub;
-use crate::script::{rhai_eval, DevaiCustom};
+use crate::script::devai_custom::{DevaiCustom, FromValue};
+use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::support::truncate_with_ellipsis;
 use crate::{Error, Result};
@@ -78,21 +79,18 @@ pub async fn run_command_agent(
 
 		let before_all_res = rhai_eval(before_all_script, Some(scope_item))?;
 
-		if let Some(devai_custom) = DevaiCustom::from_value(&before_all_res)? {
-			match devai_custom {
-				DevaiCustom::ActionSkip { reason } => {
-					let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
-					hub.publish(format!("-- DevAI Skip items at Before All section{reason_msg}"))
-						.await;
-					return Ok(());
-				}
-				DevaiCustom::BeforeAll {
-					items: items_ov,
-					before_all,
-				} => (items_ov.or(items), before_all),
+		match DevaiCustom::from_value(before_all_res)? {
+			FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
+				let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
+				hub.publish(format!("-- DevAI Skip items at Before All section{reason_msg}"))
+					.await;
+				return Ok(());
 			}
-		} else {
-			(items, Some(before_all_res))
+			FromValue::DevaiCustom(DevaiCustom::BeforeAll {
+				items_override,
+				before_all,
+			}) => (items_override.or(items), before_all),
+			FromValue::OriginalValue(value) => (items, Some(value)),
 		}
 	} else {
 		(items, None)
@@ -247,12 +245,26 @@ async fn run_agent_item(
 	};
 
 	// skip item if devai action is sent
-	if let Some(DevaiCustom::ActionSkip { reason }) = DevaiCustom::from_value(&data)? {
-		let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
+	let data = match DevaiCustom::from_value(data)? {
+		// If it is not a DevaiCustom the data is the orginal value
+		FromValue::OriginalValue(data) => data,
 
-		hub.publish(format!("-- DevAI Skip item: {label}{reason_txt}")).await;
-		return Ok(Value::Null);
-	}
+		// If we have a skip, we can skip
+		FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
+			let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
+
+			hub.publish(format!("-- DevAI Skip item: {label}{reason_txt}")).await;
+			return Ok(Value::Null);
+		}
+
+		FromValue::DevaiCustom(other) => {
+			return Err(format!(
+				"-! DevAI Custom '{}' is not supported at the run agent stage",
+				other.as_ref()
+			)
+			.into())
+		}
+	};
 
 	let data_scope = HashMap::from([("data".to_string(), data.clone())]);
 

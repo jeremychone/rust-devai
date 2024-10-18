@@ -3,9 +3,9 @@ use crate::agent::{Agent, AgentDoc};
 use crate::init::{DEVAI_AGENT_CUSTOM_DIR, DEVAI_AGENT_DEFAULT_DIR, DEVAI_CONFIG_FILE_PATH};
 use crate::support::tomls::parse_toml;
 use crate::Result;
-use simple_fs::{list_files, read_to_string, SFile};
+use simple_fs::{list_files, read_to_string, SFile, SPath};
 use std::collections::HashSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use strsim::levenshtein;
 
 pub fn find_agent(name: &str) -> Result<Agent> {
@@ -43,6 +43,27 @@ pub fn find_agent(name: &str) -> Result<Agent> {
 	};
 
 	Err(error_msg.into())
+}
+
+/// Returns the (solo_path, target_path) tuple for a file path of either.
+/// - If the path ends with `.devai`, then it is the solo path.
+/// - Otherwise, add `.devai` to the file name in the same path.
+pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPath)> {
+	let path = SPath::new(path)?;
+
+	// returns (solo_path, target_path)
+	// path is the solo_path
+	let solo_and_target_path = if path.ext() == "devai" {
+		let target_path = path.new_sibling(path.file_stem())?;
+		(path, target_path)
+	}
+	// path is the target_path
+	else {
+		let solo_path = path.new_sibling(format!("{}.devai", path.file_name()))?;
+		(solo_path, path)
+	};
+
+	Ok(solo_and_target_path)
 }
 
 /// Lists all agent files following the precedence rules (customs first, defaults second).
