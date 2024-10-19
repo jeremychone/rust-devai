@@ -1,5 +1,5 @@
-use crate::agent::{get_solo_and_target_path, Agent, AgentConfig, AgentDoc};
-use crate::ai::AiSoloConfig;
+use crate::agent::{Agent, AgentConfig, AgentDoc};
+use crate::support::RunSoloOptions;
 use crate::Result;
 
 pub const TEST_MODEL: &str = "gpt-4o-mini";
@@ -14,10 +14,9 @@ pub fn load_test_agent(path: &str) -> Result<Agent> {
 	Ok(agent)
 }
 
-pub fn load_test_solo_agent_and_ai_config(path: &str) -> Result<(Agent, AiSoloConfig)> {
-	let (fx_solo_path, fx_target_path) = get_solo_and_target_path(path)?;
-	let agent = load_test_agent(fx_solo_path.to_str())?;
-	let ai_solo_config = AiSoloConfig::from_target_path(fx_target_path.to_str())?;
+pub fn load_test_solo_agent_and_ai_config(path: &str) -> Result<(Agent, RunSoloOptions)> {
+	let solo_config = RunSoloOptions::from_path(path)?;
+	let agent = load_test_agent(solo_config.solo_path().to_str())?;
 
-	Ok((agent, ai_solo_config))
+	Ok((agent, solo_config))
 }

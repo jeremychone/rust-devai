@@ -14,15 +14,7 @@ async fn test_run_agent_c_simple_ok() -> Result<()> {
 	let agent = load_test_agent("./tests-data/agents/agent-simple.md")?;
 
 	// -- Execute
-	let res = run_command_agent_item(
-		0,
-		&client,
-		&agent,
-		Value::Null,
-		Value::Null,
-		&AiCommandConfig::default(),
-	)
-	.await?;
+	let res = run_command_agent_item(0, &client, &agent, Value::Null, Value::Null, &RunBaseOptions::default()).await?;
 
 	// -- Check
 	assert_eq!(res.as_str().ok_or("Should have output result")?, "./src/main.rs");
@@ -41,7 +33,7 @@ async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	let file_ref = FileRef::from(on_file);
 
 	let run_output =
-		run_command_agent_item(0, &client, &agent, Value::Null, file_ref, &AiCommandConfig::default()).await?;
+		run_command_agent_item(0, &client, &agent, Value::Null, file_ref, &RunBaseOptions::default()).await?;
 
 	// -- Check
 	// The output return the {data_path: data.file.path, item_name: item.name}
@@ -65,7 +57,7 @@ async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	let file_ref = FileRef::from(on_file);
 	let items = vec![serde_json::to_value(file_ref)?];
 
-	run_command_agent(&client, &agent, Some(items), AiCommandConfig::default()).await?;
+	run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default()).await?;
 
 	// -- Check
 	let hub_content = hub_capture.into_content().await?;

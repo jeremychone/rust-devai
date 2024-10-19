@@ -1,7 +1,7 @@
 use crate::agent::{find_agent, Agent};
 use crate::ai::{get_genai_client, run_command_agent};
-use crate::exec::CommandConfig;
 use crate::hub::get_hub; // Importing get_hub
+use crate::support::RunCommandOptions;
 use crate::support::ValuesExt;
 use crate::types::FileRef;
 use crate::Result;
@@ -10,8 +10,8 @@ use simple_fs::{list_files, watch, SEventKind};
 
 /// Exec for the Run command
 /// Might do a single run or a watch
-pub async fn exec_run(run_config: impl Into<CommandConfig>) -> Result<()> {
-	let run_config = run_config.into();
+pub async fn exec_run(run_command_options: impl Into<RunCommandOptions>) -> Result<()> {
+	let run_config = run_command_options.into();
 
 	// -- Get the AI client and agent
 	let client = get_genai_client()?;
@@ -20,7 +20,7 @@ pub async fn exec_run(run_config: impl Into<CommandConfig>) -> Result<()> {
 
 	do_run(&run_config, &client, &agent).await?;
 
-	if run_config.watch() {
+	if run_config.base_run_config().watch() {
 		let watcher = watch(agent.file_path())?;
 		// Continuously listen for events
 		loop {
@@ -63,17 +63,16 @@ pub async fn exec_run(run_config: impl Into<CommandConfig>) -> Result<()> {
 }
 
 /// Do one run
-async fn do_run(run_config: &CommandConfig, client: &Client, agent: &Agent) -> Result<()> {
-	// -- Execute the command
-	let on_file_globs = run_config.on_file_globs();
-	// If we have the on_file_globs, they become the items
-	if let Some(on_file_globs) = on_file_globs {
+async fn do_run(run_command_options: &RunCommandOptions, client: &Client, agent: &Agent) -> Result<()> {
+	let on_file_globs = run_command_options.on_file_globs();
+	let file_refs = if let Some(on_file_globs) = on_file_globs {
 		let files = list_files("./", Some(&on_file_globs), None)?;
-		let file_refs = files.into_iter().map(FileRef::from).collect::<Vec<_>>();
-		run_command_agent(client, agent, Some(file_refs.x_into_values()?), run_config.into()).await?;
+		Some(files.into_iter().map(FileRef::from).collect::<Vec<_>>().x_into_values()?)
 	} else {
-		run_command_agent(client, agent, None, run_config.into()).await?;
-	}
+		None
+	};
+
+	run_command_agent(client, agent, file_refs, run_command_options.base_run_config()).await?;
 
 	Ok(())
 }
