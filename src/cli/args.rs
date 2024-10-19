@@ -110,4 +110,9 @@ pub struct NewSoloArgs {
 	///       `devai new-solo ./some-dir/some-file.md`
 	///       will create `./some-dir/some-file.devai`
 	pub path: String,
+
+	/// Open the .devai file, and the target file if exists.
+	/// Note: For now assume vscode `code ...` is installed
+	#[arg(short = 'o', long = "open")]
+	pub open: bool,
 }
