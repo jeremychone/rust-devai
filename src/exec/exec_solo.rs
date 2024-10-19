@@ -1,9 +1,9 @@
-use crate::agent::{get_solo_and_target_path, load_base_agent_config, Agent, AgentDoc};
+use crate::agent::{load_base_agent_config, Agent, AgentDoc};
 use crate::ai::{get_genai_client, run_solo_agent};
-use crate::cli::SoloArgs;
+use crate::exec::SoloConfig;
 use crate::hub::get_hub;
 use crate::{Error, Result};
-use simple_fs::{watch, SEventKind, SFile, SPath};
+use simple_fs::{watch, SEventKind, SFile};
 
 /// Executes the Run command
 /// Can either perform a single run or run in watch mode
@@ -71,7 +71,7 @@ where
 fn load_solo_agent(solo_config: &SoloConfig) -> Result<Agent> {
 	// TODO: Create it if solo_config.create_if_needed with the eventual template
 
-	let solo_file = SFile::new(solo_config.solo_path.path()).map_err(|err| format!("Solo file not found: {err}"))?;
+	let solo_file = SFile::new(solo_config.solo_path().path()).map_err(|err| format!("Solo file not found: {err}"))?;
 	let base_config = load_base_agent_config()?;
 
 	let agent_doc = AgentDoc::from_file(solo_file)?;
@@ -79,51 +79,3 @@ fn load_solo_agent(solo_config: &SoloConfig) -> Result<Agent> {
 }
 
 // endregion: --- Support
-
-// region:    --- SoloConfig
-
-#[derive(Debug)]
-pub struct SoloConfig {
-	solo_path: SPath,
-	target_path: SPath,
-	/// Not supported yet
-	watch: bool,
-	/// Not supported yet
-	verbose: bool,
-}
-
-/// Getters
-impl SoloConfig {
-	pub fn solo_path(&self) -> &SPath {
-		&self.solo_path
-	}
-
-	pub fn target_path(&self) -> &SPath {
-		&self.target_path
-	}
-
-	pub fn watch(&self) -> bool {
-		self.watch
-	}
-
-	pub fn verbose(&self) -> bool {
-		self.verbose
-	}
-}
-
-impl TryFrom<SoloArgs> for SoloConfig {
-	type Error = Error;
-
-	fn try_from(args: SoloArgs) -> Result<Self> {
-		let (solo_path, target_path) = get_solo_and_target_path(args.path)?;
-
-		Ok(Self {
-			solo_path,
-			target_path,
-			watch: args.watch,
-			verbose: args.verbose,
-		})
-	}
-}
-
-// endregion: --- SoloConfig

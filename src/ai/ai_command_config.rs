@@ -1,13 +1,13 @@
 use crate::ai::AiSoloConfig;
-use crate::exec::{DryMode, RunConfig};
+use crate::exec::{CommandConfig, DryMode};
 
 #[derive(Debug, Clone)]
-pub struct AiRunConfig {
+pub struct AiCommandConfig {
 	verbose: bool,
 	dry_mode: DryMode,
 }
 
-impl Default for AiRunConfig {
+impl Default for AiCommandConfig {
 	fn default() -> Self {
 		Self {
 			verbose: false,
@@ -16,7 +16,7 @@ impl Default for AiRunConfig {
 	}
 }
 
-impl AiRunConfig {
+impl AiCommandConfig {
 	pub fn verbose(&self) -> bool {
 		self.verbose
 	}
@@ -27,8 +27,8 @@ impl AiRunConfig {
 
 // region:    --- Froms
 
-impl From<RunConfig> for AiRunConfig {
-	fn from(exec_run_config: RunConfig) -> Self {
+impl From<CommandConfig> for AiCommandConfig {
+	fn from(exec_run_config: CommandConfig) -> Self {
 		Self {
 			verbose: exec_run_config.verbose(),
 			dry_mode: exec_run_config.dry_mode(),
@@ -36,8 +36,8 @@ impl From<RunConfig> for AiRunConfig {
 	}
 }
 
-impl From<&RunConfig> for AiRunConfig {
-	fn from(exec_run_config: &RunConfig) -> Self {
+impl From<&CommandConfig> for AiCommandConfig {
+	fn from(exec_run_config: &CommandConfig) -> Self {
 		Self {
 			verbose: exec_run_config.verbose(),
 			dry_mode: exec_run_config.dry_mode(),
@@ -45,7 +45,7 @@ impl From<&RunConfig> for AiRunConfig {
 	}
 }
 
-impl From<&AiSoloConfig> for AiRunConfig {
+impl From<&AiSoloConfig> for AiCommandConfig {
 	fn from(value: &AiSoloConfig) -> Self {
 		Self {
 			verbose: value.verbose(),

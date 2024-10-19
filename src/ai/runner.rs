@@ -1,5 +1,5 @@
 use crate::agent::Agent;
-use crate::ai::{AiRunConfig, AiSoloConfig};
+use crate::ai::{AiCommandConfig, AiSoloConfig};
 use crate::exec::DryMode;
 use crate::hub::get_hub;
 use crate::script::devai_custom::{DevaiCustom, FromValue};
@@ -58,7 +58,7 @@ pub async fn run_command_agent(
 	client: &Client,
 	agent: &Agent,
 	items: Option<Vec<Value>>,
-	ai_run_config: AiRunConfig,
+	ai_run_config: AiCommandConfig,
 ) -> Result<()> {
 	let hub = get_hub();
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
@@ -199,7 +199,7 @@ async fn run_command_agent_item(
 	agent: &Agent,
 	before_all: Value,
 	item: impl Serialize,
-	ai_run_config: &AiRunConfig,
+	ai_run_config: &AiCommandConfig,
 ) -> Result<Value> {
 	let hub = get_hub();
 
@@ -230,7 +230,7 @@ async fn run_agent_item(
 	agent: &Agent,
 	before_all_result: Value,
 	item: Value,
-	ai_run_config: &AiRunConfig,
+	ai_run_config: &AiCommandConfig,
 ) -> Result<Value> {
 	let hub = get_hub();
 
