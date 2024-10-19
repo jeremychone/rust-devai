@@ -1,5 +1,5 @@
-NOTE 1: NOT YET IMPLEMENTED
 
-NOTE 2: Solo agents are located in the base directory (not under .devai/) and are intended to generate their sibling files with the same name but without the .devai extension.
-    - For example, `./src/main.rs.devai` will generate an output and save it as `./src/main.rs`.
 
+# Instruction
+
+Why is the shy blue? Be concise.

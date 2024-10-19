@@ -23,6 +23,9 @@ pub enum Commands {
 	/// and if not found will look in `.devai/default/command-agent/proof-comments.devai`
 	Run(RunArgs),
 
+	/// Create a New Command Agent under `.devai/custom/command-agent/`
+	New(NewArgs),
+
 	#[command(
 		about = "Run a solo agent for a <path> relative to where the devai is run.",
 		long_about = "Run a solo agent for a <path> relative to where the devai is run.\n
@@ -34,8 +37,12 @@ IMPORTANT: The path should be at the parent folder of the `.devai/` directory."
 	)]
 	Solo(SoloArgs),
 
-	/// New
-	New(NewArgs),
+	#[command(
+		name = "new-solo",
+		alias = "ns",
+		about = "Create a new solo command at the <path>. Can be the .devai or the file to create the solo for (will add .devai)"
+	)]
+	NewSolo(NewSoloArgs),
 
 	/// List the available command agents
 	List,
@@ -91,4 +98,16 @@ pub struct NewArgs {
 	/// e.g., `devai new my-cool-agent`
 	///        will create `.devai/custom/command-agent/my-cool-agent.devai`
 	pub agent_path: String,
+}
+
+/// Arguments for the `new-solo` subcommand
+#[derive(Parser, Debug)]
+pub struct NewSoloArgs {
+	/// The solo agent path (.devai) or the solo target file if it does not end with .devai.
+	/// If target file, then .devai will e added
+	/// e.g., `devai new-solo ./some-dir/some-file.devai`
+	///        will create `./some-dir/some-file.devai`
+	///       `devai new-solo ./some-dir/some-file.md`
+	///       will create `./some-dir/some-file.devai`
+	pub path: String,
 }

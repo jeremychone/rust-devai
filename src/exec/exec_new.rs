@@ -37,24 +37,14 @@ pub async fn exec_new(new_config: impl Into<NewConfig>) -> Result<()> {
 // region:    --- NewConfig
 
 #[derive(Debug)]
-pub enum AgentKind {
-	Command,
-	#[allow(unused)] // will add support later
-	Solo,
-}
-
-#[derive(Debug)]
 pub struct NewConfig {
 	pub agent_path: String,
-	#[allow(unused)]
-	pub agent_king: AgentKind,
 }
 
 impl From<NewArgs> for NewConfig {
 	fn from(args: NewArgs) -> Self {
 		NewConfig {
 			agent_path: args.agent_path,
-			agent_king: AgentKind::Command,
 		}
 	}
 }

@@ -52,12 +52,24 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 			init_devai_files()?;
 		}
 
+		// Create a new agent
+		cli::Commands::New(new_args) => {
+			init_devai_files()?;
+			exec::exec_new(new_args).await?;
+		}
+
 		// Run an agent command
 		cli::Commands::Run(run_args) => {
 			// Note: Every run will initialize the files
 			init_devai_files()?;
 			// Execute the command
 			exec::exec_run(run_args).await?;
+		}
+
+		// Create a new agent
+		cli::Commands::NewSolo(new_args) => {
+			init_devai_files()?;
+			exec::exec_new_solo(new_args).await?;
 		}
 
 		// Run a solo agent
@@ -72,12 +84,6 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 		cli::Commands::List => {
 			init_devai_files()?;
 			exec::exec_list().await?;
-		}
-
-		// Create a new agent
-		cli::Commands::New(new_args) => {
-			init_devai_files()?;
-			exec::exec_new(new_args).await?;
 		}
 	}
 
