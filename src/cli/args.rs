@@ -98,6 +98,11 @@ pub struct NewArgs {
 	/// e.g., `devai new my-cool-agent`
 	///        will create `.devai/custom/command-agent/my-cool-agent.devai`
 	pub agent_path: String,
+
+	/// Open the .devai file, and the target file if exists.
+	/// Note: For now assume vscode `code ...` is installed
+	#[arg(short = 'o', long = "open")]
+	pub open: bool,
 }
 
 /// Arguments for the `new-solo` subcommand
