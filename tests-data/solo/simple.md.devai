@@ -2,6 +2,7 @@
 
 ```rhai
 
+return #{from_data: "From Data (item.path: " + item.path + ")"}
 // Nothing for now
 ```
 
@@ -17,5 +18,5 @@ Why is the sky blue? Make it super concise.
 
 // ai_output is the variable in the context of the eventual response of the AI.
 
-return "Hello from simple.md.devai"
+return "Output - " + item.path + " - " + data.from_data;
 ```

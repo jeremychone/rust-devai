@@ -1,8 +1,7 @@
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 use super::*;
-use crate::_test_support::load_test_agent;
-use crate::agent::get_solo_and_target_path;
+use crate::_test_support::load_test_solo_agent_and_ai_config;
 use crate::ai::get_genai_client;
 use simple_fs::read_to_string;
 
@@ -10,9 +9,8 @@ use simple_fs::read_to_string;
 async fn test_run_agent_s_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let client = get_genai_client()?;
-	let (fx_solo_path, fx_target_path) = get_solo_and_target_path("./tests-data/solo/simple.md.devai")?;
-	let agent = load_test_agent(fx_solo_path.to_str())?;
-	let ai_solo_config = AiSoloConfig::from_target_path(fx_target_path.to_str())?;
+	let (agent, ai_solo_config) = load_test_solo_agent_and_ai_config("./tests-data/solo/simple.md.devai")?;
+	let fx_target_path = ai_solo_config.target_path().to_string();
 
 	// -- Execute
 	run_solo_agent(&client, &agent, ai_solo_config).await?;
@@ -20,7 +18,10 @@ async fn test_run_agent_s_simple_ok() -> Result<()> {
 	// -- Check
 	// assert_eq!(res.as_str().ok_or("Should have output result")?, "./src/main.rs");
 	let content = read_to_string(fx_target_path)?;
-	assert_eq!(content, "Hello from simple.md.devai");
+	assert_eq!(
+		content,
+		"Output - ./tests-data/solo/simple.md - From Data (item.path: ./tests-data/solo/simple.md)"
+	);
 
 	Ok(())
 }

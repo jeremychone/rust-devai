@@ -6,6 +6,7 @@ use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::support::truncate_with_ellipsis;
+use crate::types::FileRef;
 use crate::{Error, Result};
 use genai::chat::ChatRequest;
 use genai::Client;
@@ -32,7 +33,8 @@ pub async fn run_solo_agent(client: &Client, agent: &Agent, ai_solo_config: AiSo
 
 	// -- Run the agent
 	let label = agent.file_path();
-	let item = Value::Null; // For now, will be the target file
+	let item = FileRef::from(ai_solo_config.target_path());
+	let item = serde_json::to_value(item)?;
 	let before_all_data = Value::Null;
 	let res_value = run_agent_item(label, client, agent, before_all_data, item, &(&ai_solo_config).into()).await?;
 

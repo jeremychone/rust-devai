@@ -1,6 +1,6 @@
 use rhai::Dynamic;
 use serde::Serialize;
-use simple_fs::SFile;
+use simple_fs::{SFile, SPath};
 
 #[derive(Debug, Serialize)]
 pub struct FileRef {
@@ -8,6 +8,17 @@ pub struct FileRef {
 	path: String,
 	stem: String,
 	ext: String,
+}
+
+impl From<&SPath> for FileRef {
+	fn from(file: &SPath) -> Self {
+		FileRef {
+			name: file.file_name().to_string(),
+			path: file.to_string(),
+			stem: file.file_stem().to_string(),
+			ext: file.ext().to_string(),
+		}
+	}
 }
 
 impl From<SFile> for FileRef {
