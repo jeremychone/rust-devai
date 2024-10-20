@@ -17,7 +17,9 @@ pub fn first_file_from_dirs(dirs: &[&str], path: &str) -> Result<Option<SFile>> 
 	Ok(None)
 }
 
-pub async fn open_vscode(path: &Path) {
+pub async fn open_vscode(path: impl AsRef<Path>) {
+	let path = path.as_ref();
+
 	let output = Command::new("code")
 		.arg(path)
 		.output()

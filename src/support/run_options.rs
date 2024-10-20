@@ -58,6 +58,7 @@ impl From<RunArgs> for RunCommandOptions {
 			watch: args.watch,
 			verbose: args.verbose,
 			dry_mode,
+			open: args.open,
 		};
 
 		Self {
@@ -116,6 +117,7 @@ impl TryFrom<SoloArgs> for RunSoloOptions {
 			watch: args.watch,
 			verbose: args.verbose,
 			dry_mode: DryMode::None, // Not Supported for now
+			open: args.open,
 		};
 
 		Ok(Self {
@@ -146,6 +148,7 @@ pub struct RunBaseOptions {
 	watch: bool,
 	verbose: bool,
 	dry_mode: DryMode,
+	open: bool,
 }
 
 impl RunBaseOptions {
@@ -159,6 +162,10 @@ impl RunBaseOptions {
 
 	pub fn dry_mode(&self) -> &DryMode {
 		&self.dry_mode
+	}
+
+	pub fn open(&self) -> bool {
+		self.open
 	}
 }
 

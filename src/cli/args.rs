@@ -68,6 +68,10 @@ pub struct RunArgs {
 	#[arg(short = 'v', long = "verbose")]
 	pub verbose: bool,
 
+	/// Attempt to open the command agent file (for now use VSCode code command)
+	#[arg(short = 'o', long = "open")]
+	pub open: bool,
+
 	/// Dry mode, takes either 'req' or 'res'
 	#[arg(long = "dry", value_parser = ["req", "res"])]
 	pub dry_mode: Option<String>,
@@ -89,6 +93,11 @@ pub struct SoloArgs {
 	/// Verbose mode
 	#[arg(short = 'v', long = "verbose")]
 	pub verbose: bool,
+
+	/// Attempt to open the solo agent file and the target file (if exists)
+	/// (for now use VSCode code command)
+	#[arg(short = 'o', long = "open")]
+	pub open: bool,
 }
 
 /// Arguments for the `run` subcommand

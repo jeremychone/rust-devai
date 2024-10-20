@@ -1,5 +1,6 @@
 use crate::agent::{load_base_agent_config, Agent, AgentDoc};
 use crate::ai::{get_genai_client, run_solo_agent};
+use crate::exec::support::open_vscode;
 use crate::hub::get_hub;
 use crate::support::RunSoloOptions;
 use crate::{Error, Result};
@@ -11,11 +12,16 @@ pub async fn exec_solo<T>(run_solo_options: T) -> Result<()>
 where
 	T: TryInto<RunSoloOptions, Error = Error>,
 {
-	let run_solo_options = run_solo_options.try_into()?;
+	let run_solo_options: RunSoloOptions = run_solo_options.try_into()?;
 
 	// -- Get the AI client and agent
 	let client = get_genai_client()?;
 	let hub = get_hub();
+
+	if run_solo_options.base_run_config().open() {
+		open_vscode(run_solo_options.solo_path()).await;
+		open_vscode(run_solo_options.target_path()).await;
+	}
 
 	// -- If NOT in watch mode, then just run once
 	if !run_solo_options.base_run_config().watch() {
@@ -39,12 +45,11 @@ where
 					// If there is a modification, then run again
 					let has_modify = events.iter().any(|evt| matches!(evt.skind, SEventKind::Modify));
 					if has_modify {
-						get_hub()
-							.publish(format!(
-								"\nSolo Agent Modified '{}', running again.",
-								run_solo_options.solo_path()
-							))
-							.await;
+						hub.publish(format!(
+							"\nSolo Agent Modified '{}', running again.",
+							run_solo_options.solo_path()
+						))
+						.await;
 						// Ensure to reload the agent
 						let agent = load_solo_agent(&run_solo_options)?;
 

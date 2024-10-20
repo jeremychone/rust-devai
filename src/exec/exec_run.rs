@@ -1,5 +1,6 @@
 use crate::agent::{find_agent, Agent};
 use crate::ai::{get_genai_client, run_command_agent};
+use crate::exec::support::open_vscode;
 use crate::hub::get_hub; // Importing get_hub
 use crate::support::RunCommandOptions;
 use crate::support::ValuesExt;
@@ -11,16 +12,21 @@ use simple_fs::{list_files, watch, SEventKind};
 /// Exec for the Run command
 /// Might do a single run or a watch
 pub async fn exec_run(run_command_options: impl Into<RunCommandOptions>) -> Result<()> {
-	let run_config = run_command_options.into();
+	let hub = get_hub();
+
+	let run_options: RunCommandOptions = run_command_options.into();
 
 	// -- Get the AI client and agent
 	let client = get_genai_client()?;
-	let agent = find_agent(run_config.cmd_agent())?;
-	let hub = get_hub();
+	let agent = find_agent(run_options.cmd_agent())?;
 
-	do_run(&run_config, &client, &agent).await?;
+	if run_options.base_run_config().open() {
+		open_vscode(agent.file_path()).await;
+	}
 
-	if run_config.base_run_config().watch() {
+	do_run(&run_options, &client, &agent).await?;
+
+	if run_options.base_run_config().watch() {
 		let watcher = watch(agent.file_path())?;
 		// Continuously listen for events
 		loop {
@@ -34,9 +40,9 @@ pub async fn exec_run(run_command_options: impl Into<RunCommandOptions>) -> Resu
 							SEventKind::Modify => {
 								hub.publish("\n==== Agent file modified, running agent again\n").await;
 								// Make sure to change reload the agent
-								let agent = find_agent(run_config.cmd_agent())?;
+								let agent = find_agent(run_options.cmd_agent())?;
 
-								match do_run(&run_config, &client, &agent).await {
+								match do_run(&run_options, &client, &agent).await {
 									Ok(_) => (),
 									Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 								}
