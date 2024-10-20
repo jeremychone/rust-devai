@@ -48,11 +48,7 @@ impl From<RunArgs> for RunCommandOptions {
 			None
 		};
 
-		let dry_mode = match args.dry_mode.as_deref() {
-			Some("req") => DryMode::Req,
-			Some("res") => DryMode::Res,
-			_ => DryMode::None,
-		};
+		let dry_mode = parse_dry_mode(args.dry_mode.as_deref());
 
 		let base_run_config = RunBaseOptions {
 			watch: args.watch,
@@ -113,10 +109,12 @@ impl TryFrom<SoloArgs> for RunSoloOptions {
 	fn try_from(args: SoloArgs) -> Result<Self> {
 		let (solo_path, target_path) = get_solo_and_target_path(args.path)?;
 
+		let dry_mode = parse_dry_mode(args.dry_mode.as_deref());
+
 		let base_run_config = RunBaseOptions {
 			watch: args.watch,
 			verbose: args.verbose,
-			dry_mode: DryMode::None, // Not Supported for now
+			dry_mode,
 			open: args.open,
 		};
 
@@ -170,3 +168,15 @@ impl RunBaseOptions {
 }
 
 // endregion: --- Common
+
+// region:    --- Section
+
+fn parse_dry_mode(dry_mode: Option<&str>) -> DryMode {
+	match dry_mode {
+		Some("req") => DryMode::Req,
+		Some("res") => DryMode::Res,
+		_ => DryMode::None,
+	}
+}
+
+// endregion: --- Section

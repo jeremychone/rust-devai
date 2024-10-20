@@ -98,6 +98,10 @@ pub struct SoloArgs {
 	/// (for now use VSCode code command)
 	#[arg(short = 'o', long = "open")]
 	pub open: bool,
+
+	/// Dry mode, takes either 'req' or 'res'
+	#[arg(long = "dry", value_parser = ["req", "res"])]
+	pub dry_mode: Option<String>,
 }
 
 /// Arguments for the `run` subcommand
