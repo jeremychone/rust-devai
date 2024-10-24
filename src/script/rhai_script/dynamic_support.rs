@@ -12,6 +12,7 @@ impl DynamicMap {
 		Ok(DynamicMap(map))
 	}
 
+	#[allow(unused)]
 	pub fn into_dynamic(self) -> Dynamic {
 		Dynamic::from(self.0)
 	}
