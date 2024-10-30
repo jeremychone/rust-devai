@@ -5,8 +5,8 @@
 //! processing LLM responses.
 //!
 //! ### Functions
-//! * `extract_blocks(md_content: string) -> Vec<MdBlock>`
-//! * `extract_blocks(md_content: string, lang_name: string) -> Vec<MdBlock>`
+//! * `md::extract_blocks(md_content: string) -> Vec<MdBlock>`
+//! * `md::extract_blocks(md_content: string, lang_name: string) -> Vec<MdBlock>`
 
 use crate::support::md;
 use crate::types::MdBlock;

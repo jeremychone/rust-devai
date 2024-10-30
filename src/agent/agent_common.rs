@@ -52,6 +52,7 @@ impl Agent {
 		&self.inner.name
 	}
 
+	#[allow(unused)]
 	pub fn file_name(&self) -> &str {
 		&self.inner.file_name
 	}

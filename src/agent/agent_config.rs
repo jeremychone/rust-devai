@@ -35,6 +35,7 @@ impl AgentConfig {
 // Constructors
 impl AgentConfig {
 	/// Creates a new `AgentConfig` with the specified model name.
+	#[allow(unused)]
 	pub fn new(model_name: impl Into<String>) -> Self {
 		AgentConfig {
 			model: Some(model_name.into()),

@@ -7,8 +7,8 @@
 //! devai parser and script runner.
 //!
 //! ### Functions
-//! * `action_skip() -> SkipActionDict`
-//! * `action_skip(reason: string) -> SkipActionDict`
+//! * `devai::action_skip() -> SkipActionDict`
+//! * `devai::action_skip(reason: string) -> SkipActionDict`
 
 use crate::script::rhai_script::helpers::serde_value_to_dynamic;
 use rhai::plugin::RhaiResult;

@@ -10,6 +10,7 @@ pub struct MdBlock {
 
 impl MdBlock {
 	/// Creates a new `MdBlock` with the specified language and content.
+	#[allow(unused)]
 	pub fn new(lang: Option<String>, content: impl Into<String>) -> Self {
 		MdBlock {
 			lang,

@@ -12,6 +12,10 @@ _*
 *.lockb
 *.log
 
+# -- Devai
+# Ignore the source devai (just personal recipes)
+src/**/*.devai
+
 # -- Rust
 target/
 # !Cargo.lock # commented by default
