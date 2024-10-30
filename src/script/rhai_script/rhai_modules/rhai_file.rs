@@ -6,9 +6,9 @@
 //! The `file` module exposes functions used to read, write, or modify files.
 //!
 //! ### Functions
-//! * `load(file_path: string) -> FileRecord`
-//! * `save(file_path: string, content: string)`
-//! * `list(glob: string) -> Vec<FileRef>`
+//! * `file::load(file_path: string) -> FileRecord`
+//! * `file::save(file_path: string, content: string)`
+//! * `file::list(glob: string) -> Vec<FileRef>`
 
 use crate::hub::get_hub;
 use crate::types::{FileRecord, FileRef};

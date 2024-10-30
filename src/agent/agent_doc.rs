@@ -3,22 +3,28 @@ use crate::agent::{Agent, AgentInner};
 use crate::support::tomls::parse_toml;
 use crate::Result;
 use genai::ModelName;
-use simple_fs::{read_to_string, SFile};
+use simple_fs::{read_to_string, SPath};
 use std::path::Path;
 
 #[derive(Debug)]
 pub struct AgentDoc {
-	sfile: SFile,
+	spath: SPath,
 	raw_content: String,
 }
 
 /// Constructor
 impl AgentDoc {
 	pub fn from_file(path: impl AsRef<Path>) -> Result<Self> {
-		let path = path.as_ref();
-		let sfile = SFile::new(path)?;
+		let spath = SPath::new(path.as_ref())?;
 		let raw_content = read_to_string(path)?;
-		Ok(Self { raw_content, sfile })
+		Ok(Self { spath, raw_content })
+	}
+
+	#[cfg(test)]
+	pub fn from_content(path: impl AsRef<Path>, content: impl Into<String>) -> Result<Self> {
+		let spath = SPath::new(path.as_ref())?;
+		let raw_content = content.into();
+		Ok(Self { spath, raw_content })
 	}
 
 	pub fn into_agent(self, config: AgentConfig) -> Result<Agent> {
@@ -206,9 +212,9 @@ impl AgentDoc {
 		let agent_inner = AgentInner {
 			config,
 
-			name: self.sfile.file_stem().to_string(),
-			file_name: self.sfile.file_name().to_string(),
-			file_path: self.sfile.to_str().to_string(),
+			name: self.spath.file_stem().to_string(),
+			file_name: self.spath.file_name().to_string(),
+			file_path: self.spath.to_str().to_string(),
 
 			genai_model_name,
 

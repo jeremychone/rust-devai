@@ -183,6 +183,19 @@ async fn run_command_agent_item(
 	Ok(res_value)
 }
 
+/// Workaround to expose the run_command_agent_item only for test.
+#[cfg(test)]
+pub async fn run_command_agent_item_for_test(
+	item_idx: usize,
+	client: &Client,
+	agent: &Agent,
+	before_all: Value,
+	item: impl Serialize,
+	run_base_options: &RunBaseOptions,
+) -> Result<Value> {
+	run_command_agent_item(item_idx, client, agent, before_all, item, run_base_options).await
+}
+
 // region:    --- Support
 
 fn get_item_label(item: &Value) -> Option<String> {

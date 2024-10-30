@@ -7,7 +7,7 @@
 //! The `git` module exposes functions that call `git` commands.
 //!
 //! ### Functions
-//! * `restore(file_path: string) -> string`
+//! * `git::restore(file_path: string) -> string`
 
 use crate::hub::get_hub;
 use rhai::plugin::RhaiResult;
