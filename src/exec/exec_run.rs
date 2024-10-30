@@ -78,8 +78,8 @@ async fn do_run(run_command_options: &RunCommandOptions, client: &Client, agent:
 		Some(files.into_iter().map(FileRef::from).collect::<Vec<_>>().x_into_values()?)
 	} else {
 		 // Read from stdin if no file globs are provided
-		let stdin_content = read_stdin()?;
-		Some(vec![stdin_content])
+		 let stdin_content = read_stdin(run_command_options.split_input())?;
+		 Some(stdin_content)
 	};
 
 	run_command_agent(client, agent, file_refs, run_command_options.base_run_config()).await?;
@@ -88,8 +88,15 @@ async fn do_run(run_command_options: &RunCommandOptions, client: &Client, agent:
 }
 
 /// Helper function to read from stdin and return a Value
-fn read_stdin() -> Result<Value> {
+fn read_stdin(split_input: Option<&str>) -> Result<Vec<Value>> {
 	let mut buffer = String::new();
 	io::stdin().read_to_string(&mut buffer)?;
-	Ok(Value::String(buffer))
+
+	if let Some(separator) = split_input {
+		let split_values: Vec<Value> = buffer.split(separator).map(|s| Value::String(s.to_string())).collect();
+		Ok(split_values)
+	} else {
+		Ok(vec![Value::String(buffer)])
+	}
 }
+

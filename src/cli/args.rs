@@ -75,6 +75,10 @@ pub struct RunArgs {
 	/// Dry mode, takes either 'req' or 'res'
 	#[arg(long = "dry", value_parser = ["req", "res"])]
 	pub dry_mode: Option<String>,
+
+	/// Split input by the given string
+	#[arg(long = "split-input")]
+	pub split_input: Option<String>,
 }
 
 /// Arguments for the `solo` subcommand

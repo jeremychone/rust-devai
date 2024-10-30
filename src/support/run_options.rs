@@ -9,6 +9,7 @@ use simple_fs::SPath;
 pub struct RunCommandOptions {
 	cmd_agent: String,
 	on_file_globs: Option<Vec<String>>,
+	split_input: Option<String>,
 
 	base_run_config: RunBaseOptions,
 }
@@ -24,6 +25,10 @@ impl RunCommandOptions {
 
 	pub fn base_run_config(&self) -> &RunBaseOptions {
 		&self.base_run_config
+	}
+
+	pub fn split_input(&self) -> Option<&str> {
+		self.split_input.as_deref()
 	}
 }
 
@@ -60,6 +65,7 @@ impl From<RunArgs> for RunCommandOptions {
 		Self {
 			cmd_agent: args.cmd_agent_name,
 			on_file_globs,
+			split_input: args.split_input,
 			base_run_config,
 		}
 	}
