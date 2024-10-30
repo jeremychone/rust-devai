@@ -8,6 +8,7 @@ use crate::types::FileRef;
 use crate::Result;
 use genai::Client;
 use simple_fs::{list_files, watch, SEventKind};
+use std::io::{self, Read}; // Importing io and Read
 
 /// Exec for the Run command
 /// Might do a single run or a watch
@@ -75,10 +76,19 @@ async fn do_run(run_command_options: &RunCommandOptions, client: &Client, agent:
 		let files = list_files("./", Some(&on_file_globs), None)?;
 		Some(files.into_iter().map(FileRef::from).collect::<Vec<_>>().x_into_values()?)
 	} else {
-		None
+		 // Read from stdin if no file globs are provided
+		let stdin_content = read_stdin()?;
+		Some(vec![stdin_content])
 	};
 
 	run_command_agent(client, agent, file_refs, run_command_options.base_run_config()).await?;
 
 	Ok(())
+}
+
+/// Helper function to read from stdin and return a Value
+fn read_stdin() -> Result<Value> {
+	let mut buffer = String::new();
+	io::stdin().read_to_string(&mut buffer)?;
+	Ok(Value::String(buffer))
 }
