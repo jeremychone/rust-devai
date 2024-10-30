@@ -9,6 +9,7 @@ use crate::Result;
 use genai::Client;
 use simple_fs::{list_files, watch, SEventKind};
 use std::io::{self, Read}; // Importing io and Read
+use serde_json::Value;
 
 /// Exec for the Run command
 /// Might do a single run or a watch
