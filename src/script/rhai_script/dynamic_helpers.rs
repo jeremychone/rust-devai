@@ -2,7 +2,11 @@ use crate::Result;
 use rhai::{Array, Dynamic, Map, Scope};
 use serde_json::{Map as SerdeMap, Value};
 
-pub fn rhai_dynamic_to_serde_value(dynamic: Dynamic) -> Result<Value> {
+pub fn dynamics_to_values(dynamics: Vec<Dynamic>) -> Result<Vec<Value>> {
+	dynamics.into_iter().map(dynamic_to_value).collect::<Result<Vec<_>>>()
+}
+
+pub fn dynamic_to_value(dynamic: Dynamic) -> Result<Value> {
 	// Check the type of Dynamic and convert it to serde_json::Value
 	let val = if dynamic.is::<i64>() {
 		Value::Number(dynamic.as_int()?.into())
@@ -14,16 +18,13 @@ pub fn rhai_dynamic_to_serde_value(dynamic: Dynamic) -> Result<Value> {
 		Value::String(dynamic.into_string()?)
 	} else if dynamic.is::<Array>() {
 		let arr = dynamic.into_array()?;
-		let serde_array = arr
-			.into_iter()
-			.map(rhai_dynamic_to_serde_value)
-			.collect::<Result<Vec<Value>>>()?;
+		let serde_array = arr.into_iter().map(dynamic_to_value).collect::<Result<Vec<Value>>>()?;
 		Value::Array(serde_array)
 	} else if dynamic.is::<Map>() {
 		let map = dynamic.cast::<rhai::Map>();
 		let mut serde_map = SerdeMap::new();
 		for (k, v) in map {
-			serde_map.insert(k.to_string(), rhai_dynamic_to_serde_value(v)?);
+			serde_map.insert(k.to_string(), dynamic_to_value(v)?);
 		}
 		Value::Object(serde_map)
 	} else {
@@ -34,13 +35,13 @@ pub fn rhai_dynamic_to_serde_value(dynamic: Dynamic) -> Result<Value> {
 	Ok(val)
 }
 
-pub fn serde_value_to_scope(value: &Value) -> Result<Scope> {
+pub fn value_to_scope(value: &Value) -> Result<Scope> {
 	let mut scope = Scope::new();
 
 	match value {
 		Value::Object(map) => {
 			for (k, v) in map {
-				let dynamic_value = serde_value_to_dynamic(v);
+				let dynamic_value = value_to_dynamic(v);
 				scope.push_dynamic(k.as_str(), dynamic_value);
 			}
 			Ok(scope)
@@ -49,7 +50,7 @@ pub fn serde_value_to_scope(value: &Value) -> Result<Scope> {
 	}
 }
 
-pub fn serde_value_to_dynamic(value: &Value) -> Dynamic {
+pub fn value_to_dynamic(value: &Value) -> Dynamic {
 	match value {
 		Value::Null => Dynamic::UNIT,
 		Value::Bool(b) => (*b).into(),
@@ -66,14 +67,14 @@ pub fn serde_value_to_dynamic(value: &Value) -> Dynamic {
 		Value::Array(arr) => {
 			let mut rhai_array = Array::new();
 			for v in arr {
-				rhai_array.push(serde_value_to_dynamic(v));
+				rhai_array.push(value_to_dynamic(v));
 			}
 			rhai_array.into()
 		}
 		Value::Object(obj) => {
 			let mut rhai_map = Map::new();
 			for (k, v) in obj {
-				rhai_map.insert(k.clone().into(), serde_value_to_dynamic(v));
+				rhai_map.insert(k.clone().into(), value_to_dynamic(v));
 			}
 			rhai_map.into()
 		}

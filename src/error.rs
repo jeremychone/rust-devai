@@ -1,11 +1,14 @@
+use derive_more::derive::Display;
 use derive_more::From;
+use tokio::runtime::TryCurrentError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, From)]
+#[derive(Debug, From, Display)]
 pub enum Error {
 	// -- Cli Command
-	AgentNotFound(String),
+	#[display("Command Agent not found at: {_0}")]
+	CommandAgentNotFound(String),
 
 	// -- Agent
 	ModelMissing {
@@ -16,6 +19,9 @@ pub enum Error {
 	BeforeAllFailWrongReturn {
 		cause: String,
 	},
+
+	// -- TokioSync
+	TokioTryCurrent(TryCurrentError),
 
 	// -- Sub Modules
 	#[from]
@@ -29,6 +35,7 @@ pub enum Error {
 	#[from]
 	Serde(serde_json::Error),
 	#[from]
+	#[display("Rhai Execution error:\n{_0}")]
 	Rhai(rhai::EvalAltResult),
 	#[from]
 	Handlebars(handlebars::RenderError),
@@ -40,6 +47,8 @@ pub enum Error {
 	Keyring(keyring::Error),
 	#[from]
 	Clap(clap::error::Error),
+	#[from]
+	Reqwest(reqwest::Error),
 	#[from]
 	Io(std::io::Error),
 
@@ -53,6 +62,15 @@ pub enum Error {
 impl From<Box<rhai::EvalAltResult>> for Error {
 	fn from(val: Box<rhai::EvalAltResult>) -> Self {
 		Self::Rhai(*val)
+	}
+}
+
+impl From<Error> for Box<rhai::EvalAltResult> {
+	fn from(devai_error: Error) -> Self {
+		Box::new(rhai::EvalAltResult::ErrorRuntime(
+			format!("Rhai Call error. Cause: {devai_error}").into(),
+			rhai::Position::NONE,
+		))
 	}
 }
 
@@ -75,15 +93,6 @@ impl From<&str> for Error {
 // endregion: --- Custom
 
 // region:    --- Error Boilerplate
-
-impl core::fmt::Display for Error {
-	fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
-		match self {
-			Error::Custom(custom) => write!(fmt, "{custom}"),
-			_ => write!(fmt, "{self:?}"),
-		}
-	}
-}
 
 impl std::error::Error for Error {}
 

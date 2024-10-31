@@ -19,7 +19,8 @@ pub async fn run_command_agent(
 	agent: &Agent,
 	items: Option<Vec<Value>>,
 	run_base_options: &RunBaseOptions,
-) -> Result<()> {
+	return_output_values: bool,
+) -> Result<Option<Vec<Value>>> {
 	let hub = get_hub();
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
@@ -46,7 +47,7 @@ pub async fn run_command_agent(
 				let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
 				hub.publish(format!("-- DevAI Skip items at Before All section{reason_msg}"))
 					.await;
-				return Ok(());
+				return Ok(None);
 			}
 			FromValue::DevaiCustom(DevaiCustom::BeforeAll {
 				items_override,
@@ -65,12 +66,13 @@ pub async fn run_command_agent(
 	let mut join_set = JoinSet::new();
 	let mut in_progress = 0;
 
-	// -- Initialize outputs capture
-	let mut outputs: Option<Vec<(usize, Value)>> = if agent.after_all_script().is_some() {
-		Some(Vec::new())
-	} else {
-		None
-	};
+	// -- Initialize outputs for capture
+	let mut captured_outputs: Option<Vec<(usize, Value)>> =
+		if agent.after_all_script().is_some() || return_output_values {
+			Some(Vec::new())
+		} else {
+			None
+		};
 
 	// -- Run the items
 	for (item_idx, item) in items.clone().into_iter().enumerate() {
@@ -102,7 +104,7 @@ pub async fn run_command_agent(
 				in_progress -= 1;
 				match res {
 					Ok(Ok((item_idx, output))) => {
-						if let Some(outputs_vec) = &mut outputs {
+						if let Some(outputs_vec) = &mut captured_outputs {
 							outputs_vec.push((item_idx, output));
 						}
 					}
@@ -119,7 +121,7 @@ pub async fn run_command_agent(
 			in_progress -= 1;
 			match res {
 				Ok(Ok((item_idx, output))) => {
-					if let Some(outputs_vec) = &mut outputs {
+					if let Some(outputs_vec) = &mut captured_outputs {
 						outputs_vec.push((item_idx, output));
 					}
 				}
@@ -129,11 +131,19 @@ pub async fn run_command_agent(
 		}
 	}
 
+	let mut to_return: Option<Vec<Value>> = None;
+
 	// -- Post-process outputs
-	let outputs_value = if let Some(mut outputs_vec) = outputs {
-		outputs_vec.sort_by_key(|(idx, _)| *idx);
-		let outputs_values: Vec<Value> = outputs_vec.into_iter().map(|(_, v)| v).collect();
-		Value::Array(outputs_values)
+	let outputs_value = if let Some(mut captured_outputs) = captured_outputs {
+		captured_outputs.sort_by_key(|(idx, _)| *idx);
+
+		let outputs: Vec<Value> = captured_outputs.into_iter().map(|(_, v)| v).collect();
+
+		// TODO: Need to optimize. For now we clone when return_output_values even if after_all_script is empty
+		if return_output_values {
+			to_return = Some(outputs.clone());
+		}
+		Value::Array(outputs)
 	} else {
 		Value::Null
 	};
@@ -148,7 +158,7 @@ pub async fn run_command_agent(
 		let _after_all_res = rhai_eval(after_all_script, Some(scope_item))?;
 	}
 
-	Ok(())
+	Ok(to_return)
 }
 
 /// Run the command agent item for the run_command_agent_items

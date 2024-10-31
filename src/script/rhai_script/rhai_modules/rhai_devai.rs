@@ -10,10 +10,14 @@
 //! * `devai::action_skip() -> SkipActionDict`
 //! * `devai::action_skip(reason: string) -> SkipActionDict`
 
-use crate::script::rhai_script::helpers::serde_value_to_dynamic;
+use crate::agent::find_agent;
+use crate::ai::{get_genai_client, run_command_agent};
+use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
+use crate::support::RunBaseOptions;
+use crate::Error;
 use rhai::plugin::RhaiResult;
-use rhai::{FuncRegistration, Module};
-use serde_json::json;
+use rhai::{Dynamic, FuncRegistration, Module};
+use serde_json::{json, Value};
 
 pub fn rhai_module() -> Module {
 	// Create a module for text functions
@@ -27,10 +31,41 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, action_skip_with_reason);
 
+	FuncRegistration::new("run")
+		.in_global_namespace()
+		.set_into_module(&mut module, run_with_items);
+
 	module
 }
 
-// region:    --- Rhai Functions
+// region:    --- run...
+
+fn run_with_items(cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
+	let items = dynamics_to_values(items)?;
+	let agent = find_agent(cmd_agent)?;
+	let client = get_genai_client()?;
+
+	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
+
+	// Note: Require to have
+	let res = tokio::task::block_in_place(|| {
+		rt.block_on(async { run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default(), true).await })
+	});
+
+	let res = res?;
+
+	let rhai_val = if let Some(values) = res {
+		value_to_dynamic(&Value::Array(values))
+	} else {
+		Dynamic::UNIT
+	};
+
+	Ok(rhai_val)
+}
+
+// endregion: --- run...
+
+// region:    --- action_skip..
 
 /// ## RHAI Documentation
 /// ```rhai
@@ -55,7 +90,7 @@ fn action_skip() -> RhaiResult {
 			"kind": "ActionSkip"
 		}
 	});
-	let res = serde_value_to_dynamic(&res);
+	let res = value_to_dynamic(&res);
 
 	Ok(res)
 }
@@ -86,9 +121,37 @@ fn action_skip_with_reason(reason: &str) -> RhaiResult {
 			}
 		}
 	});
-	let res = serde_value_to_dynamic(&res);
+	let res = value_to_dynamic(&res);
 
 	Ok(res)
 }
 
-// endregion: --- Rhai Functions
+// endregion: --- action_skip..
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	type Error = Box<dyn std::error::Error>;
+	type Result<T> = core::result::Result<T, Error>; // For tests.
+
+	use crate::_test_support::run_reflective_agent;
+	use serde_json::from_value;
+
+	// Note: multi_thread required, because rhai devai::run is a sync calling a async.
+	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+	async fn test_rhai_devai_run_simple() -> Result<()> {
+		let res =
+			run_reflective_agent(r#"return devai::run("./tests-data/agents/agent-hello.md", ["one", "two"])"#).await?;
+
+		let vals: Vec<String> = from_value(res)?;
+
+		assert_eq!(
+			vals,
+			["hello 'one' from agent-hello.md", "hello 'two' from agent-hello.md"]
+		);
+		Ok(())
+	}
+}
+
+// endregion: --- Tests
