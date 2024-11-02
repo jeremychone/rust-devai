@@ -2,8 +2,8 @@ use crate::agent::{find_agent, Agent};
 use crate::ai::{get_genai_client, run_command_agent};
 use crate::exec::support::open_vscode;
 use crate::hub::get_hub; // Importing get_hub
+use crate::support::jsons::into_values;
 use crate::support::RunCommandOptions;
-use crate::support::ValuesExt;
 use crate::types::FileRef;
 use crate::Result;
 use genai::Client;
@@ -75,14 +75,15 @@ async fn do_run(run_command_options: &RunCommandOptions, client: &Client, agent:
 	let on_file_globs = run_command_options.on_file_globs();
 	let file_refs = if let Some(on_file_globs) = on_file_globs {
 		let files = list_files("./", Some(&on_file_globs), None)?;
-		Some(files.into_iter().map(FileRef::from).collect::<Vec<_>>().x_into_values()?)
+		let file_refs = files.into_iter().map(FileRef::from).collect::<Vec<_>>();
+		Some(into_values(file_refs)?)
 	} else {
 		 // Read from stdin if no file globs are provided
 		 let stdin_content = read_stdin(run_command_options.split_input())?;
 		 Some(stdin_content)
 	};
 
-	run_command_agent(client, agent, file_refs, run_command_options.base_run_config()).await?;
+	run_command_agent(client, agent, file_refs, run_command_options.base_run_config(), false).await?;
 
 	Ok(())
 }

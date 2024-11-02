@@ -1,0 +1,10 @@
+
+# Output 
+
+```rhai
+let url = "https://venturebeat.com/ai/microsoft-just-made-it-way-easier-for-developers-to-build-ai-apps-and-it-could-be-bad-news-for-aws/";
+
+let content = web::get(url);
+return "hello world - " + content;
+
+```

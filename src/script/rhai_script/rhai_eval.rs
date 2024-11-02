@@ -1,5 +1,5 @@
+use super::dynamic_helpers::{dynamic_to_value, value_to_scope};
 use super::engine::rhai_engine;
-use super::helpers::{rhai_dynamic_to_serde_value, serde_value_to_scope};
 use crate::Result;
 use rhai::{Dynamic, Scope};
 use serde_json::Value;
@@ -10,7 +10,7 @@ pub fn rhai_eval(script: &str, scope_value: Option<Value>) -> Result<Value> {
 
 	// Create a scope for variables
 	let mut scope = if let Some(scope_value) = scope_value.as_ref() {
-		serde_value_to_scope(scope_value)?
+		value_to_scope(scope_value)?
 	} else {
 		Scope::new()
 	};
@@ -20,7 +20,7 @@ pub fn rhai_eval(script: &str, scope_value: Option<Value>) -> Result<Value> {
 	let result = engine.eval_with_scope::<Dynamic>(&mut scope, script)?;
 
 	// Convert the result to a serde_json::Value
-	let result_json = rhai_dynamic_to_serde_value(result)?;
+	let result_json = dynamic_to_value(result)?;
 	Ok(result_json)
 }
 

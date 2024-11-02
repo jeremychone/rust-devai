@@ -23,6 +23,25 @@ async fn test_run_agent_c_simple_ok() -> Result<()> {
 }
 
 #[tokio::test]
+async fn test_run_agent_c_hello_ok() -> Result<()> {
+	// -- Setup & Fixtures
+	let client = get_genai_client()?;
+	let agent = load_test_agent("./tests-data/agents/agent-hello.md")?;
+
+	// -- Execute
+	let res = run_command_agent_item(0, &client, &agent, Value::Null, Value::Null, &RunBaseOptions::default()).await?;
+
+	// -- Check
+	// Note here '' because item is null
+	assert_eq!(
+		res.as_str().ok_or("Should have output result")?,
+		"hello '' from agent-hello.md"
+	);
+
+	Ok(())
+}
+
+#[tokio::test]
 async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let client = get_genai_client()?;
@@ -57,7 +76,7 @@ async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	let file_ref = FileRef::from(on_file);
 	let items = vec![serde_json::to_value(file_ref)?];
 
-	run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default()).await?;
+	run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default(), false).await?;
 
 	// -- Check
 	let hub_content = hub_capture.into_content().await?;

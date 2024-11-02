@@ -25,7 +25,9 @@ impl Hub {
 			let rt = tokio::runtime::Handle::try_current();
 			match rt {
 				Ok(rt) => rt.block_on(async { self.publish(event).await }),
-				Err(_) => println!("DEVAI INTERNAL ERROR - no current tokio handle"),
+
+				// NOTE: Here per design, we do not return error or break, as it is just for logging
+				Err(err) => println!("DEVAI INTERNAL ERROR - no current tokio handle - {err}"),
 			}
 		});
 	}

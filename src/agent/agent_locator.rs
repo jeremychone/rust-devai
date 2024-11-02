@@ -2,27 +2,36 @@ use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentDoc};
 use crate::init::{DEVAI_AGENT_CUSTOM_DIR, DEVAI_AGENT_DEFAULT_DIR, DEVAI_CONFIG_FILE_PATH};
 use crate::support::tomls::parse_toml;
-use crate::Result;
+use crate::{Error, Result};
 use simple_fs::{list_files, read_to_string, SFile, SPath};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use strsim::levenshtein;
 
-pub fn find_agent(name: &str) -> Result<Agent> {
+pub fn find_agent(agent_path: &str) -> Result<Agent> {
 	let base_config = load_base_agent_config()?;
+
+	// -- First see if it is a direct path (starts with `./` or `/`)
+	if agent_path.starts_with("./") || agent_path.starts_with("/") {
+		let sfile = SFile::new(agent_path).map_err(|_| Error::CommandAgentNotFound(agent_path.to_string()))?;
+		let doc = AgentDoc::from_file(sfile)?;
+		return doc.into_agent(base_config);
+	}
+
+	// -- Otherwise, look in the command-agent dirs
 	let dirs = get_agent_dirs();
 
 	// Attempt to find the agent in the specified directories
-	if let Some(agent_doc) = find_agent_doc_in_dir(name, &dirs)? {
+	if let Some(agent_doc) = find_agent_doc_in_dir(agent_path, &dirs)? {
 		return agent_doc.into_agent(base_config);
 	}
 
 	// If not found, return an error with potential similar agents
-	let similar_paths = find_similar_agent_paths(name, &dirs)?;
+	let similar_paths = find_similar_agent_paths(agent_path, &dirs)?;
 	let error_msg = if !similar_paths.is_empty() {
 		format!(
 			"Agent '{}' not found.\nDid you mean one of these?\n{}",
-			name,
+			agent_path,
 			similar_paths
 				.iter()
 				.map(agent_sfile_as_bullet)
@@ -33,7 +42,7 @@ pub fn find_agent(name: &str) -> Result<Agent> {
 		let agent_files = list_all_agent_files()?;
 		format!(
 			"Agent '{}' not found.\nHere is the list of available command agents:\n{}",
-			name,
+			agent_path,
 			agent_files
 				.iter()
 				.map(agent_sfile_as_bullet)
