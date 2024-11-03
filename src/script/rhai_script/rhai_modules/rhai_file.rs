@@ -42,7 +42,7 @@ pub fn rhai_module() -> Module {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// list(glob: string) -> Vec<FileRef>
+/// file::list(glob: string) -> Vec<FileRef>
 /// ```
 ///
 /// Expands `glob`, returning a list of all matching file paths along with
@@ -74,7 +74,7 @@ fn list_with_glob(include_glob: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// load(file_path: string) -> FileRecord
+/// file::load(file_path: string) -> FileRecord
 /// ```
 ///
 /// Reads the file specified by `path`, returning the contents of the file
@@ -92,7 +92,7 @@ fn load(file_path: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// save(file_path: string, content: string)
+/// file::save(file_path: string, content: string)
 /// ```
 ///
 /// Writes `content` to the specified `file_path`.

@@ -36,7 +36,7 @@ pub fn rhai_module() -> Module {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// extract_blocks(md_content: string) -> Vec<MdBlock>
+/// md::extract_blocks(md_content: string) -> Vec<MdBlock>
 /// ```
 ///
 /// Parses the markdown provided by `md_content` and extracts each code block,
@@ -49,7 +49,7 @@ fn extract_blocks(md_content: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// extract_blocks(md_content: &str, lang_name: &str) -> Vec<MdBlock>
+/// md::extract_blocks(md_content: &str, lang_name: &str) -> Vec<MdBlock>
 /// ```
 ///
 /// Parses the markdown provided by `md_content` and extracts each code block,
@@ -64,7 +64,7 @@ fn extract_blocks_with_lang(md_content: &str, lang_name: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// outer_block_content_or_raw(md_content: &str) -> Vec<MdBlock>
+/// md::outer_block_content_or_raw(md_content: &str) -> Vec<MdBlock>
 /// ```
 ///
 /// Without fully parsing the markdown, this function attempts to extract the content from the first triple backticks

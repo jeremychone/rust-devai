@@ -42,7 +42,7 @@ pub fn rhai_module() -> Module {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// exists(path: string) -> bool
+/// path::exists(path: string) -> bool
 /// ```
 ///
 /// Checks if the specified path exists.
@@ -53,7 +53,7 @@ fn path_exists(path: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// is_file(path: string) -> bool
+/// path::is_file(path: string) -> bool
 /// ```
 ///
 /// Checks if the specified path is a file.
@@ -64,7 +64,7 @@ fn path_is_file(path: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// is_dir(path: string) -> bool
+/// path::is_dir(path: string) -> bool
 /// ```
 ///
 /// Checks if the specified path is a directory.
@@ -75,7 +75,7 @@ fn path_is_dir(path: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// parent(path: string) -> string | void
+/// path::parent(path: string) -> string | void
 /// ```
 ///
 /// Returns the parent directory of the specified path, or null/void if there is no parent.
