@@ -117,7 +117,7 @@ mod tests {
 
 		// -- Exec & Check
 		for path in paths {
-			let res = run_reflective_agent(&format!(r#"return path::exists("{path}");"#)).await?;
+			let res = run_reflective_agent(&format!(r#"return path::exists("{path}");"#), None).await?;
 			assert!(
 				res.as_bool().ok_or("Result should be a bool")?,
 				"'{path}' should exists"
@@ -139,7 +139,7 @@ mod tests {
 
 		// -- Exec & Check
 		for path in paths {
-			let res = run_reflective_agent(&format!(r#"return path::exists("{path}");"#)).await?;
+			let res = run_reflective_agent(&format!(r#"return path::exists("{path}");"#), None).await?;
 			assert!(
 				!res.as_bool().ok_or("Result should be a bool")?,
 				"'{path}' should NOT exists"
@@ -161,7 +161,7 @@ mod tests {
 
 		// -- Exec & Check
 		for path in paths {
-			let res = run_reflective_agent(&format!(r#"return path::is_file("{path}");"#)).await?;
+			let res = run_reflective_agent(&format!(r#"return path::is_file("{path}");"#), None).await?;
 			assert!(
 				res.as_bool().ok_or("Result should be a bool")?,
 				"'{path}' should be is_file"
@@ -183,7 +183,7 @@ mod tests {
 
 		// -- Exec & Check
 		for path in paths {
-			let res = run_reflective_agent(&format!(r#"return path::is_file("{path}");"#)).await?;
+			let res = run_reflective_agent(&format!(r#"return path::is_file("{path}");"#), None).await?;
 			assert!(
 				!res.as_bool().ok_or("Result should be a bool")?,
 				"'{path}' should NOT be is_file"
@@ -205,7 +205,7 @@ mod tests {
 
 		// -- Exec & Check
 		for path in paths {
-			let res = run_reflective_agent(&format!(r#"return path::is_dir("{path}");"#)).await?;
+			let res = run_reflective_agent(&format!(r#"return path::is_dir("{path}");"#), None).await?;
 			assert!(
 				res.as_bool().ok_or("Result should be a bool")?,
 				"'{path}' should be is_dir"
@@ -228,7 +228,7 @@ mod tests {
 
 		// -- Exec & Check
 		for path in paths {
-			let res = run_reflective_agent(&format!(r#"return path::is_dir("{path}");"#)).await?;
+			let res = run_reflective_agent(&format!(r#"return path::is_dir("{path}");"#), None).await?;
 			assert!(
 				!res.as_bool().ok_or("Result should be a bool")?,
 				"'{path}' should NOT be is_dir"

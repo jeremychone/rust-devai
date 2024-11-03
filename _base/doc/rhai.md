@@ -310,3 +310,19 @@ Strips non-content elements from the provided HTML content and returns the clean
 let cleaned_html = html::prune_to_content("<html><body><script>var a = 1;</script><p>Hello</p></body></html>");
 // cleaned_html = "<p>Hello</p>"
 ```
+
+## Module: rust
+
+The `rust` module exposes functions used to process Rust code.
+
+### rust::prune_to_declarations(code: string) -> string
+
+Trims Rust code to keep only function declarations by replacing function bodies with `{ ... }`. Preserves comments, whitespace, and non-function code structures.
+
+**Example:**
+
+```rhai
+let code = "fn add(a: i32, b: i32) -> i32 { a + b }";
+let result = rust::prune_to_declarations(code);
+// result = "fn add(a: i32, b: i32) -> i32 { ... }"
+```

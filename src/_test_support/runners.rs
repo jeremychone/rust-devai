@@ -8,9 +8,11 @@ use serde_json::Value;
 /// It's useful for testing rhai module functions.
 ///
 /// Note: This will run a
-pub async fn run_reflective_agent(data_rhai_code: &str) -> Result<Value> {
+pub async fn run_reflective_agent(data_rhai_code: &str, item: Option<Value>) -> Result<Value> {
 	let client = get_genai_client()?;
 	let agent = load_reflective_agent(data_rhai_code)?;
 
-	run_command_agent_item_for_test(0, &client, &agent, Value::Null, Value::Null, &RunBaseOptions::default()).await
+	let item = if let Some(item) = item { item } else { Value::Null };
+
+	run_command_agent_item_for_test(0, &client, &agent, Value::Null, item, &RunBaseOptions::default()).await
 }
