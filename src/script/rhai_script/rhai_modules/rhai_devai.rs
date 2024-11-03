@@ -115,7 +115,7 @@ fn action_skip() -> RhaiResult {
 fn action_skip_with_reason(reason: &str) -> RhaiResult {
 	let res = json!({
 		"_devai_": {
-			"action": "ActionSkip",
+			"kind": "ActionSkip",
 			"data": {
 				"reason": reason
 			}
