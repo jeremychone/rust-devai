@@ -1,5 +1,5 @@
 use super::rhai_modules::{rhai_devai, rhai_file, rhai_git, rhai_md, rhai_text};
-use crate::script::rhai_script::rhai_modules::{rhai_path, rhai_web};
+use crate::script::rhai_script::rhai_modules::{rhai_html, rhai_path, rhai_web};
 use crate::Result;
 use rhai::Engine;
 use std::sync::{Arc, LazyLock};
@@ -15,6 +15,7 @@ static ENGINE: LazyLock<Arc<Engine>> = LazyLock::new(|| {
 	engine.register_static_module("devai", rhai_devai::rhai_module().into());
 	engine.register_static_module("web", rhai_web::rhai_module().into());
 	engine.register_static_module("git", rhai_git::rhai_module().into());
+	engine.register_static_module("html", rhai_html::rhai_module().into());
 
 	engine.into()
 });

@@ -9,6 +9,7 @@ pub use strings::*;
 
 pub mod cred;
 pub mod hbs;
+pub mod html;
 pub mod jsons;
 pub mod md;
 pub mod tomls;

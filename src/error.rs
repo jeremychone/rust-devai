@@ -55,6 +55,9 @@ pub enum Error {
 	// -- Custom
 	#[from]
 	Custom(String),
+
+	#[display("Erro: {_0}  Cause: {_1}")]
+	CustomAndCause(String, String),
 }
 
 // region:    --- Froms
@@ -81,6 +84,15 @@ impl From<Error> for Box<rhai::EvalAltResult> {
 impl Error {
 	pub fn custom(val: impl std::fmt::Display) -> Self {
 		Self::Custom(val.to_string())
+	}
+
+	pub fn custom_and_cause(context: impl Into<String>, cause: impl std::fmt::Display) -> Self {
+		Self::CustomAndCause(context.into(), cause.to_string())
+	}
+
+	/// Same as custom_and_cause (just a "cute" shorcut)
+	pub fn cc(context: impl Into<String>, cause: impl std::fmt::Display) -> Self {
+		Self::CustomAndCause(context.into(), cause.to_string())
 	}
 }
 
