@@ -42,7 +42,7 @@ pub async fn run_agent_item(
 		FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
 			let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
 
-			hub.publish(format!("-- DevAI Skip item: {label}{reason_txt}")).await;
+			hub.publish(format!("-! DevAI Skip item: {label}{reason_txt}")).await;
 			return Ok(Value::Null);
 		}
 

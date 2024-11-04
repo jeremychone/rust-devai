@@ -45,7 +45,7 @@ pub async fn run_command_agent(
 		match DevaiCustom::from_value(before_all_res)? {
 			FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
 				let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
-				hub.publish(format!("-- DevAI Skip items at Before All section{reason_msg}"))
+				hub.publish(format!("-! DevAI Skip items at Before All section{reason_msg}"))
 					.await;
 				return Ok(None);
 			}

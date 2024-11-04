@@ -1,7 +1,7 @@
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 use super::*;
-use crate::_test_support::{load_test_agent, HubCapture};
+use crate::_test_support::{load_inline_agent, load_test_agent, HubCapture};
 use crate::ai::get_genai_client;
 use crate::types::FileRef;
 use simple_fs::SFile;
@@ -83,6 +83,79 @@ async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	assert!(
 		hub_content.contains("-> Agent Output: Some Before All - Some Data - ./src/main.rs"),
 		"Agent Output not matching!"
+	);
+
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_run_agent_c_skip_simple() -> Result<()> {
+	common_test_run_agent_c_skip(None).await
+}
+
+#[tokio::test]
+async fn test_run_agent_c_skip_reason() -> Result<()> {
+	common_test_run_agent_c_skip(Some("Some reason")).await
+}
+
+async fn common_test_run_agent_c_skip(reason: Option<&str>) -> Result<()> {
+	let reason_str = reason.map(|v| format!("\"{v}\"")).unwrap_or_default();
+	// -- Setup & Fixtures
+	let client = get_genai_client()?;
+	let fx_items = &["one", "two", "three"];
+	let fx_agent = format!(
+		r#"
+# Data
+```rhai
+if item == "one" {{
+  return devai::action_skip({reason_str});
+}}
+```
+
+# Output 
+
+```rhai
+return "output for: " + item
+```
+	"#
+	);
+
+	let agent = load_inline_agent("./dummy/path.devai", fx_agent)?;
+
+	let hub_capture = HubCapture::new_and_start();
+
+	// -- Execute
+	let items = fx_items.iter().map(|v| Value::String(v.to_string())).collect();
+	let res = run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default(), true)
+		.await?
+		.ok_or("Should have output result")?;
+
+	// -- Check
+	let hub_content = hub_capture.into_content().await?;
+	// check the prints/hub:
+	assert!(
+		hub_content.contains("-! DevAI Skip item: item index: 0"),
+		"should have skipped item 0"
+	);
+	if let Some(reason) = reason.as_ref() {
+		assert!(hub_content.contains(reason), "should have reason in the skip message");
+	}
+
+	// check the result
+	assert_eq!(res.first().ok_or("Should have item 0")?, &Value::Null);
+	assert_eq!(
+		res.get(1)
+			.ok_or("Should have item 1")?
+			.as_str()
+			.ok_or("item 1 should be string")?,
+		"output for: two"
+	);
+	assert_eq!(
+		res.get(2)
+			.ok_or("Should have item 2")?
+			.as_str()
+			.ok_or("item 2 should be string")?,
+		"output for: three"
 	);
 
 	Ok(())

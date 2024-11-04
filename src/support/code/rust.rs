@@ -191,8 +191,6 @@ mod tests {
 		// -- Exec
 		let res = run_prune_to_declarations(data_script)?;
 
-		println!("->> \n{res}");
-
 		// -- Check
 		assert!(
 			res.contains("use some::module; // and comment "),
