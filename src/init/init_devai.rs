@@ -3,68 +3,73 @@ use crate::init::embedded_files::{
 	EmbeddedFile,
 };
 use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
+use crate::support::{current_dir, DirContext};
 use crate::Result;
-use simple_fs::{ensure_dir, list_files};
+use simple_fs::{ensure_dir, list_files, SPath};
 use std::collections::HashSet;
 use std::fs::write;
 use std::path::Path;
 
-const DEVAI_DIR: &str = ".devai";
-
-// -- Agents
-pub const DEVAI_AGENT_DEFAULT_DIR: &str = ".devai/default/command-agent";
-pub const DEVAI_AGENT_CUSTOM_DIR: &str = ".devai/custom/command-agent";
-
-// -- New Command Templates
-pub const DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR: &str = ".devai/default/new-template/command-agent";
-pub const DEVAI_NEW_CUSTOM_COMMAND_AGENT_DIR: &str = ".devai/custom/new-template/command-agent";
-
-// -- New Solo Templates
-pub const DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR: &str = ".devai/default/new-template/solo-agent";
-pub const DEVAI_NEW_CUSTOM_SOLO_AGENT_DIR: &str = ".devai/custom/new-template/solo-agent";
-
-// -- Config
-pub const DEVAI_CONFIG_FILE_PATH: &str = ".devai/config.toml";
+// -- Config Content
 const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_base/config.toml");
 
-// -- Doc
-pub const DEVAI_DOC_DIR: &str = ".devai/doc";
-pub const DEVAI_DOC_RHAI_PATH: &str = ".devai/doc/rhai.md";
+// -- Doc Content
 const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_base/doc/rhai.md");
 
-pub fn init_devai_files() -> Result<()> {
-	ensure_dir(DEVAI_DIR)?;
+pub fn init_devai_files() -> Result<DirContext> {
+	if let Some(dir_context) = DirContext::load()? {
+		Ok(dir_context)
+	} else {
+		create_or_refresh_devai_files(current_dir()?)?;
+		let dir_context = DirContext::load()?.ok_or("Could not create the devai dir")?;
+		Ok(dir_context)
+	}
+}
+
+/// Create or refresh missing file a devai dir
+fn create_or_refresh_devai_files(devai_parent_dir: SPath) -> Result<()> {
+	let devai_dir = DirContext::get_devai_dir(devai_parent_dir)?;
+
+	ensure_dir(&devai_dir)?;
 
 	// -- Create the default agent files
-	ensure_dir(DEVAI_AGENT_DEFAULT_DIR)?;
-	ensure_dir(DEVAI_AGENT_CUSTOM_DIR)?;
-	ensure_dir(DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR)?;
-	ensure_dir(DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR)?;
+	let devai_agent_default_dir = DirContext::get_command_agent_default_dir(&devai_dir)?;
+	ensure_dir(&devai_agent_default_dir)?;
+	ensure_dir(DirContext::get_command_agent_custom_dir(&devai_dir)?)?;
+	for dir in DirContext::get_new_template_command_dirs(&devai_dir)? {
+		ensure_dir(dir)?;
+	}
+	for dir in DirContext::get_new_template_solo_dirs(&devai_dir)? {
+		ensure_dir(dir)?;
+	}
 
 	// -- migrate_devai_0_1_0_if_needed
-	migrate_devai_0_1_0_if_needed()?;
+	migrate_devai_0_1_0_if_needed(&devai_dir)?;
 
 	// -- Create the default command agents if not present
-	update_devai_files(DEVAI_AGENT_DEFAULT_DIR, get_embedded_command_agent_files())?;
+	update_devai_files(devai_agent_default_dir, get_embedded_command_agent_files())?;
 
 	// -- Create the config file
-	let config_path = Path::new(DEVAI_CONFIG_FILE_PATH);
+	let config_path = DirContext::get_config_toml_path(&devai_dir)?;
 	if !config_path.exists() {
 		write(config_path, DEVAI_CONFIG_FILE_CONTENT)?;
 	}
 
 	// -- Create the new-template command default
 	update_devai_files(
-		DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR,
+		DirContext::get_new_template_command_default_dir(&devai_dir)?,
 		get_embedded_new_command_agent_files(),
 	)?;
 
 	// -- Create the new-template solo default
-	update_devai_files(DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR, get_embedded_new_solo_agent_files())?;
+	update_devai_files(
+		DirContext::get_new_template_solo_default_dir(&devai_dir)?,
+		get_embedded_new_solo_agent_files(),
+	)?;
 
 	// -- Create the doc
-	ensure_dir(DEVAI_DOC_DIR)?;
-	let rhai_doc_path = Path::new(DEVAI_DOC_RHAI_PATH);
+	ensure_dir(DirContext::get_doc_dir(&devai_dir)?)?;
+	let rhai_doc_path = DirContext::get_doc_rhai_path(&devai_dir)?;
 	if !rhai_doc_path.exists() {
 		write(rhai_doc_path, DEVAI_DOC_RHAI_CONTENT)?;
 	}
@@ -74,7 +79,8 @@ pub fn init_devai_files() -> Result<()> {
 
 // region:    --- Support
 
-fn update_devai_files(dir: &str, embedded_agent_file: &[&EmbeddedFile]) -> Result<()> {
+fn update_devai_files(dir: impl AsRef<Path>, embedded_agent_file: &[&EmbeddedFile]) -> Result<()> {
+	let dir = dir.as_ref();
 	let existing_files = list_files(dir, Some(&["*.devai"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.file_name()).collect();
 

@@ -1,35 +1,35 @@
-use crate::agent::get_solo_and_target_path;
+use crate::agent::Agent;
+use crate::ai::Literals;
 use crate::cli::{RunArgs, SoloArgs};
-use crate::{Error, Result};
+use crate::support::DirContext;
+use crate::Result;
 use simple_fs::SPath;
+use std::path::Path;
 
 // region:    --- RunCommandOptions
 
 #[derive(Debug)]
 pub struct RunCommandOptions {
-	cmd_agent: String,
 	on_file_globs: Option<Vec<String>>,
 
-	base_run_config: RunBaseOptions,
+	base_run_options: RunBaseOptions,
 }
 
+/// Getters
 impl RunCommandOptions {
-	pub fn cmd_agent(&self) -> &str {
-		&self.cmd_agent
-	}
-
 	pub fn on_file_globs(&self) -> Option<Vec<&str>> {
 		self.on_file_globs.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
 	}
 
 	pub fn base_run_config(&self) -> &RunBaseOptions {
-		&self.base_run_config
+		&self.base_run_options
 	}
 }
 
-impl From<RunArgs> for RunCommandOptions {
-	fn from(args: RunArgs) -> Self {
-		// -- When a simple name is provided
+/// Constructors
+impl RunCommandOptions {
+	pub fn new(args: RunArgs, dir_context: &DirContext, agent: &Agent) -> Result<Self> {
+		// -- Refine the globs
 		let on_file_globs = if let Some(on_files) = args.on_files {
 			let on_files_globs = on_files
 				.into_iter()
@@ -48,20 +48,25 @@ impl From<RunArgs> for RunCommandOptions {
 			None
 		};
 
+		// -- Parse dry_mode
 		let dry_mode = parse_dry_mode(args.dry_mode.as_deref());
 
-		let base_run_config = RunBaseOptions {
+		// -- Build the literal
+		let literals = build_literals(dir_context, agent)?;
+
+		// -- Build the base Options
+		let base_run_options = RunBaseOptions {
 			watch: args.watch,
 			verbose: args.verbose,
 			dry_mode,
 			open: args.open,
+			literals,
 		};
 
-		Self {
-			cmd_agent: args.cmd_agent_name,
+		Ok(Self {
 			on_file_globs,
-			base_run_config,
-		}
+			base_run_options,
+		})
 	}
 }
 
@@ -71,17 +76,12 @@ impl From<RunArgs> for RunCommandOptions {
 
 #[derive(Debug)]
 pub struct RunSoloOptions {
-	solo_path: SPath,
 	target_path: SPath,
 	base_run_config: RunBaseOptions,
 }
 
 /// Getters
 impl RunSoloOptions {
-	pub fn solo_path(&self) -> &SPath {
-		&self.solo_path
-	}
-
 	pub fn target_path(&self) -> &SPath {
 		&self.target_path
 	}
@@ -91,37 +91,36 @@ impl RunSoloOptions {
 	}
 }
 
+/// Constructors
 impl RunSoloOptions {
-	#[cfg(test)]
-	pub fn from_path(path: &str) -> Result<Self> {
-		let (solo_path, target_path) = get_solo_and_target_path(path)?;
-		Ok(Self {
-			solo_path,
-			target_path,
-			base_run_config: RunBaseOptions::default(),
-		})
-	}
-}
-
-impl TryFrom<SoloArgs> for RunSoloOptions {
-	type Error = Error;
-
-	fn try_from(args: SoloArgs) -> Result<Self> {
-		let (solo_path, target_path) = get_solo_and_target_path(args.path)?;
-
+	pub fn new(args: SoloArgs, dir_context: &DirContext, agent: &Agent, target_path: SPath) -> Result<Self> {
 		let dry_mode = parse_dry_mode(args.dry_mode.as_deref());
+
+		// -- Build the literal
+		let literals = build_literals(dir_context, agent)?;
 
 		let base_run_config = RunBaseOptions {
 			watch: args.watch,
 			verbose: args.verbose,
 			dry_mode,
 			open: args.open,
+			literals,
 		};
 
 		Ok(Self {
-			solo_path,
 			target_path,
 			base_run_config,
+		})
+	}
+}
+
+/// For testing only
+impl RunSoloOptions {
+	#[cfg(test)]
+	pub fn from_target_path(path: &str) -> Result<Self> {
+		Ok(Self {
+			target_path: SPath::new(path)?,
+			base_run_config: RunBaseOptions::default(),
 		})
 	}
 }
@@ -147,6 +146,7 @@ pub struct RunBaseOptions {
 	verbose: bool,
 	dry_mode: DryMode,
 	open: bool,
+	literals: Literals,
 }
 
 impl RunBaseOptions {
@@ -165,11 +165,39 @@ impl RunBaseOptions {
 	pub fn open(&self) -> bool {
 		self.open
 	}
+
+	pub fn literals_as_strs(&self) -> Vec<(&str, &str)> {
+		self.literals.as_strs()
+	}
 }
 
 // endregion: --- Common
 
-// region:    --- Section
+// region:    --- Support
+
+fn build_literals(dir_context: &DirContext, agent: &Agent) -> Result<Literals> {
+	let mut literals = Literals::default();
+
+	let agent_path = agent.file_path();
+	let agent_dir = Path::new(agent.file_path())
+		.parent()
+		.ok_or_else(|| format!("Agent with path '{}' does not have a parent path", agent.file_path()))?
+		.to_str()
+		.ok_or("File path is not utf8")?;
+
+	let devai_dir = dir_context.devai_dir();
+
+	literals.append("$DEVAI_AGENT_DIR", agent_dir);
+	literals.append("$DEVAI_AGENT_PATH", agent_path);
+	literals.append("$DEVAI_DIR", devai_dir.to_str());
+	// TOOD: Need to have a better strategy when parent is none
+	literals.append(
+		"$DEVAI_PARENT_DIR",
+		devai_dir.parent().as_ref().map(|p| p.to_str()).unwrap_or_else(|| ""),
+	);
+
+	Ok(literals)
+}
 
 fn parse_dry_mode(dry_mode: Option<&str>) -> DryMode {
 	match dry_mode {
@@ -179,4 +207,4 @@ fn parse_dry_mode(dry_mode: Option<&str>) -> DryMode {
 	}
 }
 
-// endregion: --- Section
+// endregion: --- Support

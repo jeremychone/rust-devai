@@ -1,19 +1,21 @@
 use crate::cli::NewArgs;
 use crate::exec::support::{first_file_from_dirs, open_vscode};
 use crate::hub::get_hub;
-use crate::init::{DEVAI_AGENT_CUSTOM_DIR, DEVAI_NEW_CUSTOM_COMMAND_AGENT_DIR, DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR};
+use crate::support::DirContext;
 use crate::Result;
-use std::path::Path;
 
 /// exec for the New command
-pub async fn exec_new(new_config: impl Into<NewConfig>) -> Result<()> {
+pub async fn exec_new(new_config: impl Into<NewConfig>, dir_context: DirContext) -> Result<()> {
 	let hub = get_hub();
 
 	let new_config = new_config.into();
 
 	// TODO: support --template template_name
+	let dirs = DirContext::get_new_template_command_dirs(dir_context.devai_dir())?;
+	let dirs = dirs.iter().map(|dir| dir.to_str()).collect::<Vec<_>>();
+
 	let template_file = first_file_from_dirs(
-		&[DEVAI_NEW_CUSTOM_COMMAND_AGENT_DIR, DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR],
+		&dirs,
 		"default.devai", // for now, just look for default.devai
 	)
 	.ok()
@@ -26,7 +28,7 @@ pub async fn exec_new(new_config: impl Into<NewConfig>) -> Result<()> {
 		format!("{}.devai", new_config.agent_path)
 	};
 
-	let dest_file = Path::new(DEVAI_AGENT_CUSTOM_DIR).join(file_path);
+	let dest_file = DirContext::get_command_agent_custom_dir(dir_context.devai_dir())?.join(file_path)?;
 
 	if !dest_file.exists() {
 		std::fs::copy(template_file.path(), &dest_file)?;
@@ -35,7 +37,7 @@ pub async fn exec_new(new_config: impl Into<NewConfig>) -> Result<()> {
 	else {
 		hub.publish(format!(
 			"-! Command agent file '{}' already exists.",
-			dest_file.to_string_lossy()
+			dest_file.path().to_string_lossy()
 		))
 		.await;
 	}

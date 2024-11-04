@@ -1,12 +1,20 @@
 use super::dynamic_helpers::{dynamic_to_value, value_to_scope};
 use super::engine::rhai_engine;
+use crate::support::replace_all;
 use crate::Result;
 use rhai::{Dynamic, Scope};
 use serde_json::Value;
 
-pub fn rhai_eval(script: &str, scope_value: Option<Value>) -> Result<Value> {
+pub fn rhai_eval(script: &str, scope_value: Option<Value>, replace: Option<&[(&str, &str)]>) -> Result<Value> {
 	// Initialize the Rhai engine
 	let engine = rhai_engine()?;
+
+	let script = if let Some(replace) = replace {
+		let (patterns, values): (Vec<&str>, Vec<&str>) = replace.iter().cloned().unzip();
+		replace_all(script, &patterns, &values)?
+	} else {
+		script.to_string()
+	};
 
 	// Create a scope for variables
 	let mut scope = if let Some(scope_value) = scope_value.as_ref() {
@@ -17,7 +25,7 @@ pub fn rhai_eval(script: &str, scope_value: Option<Value>) -> Result<Value> {
 
 	// Evaluate the script with the provided scope
 
-	let result = engine.eval_with_scope::<Dynamic>(&mut scope, script)?;
+	let result = engine.eval_with_scope::<Dynamic>(&mut scope, &script)?;
 
 	// Convert the result to a serde_json::Value
 	let result_json = dynamic_to_value(result)?;
@@ -44,7 +52,7 @@ mod tests {
     "#;
 
 		// -- Exec
-		let result = rhai_eval(script, None)?;
+		let result = rhai_eval(script, None, None)?;
 
 		// -- Check
 		if let Value::Array(values) = result {

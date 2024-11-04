@@ -1,5 +1,6 @@
 use crate::agent::Agent;
 
+/// Return the genai info of a particular agent.
 pub fn get_genai_info(agent: &Agent) -> String {
 	let mut genai_infos: Vec<String> = vec![];
 

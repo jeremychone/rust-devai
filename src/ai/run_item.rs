@@ -28,7 +28,11 @@ pub async fn run_agent_item(
 
 	// -- Execute data
 	let data = if let Some(data_script) = agent.data_script().as_ref() {
-		rhai_eval(data_script, Some(data_rhai_scope))?
+		rhai_eval(
+			data_script,
+			Some(data_rhai_scope),
+			Some(&run_base_options.literals_as_strs()),
+		)?
 	} else {
 		Value::Null
 	};
@@ -119,7 +123,11 @@ pub async fn run_agent_item(
 			"ai_output": ai_output,
 		});
 
-		rhai_eval(output_script, Some(scope_output))?
+		rhai_eval(
+			output_script,
+			Some(scope_output),
+			Some(&run_base_options.literals_as_strs()),
+		)?
 	} else {
 		ai_output
 	};

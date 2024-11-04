@@ -13,7 +13,7 @@
 use crate::agent::find_agent;
 use crate::ai::{get_genai_client, run_command_agent};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
-use crate::support::RunBaseOptions;
+use crate::support::{DirContext, RunBaseOptions};
 use crate::Error;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
@@ -42,7 +42,9 @@ pub fn rhai_module() -> Module {
 
 fn run_with_items(cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
 	let items = dynamics_to_values(items)?;
-	let agent = find_agent(cmd_agent)?;
+	// TODO: Might want to reuse the current one
+	let dir_context = DirContext::load()?.ok_or("Cannot load dir_context in devai::run")?;
+	let agent = find_agent(cmd_agent, &dir_context)?;
 	let client = get_genai_client()?;
 
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;

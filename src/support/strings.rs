@@ -1,5 +1,7 @@
 //! String utils
 
+use crate::{Error, Result};
+use aho_corasick::AhoCorasick;
 use std::borrow::Cow;
 
 /// unescape code (sometime chatgpt encode the < and such)
@@ -14,6 +16,16 @@ pub fn truncate_with_ellipsis(s: &str, max_len: usize) -> Cow<str> {
 	} else {
 		Cow::from(s)
 	}
+}
+
+pub fn replace_all(content: &str, patterns: &[&str], values: &[&str]) -> Result<String> {
+	let ac = AhoCorasick::new(patterns).map_err(|err| Error::cc("replace_all fail because patterns", err))?;
+
+	let res = ac.replace_all_bytes(content.as_bytes(), values);
+	let new_content =
+		String::from_utf8(res).map_err(|err| Error::cc("replace_all fail because result is not utf8", err))?;
+
+	Ok(new_content)
 }
 
 /// Make sure that the text end with one and only one single newline

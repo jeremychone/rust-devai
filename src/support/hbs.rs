@@ -48,7 +48,7 @@ The files are:
 		"#;
 
 		// -- Exec
-		let result_json = rhai_eval(script, None)?;
+		let result_json = rhai_eval(script, None, None)?;
 		// Execute the template
 		let data = HashMap::from([("data".to_string(), result_json)]);
 		let res = hbs_render(tmpl, &data)?;

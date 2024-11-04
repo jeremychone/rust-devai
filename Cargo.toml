@@ -34,7 +34,7 @@ handlebars = "6"
 # -- Cli
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 # -- Files
-simple-fs = { version = "0.1.6" }
+simple-fs = { version = "0.1.7" }
 # -- Web
 reqwest = {version = "0.12", features = ["json"]}
 # -- Others
@@ -43,5 +43,6 @@ strum = { version = "0.26", features = ["derive"] }
 keyring = {version = "3", features = ["apple-native"]}
 html-escape = "0.2"
 strsim = "0.11"
+aho-corasick = "1.1.3"
 
 

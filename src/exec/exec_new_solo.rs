@@ -2,25 +2,24 @@ use crate::agent::get_solo_and_target_path;
 use crate::cli::NewSoloArgs;
 use crate::exec::support::{first_file_from_dirs, open_vscode};
 use crate::hub::get_hub;
-use crate::init::{DEVAI_NEW_CUSTOM_SOLO_AGENT_DIR, DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR};
+use crate::support::DirContext;
 use crate::Result;
 use simple_fs::ensure_file_dir;
 use std::path::Path;
 
 /// exec for the New command
-pub async fn exec_new_solo(new_config: impl Into<NewSoloConfig>) -> Result<()> {
+pub async fn exec_new_solo(new_config: impl Into<NewSoloConfig>, dir_context: DirContext) -> Result<()> {
 	let hub = get_hub();
 
 	let new_config = new_config.into();
 
 	// TODO: support --template template_name
-	let template_file = first_file_from_dirs(
-		&[DEVAI_NEW_CUSTOM_SOLO_AGENT_DIR, DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR],
-		"default.devai", // for now, just look for default.devai
-	)
-	.ok()
-	.flatten()
-	.ok_or("solo agent template 'default.devai' not found")?;
+	let dirs = DirContext::get_new_template_solo_dirs(dir_context.devai_dir())?;
+	let dirs = dirs.iter().map(|dir| dir.to_str()).collect::<Vec<_>>();
+	let template_file = first_file_from_dirs(&dirs, "default.devai")
+		.ok()
+		.flatten()
+		.ok_or("solo agent template 'default.devai' not found")?;
 
 	let solo_file_path = if new_config.path.ends_with(".devai") {
 		new_config.path

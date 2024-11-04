@@ -40,7 +40,11 @@ pub async fn run_command_agent(
 			"items": items.clone(), // clone because item is reused later
 		});
 
-		let before_all_res = rhai_eval(before_all_script, Some(scope_item))?;
+		let before_all_res = rhai_eval(
+			before_all_script,
+			Some(scope_item),
+			Some(&run_base_options.literals_as_strs()),
+		)?;
 
 		match DevaiCustom::from_value(before_all_res)? {
 			FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
@@ -155,7 +159,11 @@ pub async fn run_command_agent(
 			"outputs": outputs_value, // Will be Value::Null if outputs were not collected
 			"before_all": before_all,
 		});
-		let _after_all_res = rhai_eval(after_all_script, Some(scope_item))?;
+		let _after_all_res = rhai_eval(
+			after_all_script,
+			Some(scope_item),
+			Some(&run_base_options.literals_as_strs()),
+		)?;
 	}
 
 	Ok(to_return)

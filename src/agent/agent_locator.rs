@@ -1,15 +1,15 @@
 use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentDoc};
-use crate::init::{DEVAI_AGENT_CUSTOM_DIR, DEVAI_AGENT_DEFAULT_DIR, DEVAI_CONFIG_FILE_PATH};
 use crate::support::tomls::parse_toml;
+use crate::support::DirContext;
 use crate::{Error, Result};
 use simple_fs::{list_files, read_to_string, SFile, SPath};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use strsim::levenshtein;
 
-pub fn find_agent(agent_path: &str) -> Result<Agent> {
-	let base_config = load_base_agent_config()?;
+pub fn find_agent(agent_path: &str, dir_context: &DirContext) -> Result<Agent> {
+	let base_config = load_base_agent_config(dir_context)?;
 
 	// -- First see if it is a direct path (starts with `./` or `/`)
 	if agent_path.starts_with("./") || agent_path.starts_with("/") {
@@ -19,7 +19,8 @@ pub fn find_agent(agent_path: &str) -> Result<Agent> {
 	}
 
 	// -- Otherwise, look in the command-agent dirs
-	let dirs = get_agent_dirs();
+	let dirs = DirContext::get_command_agent_dirs(dir_context.devai_dir())?;
+	let dirs = dirs.iter().map(|dir| dir.path()).collect::<Vec<_>>();
 
 	// Attempt to find the agent in the specified directories
 	if let Some(agent_doc) = find_agent_doc_in_dir(agent_path, &dirs)? {
@@ -39,7 +40,7 @@ pub fn find_agent(agent_path: &str) -> Result<Agent> {
 				.join("\n")
 		)
 	} else {
-		let agent_files = list_all_agent_files()?;
+		let agent_files = list_all_agent_files(dir_context)?;
 		format!(
 			"Agent '{}' not found.\nHere is the list of available command agents:\n{}",
 			agent_path,
@@ -86,8 +87,8 @@ pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPat
 
 /// Lists all agent files following the precedence rules (customs first, defaults second).
 /// Agent files already present in a higher priority directory are not included.
-pub fn list_all_agent_files() -> Result<Vec<SFile>> {
-	let dirs = get_agent_dirs();
+pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
+	let dirs = DirContext::get_command_agent_dirs(dir_context.devai_dir())?;
 
 	let mut sfiles = Vec::new();
 
@@ -120,11 +121,6 @@ pub fn agent_sfile_as_bullet(sfile: &SFile) -> String {
 }
 
 // region:    --- Support
-
-fn get_agent_dirs() -> Vec<&'static Path> {
-	vec![Path::new(DEVAI_AGENT_CUSTOM_DIR), Path::new(DEVAI_AGENT_DEFAULT_DIR)]
-}
-
 /// Finds the first matching AgentDoc in the provided directories.
 fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>> {
 	for dir in dirs {
@@ -188,8 +184,8 @@ fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
 }
 
 /// Loads the base agent configuration.
-pub fn load_base_agent_config() -> Result<AgentConfig> {
-	let config_path = Path::new(DEVAI_CONFIG_FILE_PATH);
+pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentConfig> {
+	let config_path = DirContext::get_config_toml_path(dir_context.devai_dir())?;
 	let config_content = read_to_string(config_path)?;
 	let config_value = parse_toml(&config_content)?;
 	let config = AgentConfig::from_value(config_value)?;
