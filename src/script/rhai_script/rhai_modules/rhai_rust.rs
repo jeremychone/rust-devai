@@ -8,7 +8,7 @@
 //! ### Functions
 //! * `rust::prune_to_declarations(code: string) -> string`
 
-use crate::support::code::rust_trim_to_declaration;
+use crate::support::code::run_prune_to_declarations;
 use rhai::plugin::RhaiResult;
 use rhai::{EvalAltResult, FuncRegistration, Module};
 
@@ -39,7 +39,7 @@ pub fn rhai_module() -> Module {
 /// // result will be: "fn add(a: i32, b: i32) -> i32 { ... }"
 /// ```
 fn prune_to_declarations(code: &str) -> RhaiResult {
-	match rust_trim_to_declaration(code) {
+	match run_prune_to_declarations(code) {
 		Ok(result) => Ok(result.into()),
 		Err(err) => Err(Box::new(EvalAltResult::ErrorRuntime(
 			format!("Failed to prune Rust code: {}", err).into(),
