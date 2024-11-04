@@ -53,7 +53,7 @@ let files = file::list("src/**/*.rs");
 
 The `md` module exposes functions that process markdown content. Useful for processing LLM responses.
 
-### extract_blocks(md_content: string) -> Vec<MdBlock>
+### md::extract_blocks(md_content: string) -> Vec<MdBlock>
 
 Parses the markdown provided by `md_content` and extracts each code block, returning a list of blocks.
 
@@ -90,7 +90,6 @@ Attempts to extract the content from the first triple backticks until the last t
 let content = md::outer_block_content_or_raw("Some text\n```python\ndef hello(): pass\n```");
 // content = "python\ndef hello(): pass"
 ```
-
 
 ## Module: text
 
@@ -165,7 +164,6 @@ let result = text::remove_last_lines("Line1\nLine2\nLine3\nLine4", 2);
 // result = "Line1\nLine2"
 ```
 
-
 ## Module: git
 
 The `git` module exposes functions that call `git` commands.
@@ -183,7 +181,6 @@ let output = git::restore("./path/to/file.js");
 
 *Note:* If `git restore` outputs to stderr, it will be published to the hub and an error will be returned.
 
-
 ## Module: devai
 
 The `devai` module provides functions for interacting with the devai system, such as skipping actions.
@@ -200,7 +197,7 @@ if item.name == "mod.rs" {
 }
 // {
 //   "_devai_": {
-//     "action": "skip"
+//     "kind": "ActionSkip"
 //   }
 // }
 ```
@@ -217,7 +214,7 @@ if item.name == "mod.rs" {
 }
 // {
 //   "_devai_": {
-//     "action": "skip",
+//     "kind": "ActionSkip",
 //     "data": {
 //       "reason": "mod.rs does not need to be processed by this agent"
 //     }
@@ -225,3 +222,107 @@ if item.name == "mod.rs" {
 // }
 ```
 
+### devai::run(cmd_agent: string, items: Vec<Dynamic>) -> Dynamic
+
+Runs a command agent with the specified items and returns the result.
+
+**Example:**
+
+```rhai
+let result = devai::run("./path/to/agent.md", ["item1", "item2"]);
+// result = ["output1", "output2"]
+```
+
+## Module: web
+
+The `web` module exposes functions used to perform web requests.
+
+### web::get(url: string) -> string
+
+Fetches the content of the specified URL and returns it as a string.
+
+**Example:**
+
+```rhai
+let content = web::get("https://example.com");
+// content = "<html>...</html>"
+```
+
+## Module: path
+
+The `path` module exposes functions used to interact with file paths.
+
+### path::exists(path: string) -> bool
+
+Checks if the specified path exists.
+
+**Example:**
+
+```rhai
+let exists = path::exists("./src/main.rs");
+// exists = true
+```
+
+### path::is_file(path: string) -> bool
+
+Checks if the specified path is a file.
+
+**Example:**
+
+```rhai
+let is_file = path::is_file("./src/main.rs");
+// is_file = true
+```
+
+### path::is_dir(path: string) -> bool
+
+Checks if the specified path is a directory.
+
+**Example:**
+
+```rhai
+let is_dir = path::is_dir("./src");
+// is_dir = true
+```
+
+### path::parent(path: string) -> string | void
+
+Returns the parent directory of the specified path, or null/void if there is no parent.
+
+**Example:**
+
+```rhai
+let parent = path::parent("./src/main.rs");
+// parent = "./src"
+```
+
+## Module: html
+
+The `html` module exposes functions used to process HTML content.
+
+### html::prune_to_content(html_content: string) -> string
+
+Strips non-content elements from the provided HTML content and returns the cleaned HTML as a string.
+
+**Example:**
+
+```rhai
+let cleaned_html = html::prune_to_content("<html><body><script>var a = 1;</script><p>Hello</p></body></html>");
+// cleaned_html = "<p>Hello</p>"
+```
+
+## Module: rust
+
+The `rust` module exposes functions used to process Rust code.
+
+### rust::prune_to_declarations(code: string) -> string
+
+Trims Rust code to keep only function declarations by replacing function bodies with `{ ... }`. Preserves comments, whitespace, and non-function code structures.
+
+**Example:**
+
+```rhai
+let code = "fn add(a: i32, b: i32) -> i32 { a + b }";
+let result = rust::prune_to_declarations(code);
+// result = "fn add(a: i32, b: i32) -> i32 { ... }"
+```

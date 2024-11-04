@@ -1,7 +1,8 @@
 [genai]
 # Required (any model supported by the Rust genai crate)
-# e.g., "gpt-4o", "gpt-4o-2024-08-06", "gpt-4o-mini", "claude-3-5-sonnet-20240620"
-#       Local Ollama: "llama3.1:70b" (or any locally installed Ollama)
+# e.g.,    OpenAI: "gpt-4o", "gpt-4o-2024-08-06", "gpt-4o-mini", 
+#       Anthropic: "claude-3-5-sonnet-20241022"
+#          Ollama: "llama3.1:70b" (or any locally installed Ollama)
 model = "gpt-4o-mini"
 
 # Temperature (by default unset)
@@ -9,4 +10,4 @@ model = "gpt-4o-mini"
 
 [runtime]
 # Default to 1 if absent
-items_concurrency = 1 
+items_concurrency = 1
