@@ -1,12 +1,11 @@
 // region:    --- Modules
 
 mod agent;
-mod ai;
 mod cli;
 mod error;
-mod exec;
 mod hub;
 mod init;
+mod run;
 mod script;
 mod support;
 mod tui;
@@ -54,30 +53,30 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 
 		// Create a new agent
 		cli::Commands::New(new_args) => {
-			exec::exec_new(new_args, init_devai_files()?).await?;
+			cli::exec_new(new_args, init_devai_files()?).await?;
 		}
 
 		// Run an agent command
 		cli::Commands::Run(run_args) => {
 			// Note: Every run will initialize the files
 			// Execute the command
-			exec::exec_run(run_args, init_devai_files()?).await?;
+			cli::exec_run(run_args, init_devai_files()?).await?;
 		}
 
 		// Create a new agent
 		cli::Commands::NewSolo(new_args) => {
-			exec::exec_new_solo(new_args, init_devai_files()?).await?;
+			cli::exec_new_solo(new_args, init_devai_files()?).await?;
 		}
 
 		// Run a solo agent
 		cli::Commands::Solo(solo_args) => {
 			// Execute the command
-			exec::exec_solo(solo_args, init_devai_files()?).await?;
+			cli::exec_solo(solo_args, init_devai_files()?).await?;
 		}
 
 		// List the available agents
 		cli::Commands::List => {
-			exec::exec_list(init_devai_files()?).await?;
+			cli::exec_list(init_devai_files()?).await?;
 		}
 	}
 

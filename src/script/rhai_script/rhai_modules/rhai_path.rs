@@ -108,8 +108,8 @@ mod tests {
 		let paths = &[
 			//
 			"./",
-			"./src/exec",
-			"./src/exec/",
+			"./src/run",
+			"./src/run/",
 			"./src/main.rs",
 			"src/main.rs",
 			"Cargo.toml",
@@ -200,7 +200,7 @@ mod tests {
 			//
 			"./src",
 			"./",
-			"./src/exec/",
+			"./src/run/",
 		];
 
 		// -- Exec & Check

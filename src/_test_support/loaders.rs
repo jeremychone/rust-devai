@@ -1,7 +1,7 @@
 use crate::agent::{get_solo_and_target_path, Agent, AgentDoc};
 use crate::Result;
 use crate::_test_support::default_agent_config_for_test;
-use crate::support::RunSoloOptions;
+use crate::run::RunSoloOptions;
 use std::path::Path;
 
 /// Load a Agent form a content.

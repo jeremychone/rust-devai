@@ -3,7 +3,8 @@ use crate::init::embedded_files::{
 	EmbeddedFile,
 };
 use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
-use crate::support::{current_dir, DirContext};
+use crate::run::DirContext;
+use crate::support::files::current_dir;
 use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
 use std::collections::HashSet;

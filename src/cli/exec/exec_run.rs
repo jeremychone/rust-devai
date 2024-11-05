@@ -1,10 +1,10 @@
+use super::support::open_vscode;
 use crate::agent::{find_agent, Agent};
-use crate::ai::{get_genai_client, run_command_agent};
 use crate::cli::RunArgs;
-use crate::exec::support::open_vscode;
 use crate::hub::get_hub; // Importing get_hub
+use crate::run::{get_genai_client, run_command_agent};
+use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
-use crate::support::{DirContext, RunCommandOptions};
 use crate::types::FileRef;
 use crate::Result;
 use genai::Client;

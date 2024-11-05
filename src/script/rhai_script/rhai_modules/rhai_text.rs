@@ -13,7 +13,7 @@
 //! * `text::remove_last_line(content: string) -> string`
 //! * `text::remove_last_lines(content: string, n: int) -> string`
 
-use crate::support::decode_html_entities;
+use crate::support::html::decode_html_entities;
 use rhai::plugin::RhaiResult;
 use rhai::{FuncRegistration, Module};
 

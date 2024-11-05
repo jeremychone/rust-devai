@@ -1,8 +1,9 @@
+use super::support::open_vscode;
 use crate::agent::get_solo_and_target_path;
 use crate::cli::NewSoloArgs;
-use crate::exec::support::{first_file_from_dirs, open_vscode};
 use crate::hub::get_hub;
-use crate::support::DirContext;
+use crate::run::DirContext;
+use crate::support::files::first_file_from_dirs;
 use crate::Result;
 use simple_fs::ensure_file_dir;
 use std::path::Path;

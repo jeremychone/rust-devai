@@ -1,6 +1,6 @@
 use super::dynamic_helpers::{dynamic_to_value, value_to_scope};
 use super::engine::rhai_engine;
-use crate::support::replace_all;
+use crate::support::strings::replace_all;
 use crate::Result;
 use rhai::{Dynamic, Scope};
 use serde_json::Value;

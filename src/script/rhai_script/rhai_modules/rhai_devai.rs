@@ -11,9 +11,9 @@
 //! * `devai::action_skip(reason: string) -> SkipActionDict`
 
 use crate::agent::find_agent;
-use crate::ai::{get_genai_client, run_command_agent};
+use crate::run::{get_genai_client, run_command_agent};
+use crate::run::{DirContext, RunBaseOptions};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
-use crate::support::{DirContext, RunBaseOptions};
 use crate::Error;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};

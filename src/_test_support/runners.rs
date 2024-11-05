@@ -1,7 +1,7 @@
-use crate::ai::{get_genai_client, run_command_agent_item_for_test};
+use crate::run::{get_genai_client, run_command_agent_item_for_test};
 use crate::Result;
 use crate::_test_support::load_reflective_agent;
-use crate::support::RunBaseOptions;
+use crate::run::RunBaseOptions;
 use serde_json::Value;
 
 /// A reflective agent just return the value of the data rhai section.

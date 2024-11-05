@@ -2,7 +2,7 @@ type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tes
 
 use super::*;
 use crate::_test_support::load_test_solo_agent_and_solo_config;
-use crate::ai::get_genai_client;
+use crate::run::get_genai_client;
 use simple_fs::read_to_string;
 
 #[tokio::test]

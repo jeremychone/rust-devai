@@ -4,11 +4,6 @@ use crate::{Error, Result};
 use aho_corasick::AhoCorasick;
 use std::borrow::Cow;
 
-/// unescape code (sometime chatgpt encode the < and such)
-pub fn decode_html_entities(content: &str) -> String {
-	html_escape::decode_html_entities(&content).to_string()
-}
-
 pub fn truncate_with_ellipsis(s: &str, max_len: usize) -> Cow<str> {
 	if s.len() > max_len {
 		let truncated = &s[..max_len];

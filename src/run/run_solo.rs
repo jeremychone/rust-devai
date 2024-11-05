@@ -1,8 +1,8 @@
 use crate::agent::Agent;
-use crate::ai::run_item::run_agent_item;
-use crate::ai::support::get_genai_info;
 use crate::hub::get_hub;
-use crate::support::RunSoloOptions;
+use crate::run::run_item::run_agent_item;
+use crate::run::support::get_genai_info;
+use crate::run::RunSoloOptions;
 use crate::types::FileRef;
 use crate::Result;
 use genai::Client;

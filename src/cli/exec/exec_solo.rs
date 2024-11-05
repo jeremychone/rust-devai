@@ -1,9 +1,9 @@
+use super::support::open_vscode;
 use crate::agent::{get_solo_and_target_path, load_base_agent_config, Agent, AgentDoc};
-use crate::ai::{get_genai_client, run_solo_agent};
 use crate::cli::SoloArgs;
-use crate::exec::support::open_vscode;
 use crate::hub::get_hub;
-use crate::support::{DirContext, RunSoloOptions};
+use crate::run::{get_genai_client, run_solo_agent};
+use crate::run::{DirContext, RunSoloOptions};
 use crate::Result;
 use simple_fs::{watch, SEventKind, SFile};
 use std::path::Path;

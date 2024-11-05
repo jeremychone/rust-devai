@@ -6,6 +6,11 @@ use html5ever::serialize::SerializeOpts;
 use html5ever::tendril::TendrilSink;
 use markup5ever_rcdom::{Handle, NodeData, RcDom, SerializableHandle};
 
+/// unescape code (sometime chatgpt encode the < and such)
+pub fn decode_html_entities(content: &str) -> String {
+	html_escape::decode_html_entities(&content).to_string()
+}
+
 /// Strips non-content elements from the provided HTML content and returns the cleaned HTML as a string.
 ///
 /// This function removes:
