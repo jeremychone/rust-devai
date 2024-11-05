@@ -89,7 +89,6 @@ pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPat
 /// Agent files already present in a higher priority directory are not included.
 pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
 	let dirs = DirContext::get_command_agent_dirs(dir_context.devai_dir())?;
-
 	let mut sfiles = Vec::new();
 
 	let mut file_stems: HashSet<String> = HashSet::new();

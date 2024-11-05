@@ -18,25 +18,25 @@ const DEVAI_AGENT_CUSTOM_DIR: &str = "custom/command-agent";
 const DEVAI_COMMAND_AGENT_DIRS: &[&str] = &[
 	// by priority
 	DEVAI_AGENT_CUSTOM_DIR,
-	DEVAI_AGENT_CUSTOM_DIR,
+	DEVAI_AGENT_DEFAULT_DIR,
 ];
 
 // -- New Command Templates
-const DEVAI_NEW_CUSTOM_COMMAND_AGENT_DIR: &str = "custom/new-template/command-agent";
-const DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR: &str = "default/new-template/command-agent";
+const DEVAI_NEW_CUSTOM_COMMAND_DIR: &str = "custom/new-template/command-agent";
+const DEVAI_NEW_DEFAULT_COMMAND_DIR: &str = "default/new-template/command-agent";
 const DEVAI_NEW_COMMAND_DIRS: &[&str] = &[
 	// by priority
-	DEVAI_NEW_CUSTOM_COMMAND_AGENT_DIR,
-	DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR,
+	DEVAI_NEW_CUSTOM_COMMAND_DIR,
+	DEVAI_NEW_DEFAULT_COMMAND_DIR,
 ];
 
 // -- New Solo Templates
-const DEVAI_NEW_CUSTOM_SOLO_AGENT_DIR: &str = "custom/new-template/solo-agent";
-const DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR: &str = "default/new-template/solo-agent";
+const DEVAI_NEW_CUSTOM_SOLO_DIR: &str = "custom/new-template/solo-agent";
+const DEVAI_NEW_DEFAULT_SOLO_DIR: &str = "default/new-template/solo-agent";
 const DEVAI_NEW_SOLO_DIRS: &[&str] = &[
 	// by priority
-	DEVAI_NEW_CUSTOM_SOLO_AGENT_DIR,
-	DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR,
+	DEVAI_NEW_CUSTOM_SOLO_DIR,
+	DEVAI_NEW_DEFAULT_SOLO_DIR,
 ];
 
 // -- Doc
@@ -117,7 +117,7 @@ impl DirContext {
 	}
 
 	pub fn get_new_template_command_default_dir(devai_dir: impl AsRef<Path>) -> Result<SPath> {
-		let dir = devai_dir.as_ref().join(DEVAI_NEW_DEFAULT_COMMAND_AGENT_DIR);
+		let dir = devai_dir.as_ref().join(DEVAI_NEW_DEFAULT_COMMAND_DIR);
 		let dir = SPath::new(dir)?;
 		Ok(dir)
 	}
@@ -133,7 +133,7 @@ impl DirContext {
 	}
 
 	pub fn get_new_template_solo_default_dir(devai_dir: impl AsRef<Path>) -> Result<SPath> {
-		let dir = devai_dir.as_ref().join(DEVAI_NEW_DEFAULT_SOLO_AGENT_DIR);
+		let dir = devai_dir.as_ref().join(DEVAI_NEW_DEFAULT_SOLO_DIR);
 		let dir = SPath::new(dir)?;
 		Ok(dir)
 	}
