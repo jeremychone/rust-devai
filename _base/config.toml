@@ -1,6 +1,6 @@
 [genai]
 # Required (any model supported by the Rust genai crate)
-# e.g.,    OpenAI: "gpt-4o", "gpt-4o-2024-08-06", "gpt-4o-mini", 
+# e.g.,    OpenAI: "gpt-4o-mini", "gpt-4o", "o1-mini", "o1-preview"
 #       Anthropic: "claude-3-5-sonnet-20241022"
 #          Ollama: "llama3.1:70b" (or any locally installed Ollama)
 model = "gpt-4o-mini"
