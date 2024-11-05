@@ -17,17 +17,19 @@ const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_base/config.toml");
 const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_base/doc/rhai.md");
 
 pub fn init_devai_files() -> Result<DirContext> {
+	// TODO: Add more logic to tell the user what has been created, where ...
 	if let Some(dir_context) = DirContext::load()? {
+		create_or_refresh_devai_files(dir_context.devai_parent_dir())?;
 		Ok(dir_context)
 	} else {
-		create_or_refresh_devai_files(current_dir()?)?;
+		create_or_refresh_devai_files(&current_dir()?)?;
 		let dir_context = DirContext::load()?.ok_or("Could not create the devai dir")?;
 		Ok(dir_context)
 	}
 }
 
 /// Create or refresh missing file a devai dir
-fn create_or_refresh_devai_files(devai_parent_dir: SPath) -> Result<()> {
+fn create_or_refresh_devai_files(devai_parent_dir: &SPath) -> Result<()> {
 	let devai_dir = DirContext::get_devai_dir(devai_parent_dir)?;
 
 	ensure_dir(&devai_dir)?;
