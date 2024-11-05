@@ -15,7 +15,7 @@ pub async fn exec_new_solo(new_config: impl Into<NewSoloConfig>, dir_context: Di
 	let new_config = new_config.into();
 
 	// TODO: support --template template_name
-	let dirs = DirContext::get_new_template_solo_dirs(dir_context.devai_dir())?;
+	let dirs = dir_context.devai_dir().get_new_template_solo_dirs()?;
 	let dirs = dirs.iter().map(|dir| dir.to_str()).collect::<Vec<_>>();
 	let template_file = first_file_from_dirs(&dirs, "default.devai")
 		.ok()

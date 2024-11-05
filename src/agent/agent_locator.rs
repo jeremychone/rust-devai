@@ -19,7 +19,7 @@ pub fn find_agent(agent_path: &str, dir_context: &DirContext) -> Result<Agent> {
 	}
 
 	// -- Otherwise, look in the command-agent dirs
-	let dirs = DirContext::get_command_agent_dirs(dir_context.devai_dir())?;
+	let dirs = dir_context.devai_dir().get_command_agent_dirs()?;
 	let dirs = dirs.iter().map(|dir| dir.path()).collect::<Vec<_>>();
 
 	// Attempt to find the agent in the specified directories
@@ -88,7 +88,7 @@ pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPat
 /// Lists all agent files following the precedence rules (customs first, defaults second).
 /// Agent files already present in a higher priority directory are not included.
 pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
-	let dirs = DirContext::get_command_agent_dirs(dir_context.devai_dir())?;
+	let dirs = dir_context.devai_dir().get_command_agent_dirs()?;
 	let mut sfiles = Vec::new();
 
 	let mut file_stems: HashSet<String> = HashSet::new();
@@ -184,7 +184,7 @@ fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
 
 /// Loads the base agent configuration.
 pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentConfig> {
-	let config_path = DirContext::get_config_toml_path(dir_context.devai_dir())?;
+	let config_path = dir_context.devai_dir().get_config_toml_path()?;
 	let config_content = read_to_string(config_path)?;
 	let config_value = parse_toml(&config_content)?;
 	let config = AgentConfig::from_value(config_value)?;

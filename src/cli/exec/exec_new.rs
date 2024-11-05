@@ -8,11 +8,12 @@ use crate::Result;
 /// exec for the New command
 pub async fn exec_new(new_config: impl Into<NewConfig>, dir_context: DirContext) -> Result<()> {
 	let hub = get_hub();
+	let devai_dir = dir_context.devai_dir();
 
 	let new_config = new_config.into();
 
 	// TODO: support --template template_name
-	let dirs = DirContext::get_new_template_command_dirs(dir_context.devai_dir())?;
+	let dirs = devai_dir.get_new_template_command_dirs()?;
 	let dirs = dirs.iter().map(|dir| dir.to_str()).collect::<Vec<_>>();
 
 	let template_file = first_file_from_dirs(
@@ -29,7 +30,7 @@ pub async fn exec_new(new_config: impl Into<NewConfig>, dir_context: DirContext)
 		format!("{}.devai", new_config.agent_path)
 	};
 
-	let dest_file = DirContext::get_command_agent_custom_dir(dir_context.devai_dir())?.join(file_path)?;
+	let dest_file = devai_dir.get_command_agent_custom_dir()?.join(file_path)?;
 
 	if !dest_file.exists() {
 		std::fs::copy(template_file.path(), &dest_file)?;

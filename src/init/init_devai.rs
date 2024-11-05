@@ -3,7 +3,7 @@ use crate::init::embedded_files::{
 	EmbeddedFile,
 };
 use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
-use crate::run::DirContext;
+use crate::run::{DevaiDir, DirContext};
 use crate::support::files::current_dir;
 use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
@@ -31,48 +31,51 @@ pub fn init_devai_files() -> Result<DirContext> {
 
 /// Create or refresh missing file a devai dir
 fn create_or_refresh_devai_files(devai_parent_dir: &SPath) -> Result<()> {
-	let devai_dir = DirContext::get_devai_dir(devai_parent_dir)?;
+	let devai_dir = &DevaiDir::from_parent_dir(devai_parent_dir)?;
 
-	ensure_dir(&devai_dir)?;
+	ensure_dir(devai_dir)?;
 
 	// -- Create the default agent files
-	let devai_agent_default_dir = DirContext::get_command_agent_default_dir(&devai_dir)?;
-	ensure_dir(&devai_agent_default_dir)?;
-	ensure_dir(DirContext::get_command_agent_custom_dir(&devai_dir)?)?;
-	for dir in DirContext::get_new_template_command_dirs(&devai_dir)? {
+	let devai_agent_default_dir = devai_dir.get_command_agent_default_dir()?;
+	ensure_dir(devai_agent_default_dir)?;
+	ensure_dir(devai_dir.get_command_agent_custom_dir()?)?;
+	for dir in devai_dir.get_new_template_command_dirs()? {
 		ensure_dir(dir)?;
 	}
-	for dir in DirContext::get_new_template_solo_dirs(&devai_dir)? {
+	for dir in devai_dir.get_new_template_solo_dirs()? {
 		ensure_dir(dir)?;
 	}
 
 	// -- migrate_devai_0_1_0_if_needed
-	migrate_devai_0_1_0_if_needed(&devai_dir)?;
+	migrate_devai_0_1_0_if_needed(devai_dir)?;
 
 	// -- Create the default command agents if not present
-	update_devai_files(devai_agent_default_dir, get_embedded_command_agent_files())?;
+	update_devai_files(
+		devai_dir.get_command_agent_default_dir()?,
+		get_embedded_command_agent_files(),
+	)?;
 
 	// -- Create the config file
-	let config_path = DirContext::get_config_toml_path(&devai_dir)?;
+	let config_path = devai_dir.get_config_toml_path()?;
 	if !config_path.exists() {
 		write(config_path, DEVAI_CONFIG_FILE_CONTENT)?;
 	}
 
 	// -- Create the new-template command default
 	update_devai_files(
-		DirContext::get_new_template_command_default_dir(&devai_dir)?,
+		devai_dir.get_new_template_command_default_dir()?,
 		get_embedded_new_command_agent_files(),
 	)?;
 
 	// -- Create the new-template solo default
 	update_devai_files(
-		DirContext::get_new_template_solo_default_dir(&devai_dir)?,
+		devai_dir.get_new_template_solo_default_dir()?,
 		get_embedded_new_solo_agent_files(),
 	)?;
 
 	// -- Create the doc
-	ensure_dir(DirContext::get_doc_dir(&devai_dir)?)?;
-	let rhai_doc_path = DirContext::get_doc_rhai_path(&devai_dir)?;
+	ensure_dir(devai_dir.get_doc_dir()?)?;
+	let rhai_doc_path = devai_dir.get_doc_rhai_path()?;
 	if !rhai_doc_path.exists() {
 		write(rhai_doc_path, DEVAI_DOC_RHAI_CONTENT)?;
 	}

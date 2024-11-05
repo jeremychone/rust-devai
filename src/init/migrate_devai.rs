@@ -1,4 +1,4 @@
-use crate::run::DirContext;
+use crate::run::DevaiDir;
 use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
 use std::fs;
@@ -9,14 +9,14 @@ pub const DEVAI_0_1_0_AGENT_CUSTOMS_DIR: &str = ".devai/customs";
 
 pub const DEVAI_0_1_0_DEPRECATED_DIR: &str = ".devai/_deprecated_v0_1_0";
 
-pub fn migrate_devai_0_1_0_if_needed(devai_dir: &SPath) -> Result<bool> {
+pub fn migrate_devai_0_1_0_if_needed(devai_dir: &DevaiDir) -> Result<bool> {
 	// -- migrate the default command agents
-	let agent_default_dir = DirContext::get_command_agent_default_dir(devai_dir)?;
+	let agent_default_dir = devai_dir.get_command_agent_default_dir()?;
 	let defaults_migrated = migrate_agent_dir(DEVAI_0_1_0_AGENT_DEFAULTS_DIR, agent_default_dir)?;
 	archive_agent_dir(DEVAI_0_1_0_AGENT_DEFAULTS_DIR)?;
 
 	// -- migrate the custom command agents
-	let agent_custom_dir = DirContext::get_command_agent_custom_dir(devai_dir)?;
+	let agent_custom_dir = devai_dir.get_command_agent_custom_dir()?;
 	let customs_migrated = migrate_agent_dir(DEVAI_0_1_0_AGENT_CUSTOMS_DIR, agent_custom_dir)?;
 	archive_agent_dir(DEVAI_0_1_0_AGENT_CUSTOMS_DIR)?;
 
