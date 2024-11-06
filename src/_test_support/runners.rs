@@ -1,4 +1,4 @@
-use crate::run::{get_genai_client, run_command_agent_item_for_test};
+use crate::run::{get_genai_client, run_command_agent_item_for_test, Runtime};
 use crate::Result;
 use crate::_test_support::load_reflective_agent;
 use crate::run::RunBaseOptions;
@@ -9,10 +9,10 @@ use serde_json::Value;
 ///
 /// Note: This will run a
 pub async fn run_reflective_agent(data_rhai_code: &str, item: Option<Value>) -> Result<Value> {
-	let client = get_genai_client()?;
-	let agent = load_reflective_agent(data_rhai_code)?;
+	let runtime = Runtime::new_for_test()?;
 
+	let agent = load_reflective_agent(data_rhai_code)?;
 	let item = if let Some(item) = item { item } else { Value::Null };
 
-	run_command_agent_item_for_test(0, &client, &agent, Value::Null, item, &RunBaseOptions::default()).await
+	run_command_agent_item_for_test(0, &runtime, &agent, Value::Null, item, &RunBaseOptions::default()).await
 }

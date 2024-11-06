@@ -56,7 +56,7 @@ pub enum Error {
 	#[from]
 	Custom(String),
 
-	#[display("Erro: {_0}  Cause: {_1}")]
+	#[display("Error: {_0}  Cause: {_1}")]
 	CustomAndCause(String, String),
 }
 

@@ -66,7 +66,7 @@ pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPat
 	// returns (solo_path, target_path)
 	// path is the solo_path
 	let solo_and_target_path = if path.ext() == "devai" {
-		let target_file_stem = path.file_stem();
+		let target_file_stem = path.stem();
 		let target_file_name = if Path::new(target_file_stem).extension().is_some() {
 			target_file_stem.to_string()
 		} else {
@@ -78,7 +78,7 @@ pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPat
 	}
 	// path is the target_path
 	else {
-		let solo_path = path.new_sibling(format!("{}.devai", path.file_name()))?;
+		let solo_path = path.new_sibling(format!("{}.devai", path.name()))?;
 		(solo_path, path)
 	};
 
@@ -96,7 +96,7 @@ pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
 	for dir in dirs {
 		let files = list_files(dir, Some(&["*.devai"]), None)?;
 		for file in files.into_iter() {
-			let stem = file.file_stem().to_string();
+			let stem = file.stem().to_string();
 			if file_stems.contains(&stem) {
 				continue;
 			}
@@ -110,7 +110,7 @@ pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
 
 /// Note: For now, needs to be public because of `exec_list`
 pub fn agent_sfile_as_bullet(sfile: &SFile) -> String {
-	let stem = sfile.file_stem();
+	let stem = sfile.stem();
 	let initials = get_initials(stem);
 	let path = sfile.to_str();
 	let msg = format!("- {stem} ({initials})");
@@ -133,7 +133,7 @@ fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>>
 }
 
 fn match_agent(name: &str, sfile: &SFile) -> bool {
-	let file_stem = sfile.file_stem();
+	let file_stem = sfile.stem();
 	let file_stem_initials = get_initials(file_stem);
 
 	name == file_stem || name == file_stem_initials
@@ -161,7 +161,7 @@ fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
 	let mut scored_candidates: Vec<(SFile, usize)> = candidates
 		.into_iter()
 		.filter_map(|sfile| {
-			let file_stem = sfile.file_stem();
+			let file_stem = sfile.stem();
 			let distance = levenshtein(name, file_stem);
 			// note might need to change this one, seems to work ok
 			const MAX_DISTANCE: usize = 5;

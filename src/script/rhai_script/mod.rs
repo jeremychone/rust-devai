@@ -8,6 +8,7 @@ mod dynamic_map;
 mod rhai_eval;
 
 pub use dynamic_map::*;
+pub use engine::*;
 pub use rhai_eval::*;
 
 pub mod devai_custom;

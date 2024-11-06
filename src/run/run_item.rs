@@ -1,6 +1,6 @@
 use crate::agent::Agent;
 use crate::hub::get_hub;
-use crate::run::{DryMode, RunBaseOptions};
+use crate::run::{DryMode, RunBaseOptions, Runtime};
 use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
@@ -13,13 +13,14 @@ use std::collections::HashMap;
 /// Run and agent item for command agent or solo agent.
 pub async fn run_agent_item(
 	label: &str,
-	client: &Client,
+	runtime: &Runtime,
 	agent: &Agent,
 	before_all_result: Value,
 	item: Value,
 	run_base_options: &RunBaseOptions,
 ) -> Result<Value> {
 	let hub = get_hub();
+	let client = runtime.genai_client();
 
 	let data_rhai_scope = json!({
 		"item": item.clone(), // clone because item is reused later
@@ -29,6 +30,7 @@ pub async fn run_agent_item(
 	// -- Execute data
 	let data = if let Some(data_script) = agent.data_script().as_ref() {
 		rhai_eval(
+			runtime.rhai_engine(),
 			data_script,
 			Some(data_rhai_scope),
 			Some(&run_base_options.literals_as_strs()),
@@ -124,6 +126,7 @@ pub async fn run_agent_item(
 		});
 
 		rhai_eval(
+			runtime.rhai_engine(),
 			output_script,
 			Some(scope_output),
 			Some(&run_base_options.literals_as_strs()),

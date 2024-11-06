@@ -2,7 +2,7 @@ use super::support::open_vscode;
 use crate::agent::{find_agent, Agent};
 use crate::cli::RunArgs;
 use crate::hub::get_hub; // Importing get_hub
-use crate::run::{get_genai_client, run_command_agent};
+use crate::run::{get_genai_client, run_command_agent, Runtime};
 use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
 use crate::types::FileRef;
@@ -18,16 +18,16 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 	let cmd_agent_name = &run_args.cmd_agent_name;
 
 	// -- Get the AI client and agent
-	let client = get_genai_client()?;
-	let agent = find_agent(cmd_agent_name, &dir_context)?;
+	let runtime = Runtime::new(dir_context)?;
+	let agent = find_agent(cmd_agent_name, runtime.dir_context())?;
 
-	let run_options = RunCommandOptions::new(run_args, &dir_context, &agent)?;
+	let run_options = RunCommandOptions::new(run_args, runtime.dir_context(), &agent)?;
 
 	if run_options.base_run_config().open() {
 		open_vscode(agent.file_path()).await;
 	}
 
-	do_run(&run_options, &client, &agent).await?;
+	do_run(&run_options, &runtime, &agent).await?;
 
 	if run_options.base_run_config().watch() {
 		let watcher = watch(agent.file_path())?;
@@ -43,9 +43,9 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 							SEventKind::Modify => {
 								hub.publish("\n==== Agent file modified, running agent again\n").await;
 								// Make sure to change reload the agent
-								let agent = find_agent(agent.file_path(), &dir_context)?;
+								let agent = find_agent(agent.file_path(), runtime.dir_context())?;
 
-								match do_run(&run_options, &client, &agent).await {
+								match do_run(&run_options, &runtime, &agent).await {
 									Ok(_) => (),
 									Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 								}
@@ -72,7 +72,7 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 }
 
 /// Do one run
-async fn do_run(run_command_options: &RunCommandOptions, client: &Client, agent: &Agent) -> Result<()> {
+async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agent: &Agent) -> Result<()> {
 	let on_file_globs = run_command_options.on_file_globs();
 	let file_refs = if let Some(on_file_globs) = on_file_globs {
 		let files = list_files("./", Some(&on_file_globs), None)?;
@@ -82,7 +82,7 @@ async fn do_run(run_command_options: &RunCommandOptions, client: &Client, agent:
 		None
 	};
 
-	run_command_agent(client, agent, file_refs, run_command_options.base_run_config(), false).await?;
+	run_command_agent(runtime, agent, file_refs, run_command_options.base_run_config(), false).await?;
 
 	Ok(())
 }

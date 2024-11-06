@@ -2,7 +2,7 @@ use super::support::open_vscode;
 use crate::agent::{get_solo_and_target_path, load_base_agent_config, Agent, AgentDoc};
 use crate::cli::SoloArgs;
 use crate::hub::get_hub;
-use crate::run::{get_genai_client, run_solo_agent};
+use crate::run::{get_genai_client, run_solo_agent, Runtime};
 use crate::run::{DirContext, RunSoloOptions};
 use crate::Result;
 use simple_fs::{watch, SEventKind, SFile};
@@ -12,12 +12,12 @@ use std::path::Path;
 /// Can either perform a single run or run in watch mode
 pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<()> {
 	// -- Get the AI client and agent
-	let client = get_genai_client()?;
 	let hub = get_hub();
 
+	let runtime = Runtime::new(dir_context)?;
 	let (solo_path, target_path) = get_solo_and_target_path(&solo_args.path)?;
-	let agent = load_solo_agent(solo_path.path(), &dir_context)?;
-	let solo_options = RunSoloOptions::new(solo_args, &dir_context, &agent, target_path)?;
+	let agent = load_solo_agent(solo_path.path(), runtime.dir_context())?;
+	let solo_options = RunSoloOptions::new(solo_args, runtime.dir_context(), &agent, target_path)?;
 
 	if solo_options.base_run_config().open() {
 		open_vscode(agent.file_path()).await;
@@ -26,13 +26,13 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 
 	// -- If NOT in watch mode, then just run once
 	if !solo_options.base_run_config().watch() {
-		run_solo_agent(&client, &agent, &solo_options).await?;
+		run_solo_agent(&runtime, &agent, &solo_options).await?;
 	}
 	// -- If in watch mode
 	else {
 		// Do the first run
-		let agent = load_solo_agent(agent.file_path(), &dir_context)?;
-		match run_solo_agent(&client, &agent, &solo_options).await {
+		let agent = load_solo_agent(agent.file_path(), runtime.dir_context())?;
+		match run_solo_agent(&runtime, &agent, &solo_options).await {
 			Ok(_) => (),
 			Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 		}
@@ -48,9 +48,9 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 						hub.publish(format!("\nSolo Agent Modified '{}', running again.", agent.file_path()))
 							.await;
 						// Ensure to reload the agent
-						let agent = load_solo_agent(agent.file_path(), &dir_context)?;
+						let agent = load_solo_agent(agent.file_path(), runtime.dir_context())?;
 
-						match run_solo_agent(&client, &agent, &solo_options).await {
+						match run_solo_agent(&runtime, &agent, &solo_options).await {
 							Ok(_) => (),
 							Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 						}

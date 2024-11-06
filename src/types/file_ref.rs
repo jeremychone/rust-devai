@@ -13,9 +13,9 @@ pub struct FileRef {
 impl From<&SPath> for FileRef {
 	fn from(file: &SPath) -> Self {
 		FileRef {
-			name: file.file_name().to_string(),
+			name: file.name().to_string(),
 			path: file.to_string(),
-			stem: file.file_stem().to_string(),
+			stem: file.stem().to_string(),
 			ext: file.ext().to_string(),
 		}
 	}
@@ -24,9 +24,9 @@ impl From<&SPath> for FileRef {
 impl From<SFile> for FileRef {
 	fn from(file: SFile) -> Self {
 		FileRef {
-			name: file.file_name().to_string(),
+			name: file.name().to_string(),
 			path: file.to_string(),
-			stem: file.file_stem().to_string(),
+			stem: file.stem().to_string(),
 			ext: file.ext().to_string(),
 		}
 	}

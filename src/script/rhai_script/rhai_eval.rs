@@ -1,13 +1,17 @@
 use super::dynamic_helpers::{dynamic_to_value, value_to_scope};
-use super::engine::rhai_engine;
+use crate::run::RuntimeContext;
 use crate::support::strings::replace_all;
 use crate::Result;
-use rhai::{Dynamic, Scope};
+use rhai::{Dynamic, Engine, Scope};
 use serde_json::Value;
 
-pub fn rhai_eval(script: &str, scope_value: Option<Value>, replace: Option<&[(&str, &str)]>) -> Result<Value> {
+pub fn rhai_eval(
+	engine: &Engine,
+	script: &str,
+	scope_value: Option<Value>,
+	replace: Option<&[(&str, &str)]>,
+) -> Result<Value> {
 	// Initialize the Rhai engine
-	let engine = rhai_engine()?;
 
 	let script = if let Some(replace) = replace {
 		let (patterns, values): (Vec<&str>, Vec<&str>) = replace.iter().cloned().unzip();
@@ -40,11 +44,13 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
+	use crate::run::Runtime;
 	use value_ext::JsonValueExt;
 
-	#[test]
-	fn test_eval_file_load_ok() -> Result<()> {
+	#[tokio::test]
+	async fn test_eval_file_load_ok() -> Result<()> {
 		// -- Setup & Fixtures
+		let runtime = Runtime::new_for_test()?;
 		let script = r#"
         let file1 = file::load("src/main.rs");
         let file2 = file::load("src/error.rs");
@@ -52,7 +58,7 @@ mod tests {
     "#;
 
 		// -- Exec
-		let result = rhai_eval(script, None, None)?;
+		let result = rhai_eval(runtime.rhai_engine(), script, None, None)?;
 
 		// -- Check
 		if let Value::Array(values) = result {
@@ -68,10 +74,10 @@ mod tests {
 	}
 
 	/// Lower engine-level eval test
-	#[test]
-	fn test_engine_eval_simple_ok() -> Result<()> {
+	#[tokio::test]
+	async fn test_engine_eval_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let engine = rhai_engine()?;
+		let runtime = Runtime::new_for_test()?;
 		let script_content = r#"
         let x = 10;
         let y = 20;
@@ -79,7 +85,7 @@ mod tests {
     "#;
 
 		// -- Exec
-		let result = engine.eval::<i64>(script_content)?;
+		let result = runtime.rhai_engine().eval::<i64>(script_content)?;
 
 		// -- Check
 		assert_eq!(result, 30);

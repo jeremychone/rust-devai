@@ -8,12 +8,12 @@ use simple_fs::read_to_string;
 #[tokio::test]
 async fn test_run_agent_s_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let client = get_genai_client()?;
+	let runtime = Runtime::new_for_test()?;
 	let (agent, solo_config) = load_test_solo_agent_and_solo_config("./tests-data/solo/simple.md.devai")?;
 	let fx_target_path = solo_config.target_path().to_string();
 
 	// -- Execute
-	run_solo_agent(&client, &agent, &solo_config).await?;
+	run_solo_agent(&runtime, &agent, &solo_config).await?;
 
 	// -- Check
 	// assert_eq!(res.as_str().ok_or("Should have output result")?, "./src/main.rs");

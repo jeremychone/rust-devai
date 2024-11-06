@@ -11,7 +11,7 @@
 //! * `devai::action_skip(reason: string) -> SkipActionDict`
 
 use crate::agent::find_agent;
-use crate::run::{get_genai_client, run_command_agent};
+use crate::run::{get_genai_client, run_command_agent, RuntimeContext};
 use crate::run::{DirContext, RunBaseOptions};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
 use crate::Error;
@@ -19,7 +19,7 @@ use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
 use serde_json::{json, Value};
 
-pub fn rhai_module() -> Module {
+pub fn rhai_module(runtime_context: RuntimeContext) -> Module {
 	// Create a module for text functions
 	let mut module = Module::new();
 
@@ -31,27 +31,29 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, action_skip_with_reason);
 
+	let c = runtime_context.clone();
 	FuncRegistration::new("run")
 		.in_global_namespace()
-		.set_into_module(&mut module, run_with_items);
+		.set_into_module(&mut module, move |cmd_agent: &str, items: Vec<Dynamic>| {
+			run_with_items(runtime_context.clone(), cmd_agent, items)
+		});
 
 	module
 }
 
 // region:    --- run...
 
-fn run_with_items(cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
+fn run_with_items(runtime_context: RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
 	let items = dynamics_to_values(items)?;
 	// TODO: Might want to reuse the current one
-	let dir_context = DirContext::load()?.ok_or("Cannot load dir_context in devai::run")?;
-	let agent = find_agent(cmd_agent, &dir_context)?;
-	let client = get_genai_client()?;
+	let agent = find_agent(cmd_agent, runtime_context.dir_context())?;
 
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
 
 	// Note: Require to have
+	let runtime = runtime_context.get_runtime()?;
 	let res = tokio::task::block_in_place(|| {
-		rt.block_on(async { run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default(), true).await })
+		rt.block_on(async { run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true).await })
 	});
 
 	let res = res?;
@@ -147,7 +149,15 @@ mod tests {
 			r#"return devai::run("./tests-data/agents/agent-hello.md", ["one", "two"])"#,
 			None,
 		)
-		.await?;
+		.await;
+
+		// NOTE: apparently when multi thread, need to print error
+		let res = match res {
+			Ok(res) => res,
+			Err(err) => {
+				panic!("test_rhai_devai_run_simple ERROR: {err}");
+			}
+		};
 
 		let vals: Vec<String> = from_value(res)?;
 

@@ -88,7 +88,7 @@ fn create_or_refresh_devai_files(devai_parent_dir: &SPath) -> Result<()> {
 fn update_devai_files(dir: impl AsRef<Path>, embedded_agent_file: &[&EmbeddedFile]) -> Result<()> {
 	let dir = dir.as_ref();
 	let existing_files = list_files(dir, Some(&["*.devai"]), None)?;
-	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.file_name()).collect();
+	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
 
 	for e_file in embedded_agent_file {
 		if !existing_names.contains(e_file.name) {

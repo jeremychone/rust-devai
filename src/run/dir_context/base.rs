@@ -1,8 +1,8 @@
 use crate::run::DevaiDir;
 use crate::support::files::current_dir;
-use crate::Result;
+use crate::{Error, Result};
 use simple_fs::SPath;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
 pub struct DirContext {
@@ -39,6 +39,19 @@ impl DirContext {
 		} else {
 			Ok(None)
 		}
+	}
+
+	#[cfg(test)]
+	pub fn from_parent_dir(parent_dir: impl AsRef<Path>) -> Result<Self> {
+		let parent_dir = SPath::new(parent_dir.as_ref())?;
+		let devai_dir = DevaiDir::from_parent_dir(&parent_dir)?;
+
+		Ok(Self {
+			current_dir: current_dir()?,
+			devai_dir,
+			devai_parent_dir: parent_dir,
+			ref_dir: current_dir()?,
+		})
 	}
 }
 

@@ -32,8 +32,8 @@ impl FileRecord {
 		let content = read_to_string(&sfile)?;
 		Ok(FileRecord {
 			path: sfile.to_string(),
-			name: sfile.file_name().to_string(),
-			stem: sfile.file_stem().to_string(),
+			name: sfile.name().to_string(),
+			stem: sfile.stem().to_string(),
 			ext: sfile.ext().to_string(),
 			content,
 		})

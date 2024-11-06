@@ -43,7 +43,7 @@ fn migrate_agent_dir(old_dir: impl AsRef<Path>, dest_dir: impl AsRef<Path>) -> R
 	let legacy_files = list_files(old_dir, Some(&["*.md"]), None);
 
 	for file in legacy_files? {
-		let dest_file_name = format!("{}.devai", file.file_stem());
+		let dest_file_name = format!("{}.devai", file.stem());
 		let dest_file = dest_dir.join(&dest_file_name);
 
 		// we skip
@@ -72,7 +72,7 @@ fn archive_agent_dir(old_dir: impl AsRef<Path>) -> Result<bool> {
 	let dest_base_dir = Path::new(DEVAI_0_1_0_DEPRECATED_DIR);
 	ensure_dir(dest_base_dir)?;
 
-	let dest_dir = dest_base_dir.join(old_dir.file_name());
+	let dest_dir = dest_base_dir.join(old_dir.name());
 
 	fs::rename(old_dir, dest_dir)?;
 

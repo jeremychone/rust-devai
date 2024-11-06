@@ -1,7 +1,7 @@
 use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::run::run_item::run_agent_item;
-use crate::run::RunBaseOptions;
+use crate::run::{RunBaseOptions, Runtime};
 use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
 use crate::support::strings::truncate_with_ellipsis;
@@ -15,7 +15,7 @@ use value_ext::JsonValueExt;
 const DEFAULT_CONCURRENCY: usize = 1;
 
 pub async fn run_command_agent(
-	client: &Client,
+	runtime: &Runtime,
 	agent: &Agent,
 	items: Option<Vec<Value>>,
 	run_base_options: &RunBaseOptions,
@@ -41,6 +41,7 @@ pub async fn run_command_agent(
 		});
 
 		let before_all_res = rhai_eval(
+			runtime.rhai_engine(),
 			before_all_script,
 			Some(scope_item),
 			Some(&run_base_options.literals_as_strs()),
@@ -80,7 +81,7 @@ pub async fn run_command_agent(
 
 	// -- Run the items
 	for (item_idx, item) in items.clone().into_iter().enumerate() {
-		let client_clone = client.clone();
+		let runtime_clone = runtime.clone();
 		let agent_clone = agent.clone();
 		let before_all_clone = before_all.clone();
 
@@ -90,7 +91,7 @@ pub async fn run_command_agent(
 		join_set.spawn(async move {
 			let output = run_command_agent_item(
 				item_idx,
-				&client_clone,
+				&runtime_clone,
 				&agent_clone,
 				before_all_clone,
 				item,
@@ -160,6 +161,7 @@ pub async fn run_command_agent(
 			"before_all": before_all,
 		});
 		let _after_all_res = rhai_eval(
+			runtime.rhai_engine(),
 			after_all_script,
 			Some(scope_item),
 			Some(&run_base_options.literals_as_strs()),
@@ -173,7 +175,7 @@ pub async fn run_command_agent(
 /// Not public by design, should be only used in the context of run_command_agent_items
 async fn run_command_agent_item(
 	item_idx: usize,
-	client: &Client,
+	runtime: &Runtime,
 	agent: &Agent,
 	before_all: Value,
 	item: impl Serialize,
@@ -188,7 +190,7 @@ async fn run_command_agent_item(
 	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
 	hub.publish(format!("\n==== Running item: {}", label)).await;
 
-	let res_value = run_agent_item(&label, client, agent, before_all, item, run_base_options).await?;
+	let res_value = run_agent_item(&label, runtime, agent, before_all, item, run_base_options).await?;
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = res_value.as_str() {
@@ -205,13 +207,13 @@ async fn run_command_agent_item(
 #[cfg(test)]
 pub async fn run_command_agent_item_for_test(
 	item_idx: usize,
-	client: &Client,
+	runtime: &Runtime,
 	agent: &Agent,
 	before_all: Value,
 	item: impl Serialize,
 	run_base_options: &RunBaseOptions,
 ) -> Result<Value> {
-	run_command_agent_item(item_idx, client, agent, before_all, item, run_base_options).await
+	run_command_agent_item(item_idx, runtime, agent, before_all, item, run_base_options).await
 }
 
 // region:    --- Support

@@ -212,8 +212,8 @@ impl AgentDoc {
 		let agent_inner = AgentInner {
 			config,
 
-			name: self.spath.file_stem().to_string(),
-			file_name: self.spath.file_name().to_string(),
+			name: self.spath.stem().to_string(),
+			file_name: self.spath.name().to_string(),
 			file_path: self.spath.to_str().to_string(),
 
 			genai_model_name,

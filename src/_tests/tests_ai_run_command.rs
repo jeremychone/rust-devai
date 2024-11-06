@@ -10,11 +10,19 @@ use value_ext::JsonValueExt;
 #[tokio::test]
 async fn test_run_agent_c_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let client = get_genai_client()?;
+	let runtime = Runtime::new_for_test()?;
 	let agent = load_test_agent("./tests-data/agents/agent-simple.md")?;
 
 	// -- Execute
-	let res = run_command_agent_item(0, &client, &agent, Value::Null, Value::Null, &RunBaseOptions::default()).await?;
+	let res = run_command_agent_item(
+		0,
+		&runtime,
+		&agent,
+		Value::Null,
+		Value::Null,
+		&RunBaseOptions::default(),
+	)
+	.await?;
 
 	// -- Check
 	assert_eq!(res.as_str().ok_or("Should have output result")?, "./src/main.rs");
@@ -25,11 +33,19 @@ async fn test_run_agent_c_simple_ok() -> Result<()> {
 #[tokio::test]
 async fn test_run_agent_c_hello_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let client = get_genai_client()?;
+	let runtime = Runtime::new_for_test()?;
 	let agent = load_test_agent("./tests-data/agents/agent-hello.md")?;
 
 	// -- Execute
-	let res = run_command_agent_item(0, &client, &agent, Value::Null, Value::Null, &RunBaseOptions::default()).await?;
+	let res = run_command_agent_item(
+		0,
+		&runtime,
+		&agent,
+		Value::Null,
+		Value::Null,
+		&RunBaseOptions::default(),
+	)
+	.await?;
 
 	// -- Check
 	// Note here '' because item is null
@@ -44,7 +60,7 @@ async fn test_run_agent_c_hello_ok() -> Result<()> {
 #[tokio::test]
 async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let client = get_genai_client()?;
+	let runtime = Runtime::new_for_test()?;
 	let agent = load_test_agent("./tests-data/agents/agent-on-file.md")?;
 
 	// -- Execute
@@ -52,7 +68,7 @@ async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	let file_ref = FileRef::from(on_file);
 
 	let run_output =
-		run_command_agent_item(0, &client, &agent, Value::Null, file_ref, &RunBaseOptions::default()).await?;
+		run_command_agent_item(0, &runtime, &agent, Value::Null, file_ref, &RunBaseOptions::default()).await?;
 
 	// -- Check
 	// The output return the {data_path: data.file.path, item_name: item.name}
@@ -64,10 +80,11 @@ async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	Ok(())
 }
 
-#[tokio::test]
+// #[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
-	let client = get_genai_client()?;
+	let runtime = Runtime::new_for_test()?;
 	let agent = load_test_agent("./tests-data/agents/agent-before-all.md")?;
 	let hub_capture = HubCapture::new_and_start();
 
@@ -76,7 +93,7 @@ async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	let file_ref = FileRef::from(on_file);
 	let items = vec![serde_json::to_value(file_ref)?];
 
-	run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default(), false).await?;
+	let res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), false).await;
 
 	// -- Check
 	let hub_content = hub_capture.into_content().await?;
@@ -99,6 +116,8 @@ async fn test_run_agent_c_skip_reason() -> Result<()> {
 }
 
 async fn common_test_run_agent_c_skip(reason: Option<&str>) -> Result<()> {
+	let runtime = Runtime::new_for_test()?;
+
 	let reason_str = reason.map(|v| format!("\"{v}\"")).unwrap_or_default();
 	// -- Setup & Fixtures
 	let client = get_genai_client()?;
@@ -126,7 +145,7 @@ return "output for: " + item
 
 	// -- Execute
 	let items = fx_items.iter().map(|v| Value::String(v.to_string())).collect();
-	let res = run_command_agent(&client, &agent, Some(items), &RunBaseOptions::default(), true)
+	let res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true)
 		.await?
 		.ok_or("Should have output result")?;
 

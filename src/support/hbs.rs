@@ -30,11 +30,13 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
+	use crate::run::Runtime;
 	use crate::script::rhai_eval;
 
-	#[test]
-	fn test_hbs_with_rhai_ok() -> Result<()> {
+	#[tokio::test]
+	async fn test_hbs_with_rhai_ok() -> Result<()> {
 		// -- Setup & Fixtures
+		let runtime = Runtime::new_for_test()?;
 		let script = r#"
         let file1 = file::load("src/main.rs");
         let file2 = file::load("src/error.rs");
@@ -48,7 +50,7 @@ The files are:
 		"#;
 
 		// -- Exec
-		let result_json = rhai_eval(script, None, None)?;
+		let result_json = rhai_eval(runtime.rhai_engine(), script, None, None)?;
 		// Execute the template
 		let data = HashMap::from([("data".to_string(), result_json)]);
 		let res = hbs_render(tmpl, &data)?;

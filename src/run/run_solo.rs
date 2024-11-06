@@ -2,14 +2,14 @@ use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::run::run_item::run_agent_item;
 use crate::run::support::get_genai_info;
-use crate::run::RunSoloOptions;
+use crate::run::{RunSoloOptions, Runtime};
 use crate::types::FileRef;
 use crate::Result;
 use genai::Client;
 use serde_json::Value;
 use std::fs::write;
 
-pub async fn run_solo_agent(client: &Client, agent: &Agent, run_solo_options: &RunSoloOptions) -> Result<()> {
+pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: &RunSoloOptions) -> Result<()> {
 	let hub = get_hub();
 
 	// -- Print the run info
@@ -28,7 +28,7 @@ pub async fn run_solo_agent(client: &Client, agent: &Agent, run_solo_options: &R
 	let before_all_data = Value::Null;
 	let res_value = run_agent_item(
 		label,
-		client,
+		runtime,
 		agent,
 		before_all_data,
 		item,
