@@ -2,7 +2,6 @@ type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tes
 
 use super::*;
 use crate::_test_support::{load_inline_agent, load_test_agent, HubCapture};
-use crate::run::get_genai_client;
 use crate::types::FileRef;
 use simple_fs::SFile;
 use value_ext::JsonValueExt;
@@ -93,7 +92,7 @@ async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	let file_ref = FileRef::from(on_file);
 	let items = vec![serde_json::to_value(file_ref)?];
 
-	let res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), false).await;
+	let _res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), false).await;
 
 	// -- Check
 	let hub_content = hub_capture.into_content().await?;
@@ -120,7 +119,6 @@ async fn common_test_run_agent_c_skip(reason: Option<&str>) -> Result<()> {
 
 	let reason_str = reason.map(|v| format!("\"{v}\"")).unwrap_or_default();
 	// -- Setup & Fixtures
-	let client = get_genai_client()?;
 	let fx_items = &["one", "two", "three"];
 	let fx_agent = format!(
 		r#"

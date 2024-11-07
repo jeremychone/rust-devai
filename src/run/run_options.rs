@@ -1,9 +1,6 @@
-use crate::agent::Agent;
 use crate::cli::{RunArgs, SoloArgs};
-use crate::run::{DirContext, Literals};
 use crate::Result;
 use simple_fs::SPath;
-use std::path::Path;
 
 // region:    --- RunCommandOptions
 
@@ -27,7 +24,7 @@ impl RunCommandOptions {
 
 /// Constructors
 impl RunCommandOptions {
-	pub fn new(args: RunArgs, dir_context: &DirContext, agent: &Agent) -> Result<Self> {
+	pub fn new(args: RunArgs) -> Result<Self> {
 		// -- Refine the globs
 		let on_file_globs = if let Some(on_files) = args.on_files {
 			let on_files_globs = on_files
@@ -50,16 +47,12 @@ impl RunCommandOptions {
 		// -- Parse dry_mode
 		let dry_mode = parse_dry_mode(args.dry_mode.as_deref());
 
-		// -- Build the literal
-		let literals = build_literals(dir_context, agent)?;
-
 		// -- Build the base Options
 		let base_run_options = RunBaseOptions {
 			watch: args.watch,
 			verbose: args.verbose,
 			dry_mode,
 			open: args.open,
-			literals,
 		};
 
 		Ok(Self {
@@ -92,18 +85,14 @@ impl RunSoloOptions {
 
 /// Constructors
 impl RunSoloOptions {
-	pub fn new(args: SoloArgs, dir_context: &DirContext, agent: &Agent, target_path: SPath) -> Result<Self> {
+	pub fn new(args: SoloArgs, target_path: SPath) -> Result<Self> {
 		let dry_mode = parse_dry_mode(args.dry_mode.as_deref());
-
-		// -- Build the literal
-		let literals = build_literals(dir_context, agent)?;
 
 		let base_run_config = RunBaseOptions {
 			watch: args.watch,
 			verbose: args.verbose,
 			dry_mode,
 			open: args.open,
-			literals,
 		};
 
 		Ok(Self {
@@ -145,7 +134,6 @@ pub struct RunBaseOptions {
 	verbose: bool,
 	dry_mode: DryMode,
 	open: bool,
-	literals: Literals,
 }
 
 impl RunBaseOptions {
@@ -164,39 +152,11 @@ impl RunBaseOptions {
 	pub fn open(&self) -> bool {
 		self.open
 	}
-
-	pub fn literals_as_strs(&self) -> Vec<(&str, &str)> {
-		self.literals.as_strs()
-	}
 }
 
 // endregion: --- Common
 
 // region:    --- Support
-
-fn build_literals(dir_context: &DirContext, agent: &Agent) -> Result<Literals> {
-	let mut literals = Literals::default();
-
-	let agent_path = agent.file_path();
-	let agent_dir = Path::new(agent.file_path())
-		.parent()
-		.ok_or_else(|| format!("Agent with path '{}' does not have a parent path", agent.file_path()))?
-		.to_str()
-		.ok_or("File path is not utf8")?;
-
-	let devai_dir = dir_context.devai_dir();
-
-	literals.append("$DEVAI_AGENT_DIR", agent_dir);
-	literals.append("$DEVAI_AGENT_PATH", agent_path);
-	literals.append("$DEVAI_DIR", devai_dir.to_str());
-	// TOOD: Need to have a better strategy when parent is none
-	literals.append(
-		"$DEVAI_PARENT_DIR",
-		devai_dir.parent().as_ref().map(|p| p.to_str()).unwrap_or_else(|| ""),
-	);
-
-	Ok(literals)
-}
 
 fn parse_dry_mode(dry_mode: Option<&str>) -> DryMode {
 	match dry_mode {

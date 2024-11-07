@@ -5,7 +5,6 @@ use crate::run::support::get_genai_info;
 use crate::run::{RunSoloOptions, Runtime};
 use crate::types::FileRef;
 use crate::Result;
-use genai::Client;
 use serde_json::Value;
 use std::fs::write;
 

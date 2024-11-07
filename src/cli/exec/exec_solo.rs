@@ -2,7 +2,7 @@ use super::support::open_vscode;
 use crate::agent::{get_solo_and_target_path, load_base_agent_config, Agent, AgentDoc};
 use crate::cli::SoloArgs;
 use crate::hub::get_hub;
-use crate::run::{get_genai_client, run_solo_agent, Runtime};
+use crate::run::{run_solo_agent, Runtime};
 use crate::run::{DirContext, RunSoloOptions};
 use crate::Result;
 use simple_fs::{watch, SEventKind, SFile};
@@ -17,7 +17,7 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 	let runtime = Runtime::new(dir_context)?;
 	let (solo_path, target_path) = get_solo_and_target_path(&solo_args.path)?;
 	let agent = load_solo_agent(solo_path.path(), runtime.dir_context())?;
-	let solo_options = RunSoloOptions::new(solo_args, runtime.dir_context(), &agent, target_path)?;
+	let solo_options = RunSoloOptions::new(solo_args, target_path)?;
 
 	if solo_options.base_run_config().open() {
 		open_vscode(agent.file_path()).await;

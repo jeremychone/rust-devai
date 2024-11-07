@@ -50,7 +50,7 @@ The files are:
 		"#;
 
 		// -- Exec
-		let result_json = rhai_eval(runtime.rhai_engine(), script, None, None)?;
+		let result_json = rhai_eval(runtime.rhai_engine(), script, None)?;
 		// Execute the template
 		let data = HashMap::from([("data".to_string(), result_json)]);
 		let res = hbs_render(tmpl, &data)?;

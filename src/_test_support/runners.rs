@@ -1,4 +1,4 @@
-use crate::run::{get_genai_client, run_command_agent_item_for_test, Runtime};
+use crate::run::{run_command_agent_item_for_test, Runtime};
 use crate::Result;
 use crate::_test_support::load_reflective_agent;
 use crate::run::RunBaseOptions;

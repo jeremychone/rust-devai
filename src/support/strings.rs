@@ -13,6 +13,7 @@ pub fn truncate_with_ellipsis(s: &str, max_len: usize) -> Cow<str> {
 	}
 }
 
+#[allow(unused)]
 pub fn replace_all(content: &str, patterns: &[&str], values: &[&str]) -> Result<String> {
 	let ac = AhoCorasick::new(patterns).map_err(|err| Error::cc("replace_all fail because patterns", err))?;
 

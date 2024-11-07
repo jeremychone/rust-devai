@@ -2,12 +2,11 @@ use super::support::open_vscode;
 use crate::agent::{find_agent, Agent};
 use crate::cli::RunArgs;
 use crate::hub::get_hub; // Importing get_hub
-use crate::run::{get_genai_client, run_command_agent, Runtime};
+use crate::run::{run_command_agent, Runtime};
 use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
 use crate::types::FileRef;
 use crate::Result;
-use genai::Client;
 use simple_fs::{list_files, watch, SEventKind};
 
 /// Exec for the Run command
@@ -21,7 +20,7 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 	let runtime = Runtime::new(dir_context)?;
 	let agent = find_agent(cmd_agent_name, runtime.dir_context())?;
 
-	let run_options = RunCommandOptions::new(run_args, runtime.dir_context(), &agent)?;
+	let run_options = RunCommandOptions::new(run_args)?;
 
 	if run_options.base_run_config().open() {
 		open_vscode(agent.file_path()).await;

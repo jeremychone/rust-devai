@@ -70,10 +70,12 @@ impl DevaiDir {
 		self.path.exists()
 	}
 
+	#[allow(unused)]
 	pub fn to_str(&self) -> &str {
 		self.path.to_str()
 	}
 
+	#[allow(unused)]
 	pub fn parent(&self) -> Option<SPath> {
 		self.path.parent()
 	}

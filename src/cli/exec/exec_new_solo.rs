@@ -51,13 +51,13 @@ pub async fn exec_new_solo(new_config: impl Into<NewSoloConfig>, dir_context: Di
 
 	// We open no matter what
 	if new_config.open {
-		open_vscode(solo_file_path).await;
-
 		// open the target file if exists
 		let (_, target_path) = get_solo_and_target_path(solo_file_path)?;
 		if target_path.path().exists() {
 			open_vscode(target_path.path()).await;
 		}
+
+		open_vscode(solo_file_path).await;
 	}
 
 	Ok(())

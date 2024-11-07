@@ -11,15 +11,15 @@
 //! * `devai::action_skip(reason: string) -> SkipActionDict`
 
 use crate::agent::find_agent;
-use crate::run::{get_genai_client, run_command_agent, RuntimeContext};
-use crate::run::{DirContext, RunBaseOptions};
+use crate::run::RunBaseOptions;
+use crate::run::{run_command_agent, RuntimeContext};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
 use crate::Error;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
 use serde_json::{json, Value};
 
-pub fn rhai_module(runtime_context: RuntimeContext) -> Module {
+pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	// Create a module for text functions
 	let mut module = Module::new();
 
@@ -31,11 +31,11 @@ pub fn rhai_module(runtime_context: RuntimeContext) -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, action_skip_with_reason);
 
-	let c = runtime_context.clone();
+	let ctx = runtime_context.clone();
 	FuncRegistration::new("run")
 		.in_global_namespace()
 		.set_into_module(&mut module, move |cmd_agent: &str, items: Vec<Dynamic>| {
-			run_with_items(runtime_context.clone(), cmd_agent, items)
+			run_with_items(&ctx, cmd_agent, items)
 		});
 
 	module
@@ -43,15 +43,15 @@ pub fn rhai_module(runtime_context: RuntimeContext) -> Module {
 
 // region:    --- run...
 
-fn run_with_items(runtime_context: RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
+fn run_with_items(ctx: &RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
 	let items = dynamics_to_values(items)?;
 	// TODO: Might want to reuse the current one
-	let agent = find_agent(cmd_agent, runtime_context.dir_context())?;
+	let agent = find_agent(cmd_agent, ctx.dir_context())?;
 
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
 
 	// Note: Require to have
-	let runtime = runtime_context.get_runtime()?;
+	let runtime = ctx.get_runtime()?;
 	let res = tokio::task::block_in_place(|| {
 		rt.block_on(async { run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true).await })
 	});

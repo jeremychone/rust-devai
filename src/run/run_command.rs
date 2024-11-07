@@ -6,7 +6,6 @@ use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
 use crate::support::strings::truncate_with_ellipsis;
 use crate::{Error, Result};
-use genai::Client;
 use serde::Serialize;
 use serde_json::{json, Value};
 use tokio::task::JoinSet;
@@ -40,12 +39,7 @@ pub async fn run_command_agent(
 			"items": items.clone(), // clone because item is reused later
 		});
 
-		let before_all_res = rhai_eval(
-			runtime.rhai_engine(),
-			before_all_script,
-			Some(scope_item),
-			Some(&run_base_options.literals_as_strs()),
-		)?;
+		let before_all_res = rhai_eval(runtime.rhai_engine(), before_all_script, Some(scope_item))?;
 
 		match DevaiCustom::from_value(before_all_res)? {
 			FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
@@ -160,12 +154,7 @@ pub async fn run_command_agent(
 			"outputs": outputs_value, // Will be Value::Null if outputs were not collected
 			"before_all": before_all,
 		});
-		let _after_all_res = rhai_eval(
-			runtime.rhai_engine(),
-			after_all_script,
-			Some(scope_item),
-			Some(&run_base_options.literals_as_strs()),
-		)?;
+		let _after_all_res = rhai_eval(runtime.rhai_engine(), after_all_script, Some(scope_item))?;
 	}
 
 	Ok(to_return)

@@ -1,5 +1,5 @@
 use crate::hub::get_hub;
-use crate::run::{get_genai_client, DirContext};
+use crate::run::{get_genai_client, DirContext, RuntimeContext};
 use crate::script::new_rhai_engine;
 use crate::{Error, Result};
 use flume::{Receiver, Sender};
@@ -41,7 +41,6 @@ impl Runtime {
 		//       but we need the rhai_engine to be built with the RuntimeContext.
 		//       For devai::run, the function will need to get the engine back.
 		let runtime_for_rx = runtime.clone();
-		let stop_receiver = stop_receiver.clone();
 		tokio::spawn(async move {
 			let mut stop_receiver = stop_receiver; // Keep the mutable receiver
 			loop {
@@ -89,6 +88,7 @@ impl Drop for Runtime {
 
 /// Getters
 impl Runtime {
+	#[allow(unused)]
 	pub fn context(&self) -> RuntimeContext {
 		self.context.clone()
 	}
@@ -105,52 +105,3 @@ impl Runtime {
 		self.context.dir_context()
 	}
 }
-
-// region:    --- RuntimeContext
-
-#[derive(Clone)]
-pub struct RuntimeContext {
-	inner: Arc<RuntimeContextInner>,
-	tx: Sender<Sender<Runtime>>,
-}
-
-/// Constructors
-impl RuntimeContext {
-	pub fn new(dir_context: DirContext, genai_client: Client, tx: Sender<Sender<Runtime>>) -> Self {
-		Self {
-			inner: Arc::new(RuntimeContextInner {
-				dir_context,
-				genai_client,
-			}),
-			tx,
-		}
-	}
-}
-
-/// Getters
-impl RuntimeContext {
-	pub fn dir_context(&self) -> &DirContext {
-		&self.inner.dir_context
-	}
-
-	pub fn genai_client(&self) -> &Client {
-		&self.inner.genai_client
-	}
-
-	pub fn get_runtime(&self) -> Result<Runtime> {
-		let (one_tx, one_rx) = flume::bounded(1);
-		self.tx
-			.send(one_tx)
-			.map_err(|err| Error::cc("RuntimeContext::get_runtime ", err))?;
-		let runtime = one_rx.recv().map_err(|err| Error::cc("RuntimeContext::get_runtime ", err))?;
-
-		Ok(runtime)
-	}
-}
-
-struct RuntimeContextInner {
-	dir_context: DirContext,
-	genai_client: Client,
-}
-
-// endregion: --- RuntimeContext

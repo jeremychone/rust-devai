@@ -6,7 +6,6 @@ use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::Result;
 use genai::chat::ChatRequest;
-use genai::Client;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
@@ -29,12 +28,7 @@ pub async fn run_agent_item(
 
 	// -- Execute data
 	let data = if let Some(data_script) = agent.data_script().as_ref() {
-		rhai_eval(
-			runtime.rhai_engine(),
-			data_script,
-			Some(data_rhai_scope),
-			Some(&run_base_options.literals_as_strs()),
-		)?
+		rhai_eval(runtime.rhai_engine(), data_script, Some(data_rhai_scope))?
 	} else {
 		Value::Null
 	};
@@ -125,12 +119,7 @@ pub async fn run_agent_item(
 			"ai_output": ai_output,
 		});
 
-		rhai_eval(
-			runtime.rhai_engine(),
-			output_script,
-			Some(scope_output),
-			Some(&run_base_options.literals_as_strs()),
-		)?
+		rhai_eval(runtime.rhai_engine(), output_script, Some(scope_output))?
 	} else {
 		ai_output
 	};
