@@ -81,7 +81,7 @@ mod tests {
 	use value_ext::JsonValueExt;
 
 	#[tokio::test]
-	async fn test_run_litterals_devai_dir() -> Result<()> {
+	async fn test_run_literals_devai_dir() -> Result<()> {
 		let script = r#"
 return #{
 		AGENT_FILE_PATH: CTX.AGENT_FILE_PATH,
@@ -99,9 +99,9 @@ return #{
 		// -- Check
 		assert_eq!(
 			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"dummy/path/agent-dir/dummy-agent.devai"
+			"./dummy/path/agent-dir/dummy-agent.devai"
 		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "dummy/path/agent-dir");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./dummy/path/agent-dir");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "dummy-agent.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "dummy-agent");
 		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
