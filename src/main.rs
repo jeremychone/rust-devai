@@ -48,35 +48,35 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 	match args.cmd {
 		// Initialize the device for this folder
 		cli::Commands::Init => {
-			init_devai_files()?;
+			init_devai_files().await?;
 		}
 
 		// Create a new agent
 		cli::Commands::New(new_args) => {
-			cli::exec_new(new_args, init_devai_files()?).await?;
+			cli::exec_new(new_args, init_devai_files().await?).await?;
 		}
 
 		// Run an agent command
 		cli::Commands::Run(run_args) => {
 			// Note: Every run will initialize the files
 			// Execute the command
-			cli::exec_run(run_args, init_devai_files()?).await?;
+			cli::exec_run(run_args, init_devai_files().await?).await?;
 		}
 
 		// Create a new agent
 		cli::Commands::NewSolo(new_args) => {
-			cli::exec_new_solo(new_args, init_devai_files()?).await?;
+			cli::exec_new_solo(new_args, init_devai_files().await?).await?;
 		}
 
 		// Run a solo agent
 		cli::Commands::Solo(solo_args) => {
 			// Execute the command
-			cli::exec_solo(solo_args, init_devai_files()?).await?;
+			cli::exec_solo(solo_args, init_devai_files().await?).await?;
 		}
 
 		// List the available agents
 		cli::Commands::List => {
-			cli::exec_list(init_devai_files()?).await?;
+			cli::exec_list(init_devai_files().await?).await?;
 		}
 	}
 

@@ -14,7 +14,7 @@ pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: 
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);
 	hub.publish(format!(
-		"Running solo agent: {}\n        with model: {}{genai_info}",
+		"==== Running solo agent: {}\n        with model: {}{genai_info}",
 		agent.file_path(),
 		agent.genai_model()
 	))

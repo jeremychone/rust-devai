@@ -1,3 +1,4 @@
+use crate::hub::get_hub;
 use crate::run::DevaiDir;
 use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
@@ -29,6 +30,8 @@ pub fn migrate_devai_0_1_0_if_needed(devai_dir: &DevaiDir) -> Result<bool> {
 ///    -  Only the direct decending .md files
 /// - Move the whole legacy folder `.devai/customs` to the `.devai/deprecated_v0_1_0/customs`
 fn migrate_agent_dir(old_dir: impl AsRef<Path>, dest_dir: impl AsRef<Path>) -> Result<bool> {
+	let hub = get_hub();
+
 	let old_dir = old_dir.as_ref();
 	if !old_dir.exists() {
 		return Ok(false);
@@ -51,7 +54,11 @@ fn migrate_agent_dir(old_dir: impl AsRef<Path>, dest_dir: impl AsRef<Path>) -> R
 			continue;
 		}
 
-		std::fs::copy(file.path(), dest_file)?;
+		std::fs::copy(file.path(), &dest_file)?;
+		hub.publish_sync(format!(
+			"-- 0.1.0 to 0.2.x migration - copied '{file}' to '{}'",
+			dest_file.to_string_lossy()
+		));
 
 		if !at_least_one {
 			at_least_one = true;
@@ -74,7 +81,11 @@ fn archive_agent_dir(old_dir: impl AsRef<Path>) -> Result<bool> {
 
 	let dest_dir = dest_base_dir.join(old_dir.name());
 
-	fs::rename(old_dir, dest_dir)?;
+	fs::rename(&old_dir, &dest_dir)?;
+	get_hub().publish_sync(format!(
+		"-- 0.1.0 to 0.2.x migration - archived dir '{old_dir}' to '{}'",
+		dest_dir.to_string_lossy()
+	));
 
 	Ok(true)
 }

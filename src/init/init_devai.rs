@@ -1,3 +1,4 @@
+use crate::hub::get_hub;
 use crate::init::embedded_files::{
 	get_embedded_command_agent_files, get_embedded_new_command_agent_files, get_embedded_new_solo_agent_files,
 	EmbeddedFile,
@@ -17,20 +18,35 @@ const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_init/config.toml");
 // -- Doc Content
 const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_init/doc/rhai.md");
 
-pub fn init_devai_files() -> Result<DirContext> {
+pub async fn init_devai_files() -> Result<DirContext> {
+	let hub = get_hub();
 	// TODO: Add more logic to tell the user what has been created, where ...
-	if let Some(dir_context) = DirContext::load()? {
-		create_or_refresh_devai_files(dir_context.devai_parent_dir())?;
-		Ok(dir_context)
+	let dir_context = if let Some(dir_context) = DirContext::load()? {
+		let devai_parent_dir = dir_context.devai_parent_dir();
+		hub.publish(format!(
+			"==== Devai already created at '{devai_parent_dir}'\n   (will create missing files)"
+		))
+		.await;
+		create_or_refresh_devai_files(devai_parent_dir).await?;
+		dir_context
 	} else {
-		create_or_refresh_devai_files(&current_dir()?)?;
-		let dir_context = DirContext::load()?.ok_or("Could not create the devai dir")?;
-		Ok(dir_context)
-	}
+		let devai_parent_dir = current_dir()?;
+		hub.publish(format!(
+			"==== .devai/ will be created at '{devai_parent_dir}\n   (will create missing files)'"
+		))
+		.await;
+		create_or_refresh_devai_files(&devai_parent_dir).await?;
+		DirContext::load()?.ok_or("Could not create the devai dir")?
+	};
+
+	hub.publish("-- DONE").await;
+
+	Ok(dir_context)
 }
 
 /// Create or refresh missing file a devai dir
-fn create_or_refresh_devai_files(devai_parent_dir: &SPath) -> Result<()> {
+async fn create_or_refresh_devai_files(devai_parent_dir: &SPath) -> Result<()> {
+	let hub = get_hub();
 	let devai_dir = &DevaiDir::from_parent_dir(devai_parent_dir)?;
 
 	ensure_dir(devai_dir)?;
@@ -53,31 +69,36 @@ fn create_or_refresh_devai_files(devai_parent_dir: &SPath) -> Result<()> {
 	update_devai_files(
 		devai_dir.get_command_agent_default_dir()?,
 		get_embedded_command_agent_files(),
-	)?;
+	)
+	.await?;
 
 	// -- Create the config file
 	let config_path = devai_dir.get_config_toml_path()?;
 	if !config_path.exists() {
-		write(config_path, DEVAI_CONFIG_FILE_CONTENT)?;
+		write(&config_path, DEVAI_CONFIG_FILE_CONTENT)?;
+		hub.publish(format!("-- Create Config.toml '{config_path}'")).await;
 	}
 
 	// -- Create the new-template command default
 	update_devai_files(
 		devai_dir.get_new_template_command_default_dir()?,
 		get_embedded_new_command_agent_files(),
-	)?;
+	)
+	.await?;
 
 	// -- Create the new-template solo default
 	update_devai_files(
 		devai_dir.get_new_template_solo_default_dir()?,
 		get_embedded_new_solo_agent_files(),
-	)?;
+	)
+	.await?;
 
 	// -- Create the doc
 	ensure_dir(devai_dir.get_doc_dir()?)?;
 	let rhai_doc_path = devai_dir.get_doc_rhai_path()?;
 	if !rhai_doc_path.exists() {
-		write(rhai_doc_path, DEVAI_DOC_RHAI_CONTENT)?;
+		write(&rhai_doc_path, DEVAI_DOC_RHAI_CONTENT)?;
+		hub.publish(format!("-- Create doc file '{rhai_doc_path}'")).await;
 	}
 
 	Ok(())
@@ -85,7 +106,7 @@ fn create_or_refresh_devai_files(devai_parent_dir: &SPath) -> Result<()> {
 
 // region:    --- Support
 
-fn update_devai_files(dir: impl AsRef<Path>, embedded_agent_file: &[&EmbeddedFile]) -> Result<()> {
+async fn update_devai_files(dir: impl AsRef<Path>, embedded_agent_file: &[&EmbeddedFile]) -> Result<()> {
 	let dir = dir.as_ref();
 	let existing_files = list_files(dir, Some(&["*.devai"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
@@ -94,6 +115,7 @@ fn update_devai_files(dir: impl AsRef<Path>, embedded_agent_file: &[&EmbeddedFil
 		if !existing_names.contains(e_file.name) {
 			let path = Path::new(dir).join(e_file.name);
 			write(&path, e_file.content)?;
+			get_hub().publish(format!("-- Create file '{}'", path.to_string_lossy())).await;
 		}
 	}
 
