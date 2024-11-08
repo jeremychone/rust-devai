@@ -12,7 +12,7 @@ repository = "https://github.com/jeremychone/rust-devai"
 
 [lints.rust]
 unsafe_code = "forbid"
-# unused = { level = "allow", priority = -1 } # For exploratory dev.
+unused = { level = "allow", priority = -1 } # For exploratory dev.
 
 [dependencies]
 # -- Async
@@ -34,7 +34,7 @@ handlebars = "6"
 # -- Cli
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 # -- Files
-simple-fs = { version = "0.2.0" }
+simple-fs = { version = "0.2.2" }
 # -- Web
 reqwest = {version = "0.12", features = ["json"]}
 # -- Others

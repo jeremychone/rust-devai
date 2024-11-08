@@ -12,7 +12,7 @@ pub struct AppArgs {
 #[derive(Subcommand, Debug)]
 pub enum Commands {
 	/// Initialize the `.devai/` folder with the base setting files. Any file that already exists will not be touched.
-	Init,
+	Init(InitArgs),
 
 	/// Executes the Command Agent <name> based on its name or short name.
 	///
@@ -133,4 +133,12 @@ pub struct NewSoloArgs {
 	/// Note: For now assume vscode `code ...` is installed
 	#[arg(short = 'o', long = "open")]
 	pub open: bool,
+}
+
+/// Arguments for the `solo` subcommand
+#[derive(Parser, Debug)]
+pub struct InitArgs {
+	/// The optional path of were to init the .devai (relative to current directory)
+	/// If not given, devai will find the closest .devai/ or create one at current directory
+	pub path: Option<String>,
 }

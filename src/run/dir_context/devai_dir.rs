@@ -1,6 +1,6 @@
 use crate::Result;
 use simple_fs::SPath;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 // region:    --- Consts
 
@@ -47,20 +47,24 @@ const DEVAI_DOC_RHAI_PATH: &str = "doc/rhai.md";
 #[derive(Debug, Clone)]
 pub struct DevaiDir {
 	path: SPath,
+	parent_dir: SPath,
 }
 
 //
 impl DevaiDir {
 	pub fn from_parent_dir(parent_dir: impl AsRef<Path>) -> Result<Self> {
-		let path = SPath::new(parent_dir.as_ref().join(DEVAI_DIR_NAME))?;
-		Ok(Self { path })
+		let devai_path = parent_dir.as_ref().join(DEVAI_DIR_NAME);
+		Self::from_devai_dir(devai_path)
 	}
 
 	#[allow(unused)]
-	pub fn from_devai_dir(path: impl AsRef<Path>) -> Result<Self> {
-		Ok(Self {
-			path: SPath::new(path.as_ref())?,
-		})
+	pub fn from_devai_dir(devai_path: impl AsRef<Path>) -> Result<Self> {
+		let path = SPath::new(devai_path.as_ref())?;
+		let parent_dir = path
+			.parent()
+			.ok_or_else(|| format!(".devai/ path '{path}' does not have a parent dir (it must have one)"))?;
+
+		Ok(Self { path, parent_dir })
 	}
 }
 
@@ -75,9 +79,8 @@ impl DevaiDir {
 		self.path.to_str()
 	}
 
-	#[allow(unused)]
-	pub fn parent(&self) -> Option<SPath> {
-		self.path.parent()
+	pub fn parent_dir(&self) -> &SPath {
+		&self.parent_dir
 	}
 }
 
@@ -154,3 +157,20 @@ impl AsRef<Path> for DevaiDir {
 }
 
 // endregion: --- Froms & AsRefs
+
+/// Return an option of spath tuple as (devai_parent_dir, devai_dir)
+pub fn find_devai_parent_dir(from_dir: impl AsRef<Path>) -> Result<Option<SPath>> {
+	let mut tmp_dir: Option<PathBuf> = Some(from_dir.as_ref().to_path_buf());
+
+	while let Some(parent_dir) = tmp_dir {
+		let devai_dir = DevaiDir::from_parent_dir(&parent_dir)?;
+
+		if devai_dir.exists() {
+			return Ok(Some(SPath::new(parent_dir)?));
+		}
+
+		tmp_dir = parent_dir.parent().map(|p| p.into());
+	}
+
+	Ok(None)
+}
