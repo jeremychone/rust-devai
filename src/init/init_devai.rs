@@ -18,7 +18,9 @@ const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_init/config.toml");
 // -- Doc Content
 const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_init/doc/rhai.md");
 
-pub async fn init_devai_files(ref_dir: Option<String>) -> Result<DirContext> {
+/// Note: The `show_info_always` will make it that even if the `.devai/` is found, it will print the message
+///       This is useful for the `devai init` to always show the status, but not on `devai run`
+pub async fn init_devai_files(ref_dir: Option<String>, show_info_always: bool) -> Result<DirContext> {
 	let hub = get_hub();
 
 	let devai_parent_dir = if let Some(dir) = ref_dir {
@@ -34,14 +36,17 @@ pub async fn init_devai_files(ref_dir: Option<String>) -> Result<DirContext> {
 	let devai_dir = DevaiDir::from_parent_dir(&devai_parent_dir)?;
 
 	// -- Display the heading
-	hub.publish("==== Initializing .devai/").await;
 	if devai_dir.exists() {
-		hub.publish(format!(
-			"-- Parent path: '{}'\n   (`.devai/` already exists. Will create missing files)",
-			devai_parent_dir
-		))
-		.await;
+		if show_info_always {
+			hub.publish("==== Initializing .devai/").await;
+			hub.publish(format!(
+				"-- Parent path: '{}'\n   (`.devai/` already exists. Will create missing files)",
+				devai_parent_dir
+			))
+			.await;
+		}
 	} else {
+		hub.publish("==== Initializing .devai/").await;
 		hub.publish(format!(
 			"-- Parent path: '{}'\n   (`.devai/` will be created at this path)",
 			devai_parent_dir
