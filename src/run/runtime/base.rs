@@ -72,7 +72,7 @@ impl Runtime {
 
 	#[cfg(test)]
 	pub fn new_for_test() -> Result<Self> {
-		let dir_context = DirContext::from_parent_dir("./")?;
+		let dir_context = DirContext::from_parent_dir("./tests-data/sandbox-01")?;
 		Self::new(dir_context)
 	}
 }

@@ -32,7 +32,7 @@ pub fn load_test_solo_agent_and_solo_config(path: &str) -> Result<(Agent, RunSol
 /// Used to test rhai module functions
 pub fn load_reflective_agent(data_rhai_code: &str) -> Result<Agent> {
 	load_inline_agent(
-		"./dummy/path/agent-dir/dummy-agent.devai",
+		"./mock/reflective-agent.devai",
 		format!(
 			r#"
 # Data

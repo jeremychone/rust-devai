@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 // region:    --- Consts
 
 const DEVAI_DIR_NAME: &str = ".devai";
+const DEVAI_DIR_PATH: &str = "./.devai";
 
 // NOTE: All of the path below are designed to be below the `.devai/` folder
 
@@ -46,73 +47,93 @@ const DEVAI_DOC_RHAI_PATH: &str = "doc/rhai.md";
 
 #[derive(Debug, Clone)]
 pub struct DevaiDir {
-	path: SPath,
-	parent_dir: SPath,
+	/// This will be always "./.devai" for now
+	/// We might want to deprecate/remove this one.
+	devai_dir: SPath,
+
+	/// The devai_parent_dir.join(".devai")
+	devai_dir_full_path: SPath,
+
+	/// The absolute path of the parent
+	devai_parent_dir: SPath,
 }
 
 //
 impl DevaiDir {
 	pub fn from_parent_dir(parent_dir: impl AsRef<Path>) -> Result<Self> {
-		let devai_path = parent_dir.as_ref().join(DEVAI_DIR_NAME);
-		Self::from_devai_dir(devai_path)
+		let devai_parent_dir = SPath::from_path(parent_dir)?;
+		// Note: Here we use the `./.devai` which is fixed, and the `./`
+		//       will allow to follow the convention to start from devai_parent_dir
+		// Note: We might just want the `.devai`, will see
+		let devai_dir = SPath::try_from(DEVAI_DIR_PATH)?;
+
+		let devai_dir_full_path = devai_parent_dir.join(DEVAI_DIR_NAME)?;
+
+		Ok(Self {
+			devai_dir,
+			devai_parent_dir,
+			devai_dir_full_path,
+		})
 	}
 
-	#[allow(unused)]
-	pub fn from_devai_dir(devai_path: impl AsRef<Path>) -> Result<Self> {
-		let path = SPath::new(devai_path.as_ref())?;
-		let parent_dir = path
-			.parent()
-			.ok_or_else(|| format!(".devai/ path '{path}' does not have a parent dir (it must have one)"))?;
+	// pub fn from_devai_dir(devai_path: impl AsRef<Path>) -> Result<Self> {
+	// 	let path = SPath::new(devai_path.as_ref())?;
+	// 	let parent_dir = path
+	// 		.parent()
+	// 		.ok_or_else(|| format!(".devai/ path '{path}' does not have a parent dir (it must have one)"))?;
 
-		Ok(Self { path, parent_dir })
-	}
+	// 	Ok(Self { path, parent_dir })
+	// }
 }
 
 /// SPath passthrough
 impl DevaiDir {
 	pub fn exists(&self) -> bool {
-		self.path.exists()
+		self.devai_dir_full_path().exists()
 	}
 
-	#[allow(unused)]
-	pub fn to_str(&self) -> &str {
-		self.path.to_str()
+	pub fn devai_dir(&self) -> &SPath {
+		&self.devai_dir
+	}
+
+	pub fn devai_dir_full_path(&self) -> &SPath {
+		&self.devai_dir_full_path
 	}
 
 	pub fn parent_dir(&self) -> &SPath {
-		&self.parent_dir
+		&self.devai_parent_dir
 	}
 }
 
 impl DevaiDir {
 	pub fn get_config_toml_path(&self) -> Result<SPath> {
-		let path = self.path.join(DEVAI_CONFIG_FILE_PATH)?;
+		let path = self.devai_dir_full_path.join(DEVAI_CONFIG_FILE_PATH)?;
 		Ok(path)
 	}
 
 	pub fn get_new_template_command_default_dir(&self) -> Result<SPath> {
-		let dir = self.path.join(DEVAI_NEW_DEFAULT_COMMAND_DIR)?;
+		let dir = self.devai_dir_full_path.join(DEVAI_NEW_DEFAULT_COMMAND_DIR)?;
 		Ok(dir)
 	}
 
 	pub fn get_new_template_command_dirs(&self) -> Result<Vec<SPath>> {
 		let dirs = DEVAI_NEW_COMMAND_DIRS
 			.iter()
-			.map(|&suffix_dir| self.path.join(suffix_dir).map_err(|err| err.into()))
+			.map(|&suffix_dir| self.devai_dir_full_path.join(suffix_dir).map_err(|err| err.into()))
 			.collect::<Result<_>>()?;
 
 		Ok(dirs)
 	}
 
 	pub fn get_new_template_solo_default_dir(&self) -> Result<SPath> {
-		let dir = self.path.join(DEVAI_NEW_DEFAULT_SOLO_DIR)?;
+		let dir = self.devai_dir_full_path.join(DEVAI_NEW_DEFAULT_SOLO_DIR)?;
 		Ok(dir)
 	}
 
 	pub fn get_new_template_solo_dirs(&self) -> Result<Vec<SPath>> {
 		let dirs = DEVAI_NEW_SOLO_DIRS
 			.iter()
-			.map(|&suffix_dir| self.path.join(suffix_dir).map_err(|err| err.into()))
+			.map(|&suffix_dir| self.devai_dir_full_path.join(suffix_dir).map_err(|err| err.into()))
 			.collect::<Result<_>>()?;
 
 		Ok(dirs)
@@ -121,29 +142,29 @@ impl DevaiDir {
 	pub fn get_command_agent_dirs(&self) -> Result<Vec<SPath>> {
 		let dirs = DEVAI_COMMAND_AGENT_DIRS
 			.iter()
-			.map(|&suffix_dir| self.path.join(suffix_dir).map_err(|err| err.into()))
+			.map(|&suffix_dir| self.devai_dir_full_path.join(suffix_dir).map_err(|err| err.into()))
 			.collect::<Result<_>>()?;
 
 		Ok(dirs)
 	}
 
 	pub fn get_command_agent_default_dir(&self) -> Result<SPath> {
-		let dir = self.path.join(DEVAI_AGENT_DEFAULT_DIR)?;
+		let dir = self.devai_dir_full_path.join(DEVAI_AGENT_DEFAULT_DIR)?;
 		Ok(dir)
 	}
 
 	pub fn get_command_agent_custom_dir(&self) -> Result<SPath> {
-		let dir = self.path.join(DEVAI_AGENT_CUSTOM_DIR)?;
+		let dir = self.devai_dir_full_path.join(DEVAI_AGENT_CUSTOM_DIR)?;
 		Ok(dir)
 	}
 
 	pub fn get_doc_dir(&self) -> Result<SPath> {
-		let dir = self.path.join(DEVAI_DOC_DIR)?;
+		let dir = self.devai_dir_full_path.join(DEVAI_DOC_DIR)?;
 		Ok(dir)
 	}
 
 	pub fn get_doc_rhai_path(&self) -> Result<SPath> {
-		let path = self.path.join(DEVAI_DOC_RHAI_PATH)?;
+		let path = self.devai_dir_full_path.join(DEVAI_DOC_RHAI_PATH)?;
 		Ok(path)
 	}
 }
@@ -152,7 +173,7 @@ impl DevaiDir {
 
 impl AsRef<Path> for DevaiDir {
 	fn as_ref(&self) -> &Path {
-		self.path.as_ref()
+		self.devai_dir_full_path.as_ref()
 	}
 }
 
@@ -174,3 +195,35 @@ pub fn find_devai_parent_dir(from_dir: impl AsRef<Path>) -> Result<Option<SPath>
 
 	Ok(None)
 }
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+
+	use super::*;
+
+	#[test]
+	fn test_devai_dir_simple() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_base_dir = "./tests-data/sandbox-01";
+
+		// -- Exec
+		let devai_dir = DevaiDir::from_parent_dir(fx_base_dir)?;
+
+		// -- Check
+		assert_eq!(
+			devai_dir.get_config_toml_path()?.to_str(),
+			"./tests-data/sandbox-01/.devai/config.toml"
+		);
+		assert_eq!(
+			devai_dir.get_command_agent_custom_dir()?.to_str(),
+			"./tests-data/sandbox-01/.devai/custom/command-agent"
+		);
+
+		Ok(())
+	}
+}
+
+// endregion: --- Tests

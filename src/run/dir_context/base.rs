@@ -1,8 +1,7 @@
 use crate::run::DevaiDir;
 use crate::support::files::current_dir;
-use crate::{Error, Result};
+use crate::Result;
 use simple_fs::SPath;
-use std::fs::canonicalize;
 
 #[derive(Debug, Clone)]
 pub struct DirContext {

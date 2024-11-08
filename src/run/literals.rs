@@ -45,14 +45,15 @@ impl Literals {
 		//          agent_name: `./my-folder/command-agent-jc`
 		// literals.append("AGENT_NAME", ???);
 
+		// The devai_parent_dir should be absolute, and all of the other paths will relative to it.
+		literals.append("DEVAI_PARENT_DIR", dir_context.devai_parent_dir());
+
+		literals.append("DEVAI_DIR", devai_dir.devai_dir());
+
 		literals.append("AGENT_FILE_PATH", agent_path.to_str());
 		literals.append("AGENT_FILE_DIR", agent_dir);
 		literals.append("AGENT_FILE_NAME", agent_path.name());
 		literals.append("AGENT_FILE_STEM", agent_path.stem());
-		literals.append("DEVAI_DIR", devai_dir.to_str());
-		// the devai_parent_dir should be the one that drives the other relative
-		// For example, AGENT_DIR and AGENT_PATH should be path diff with DEVAI_PARENT_DIR
-		literals.append("DEVAI_PARENT_DIR", dir_context.devai_parent_dir());
 
 		Ok(literals)
 	}
@@ -78,18 +79,19 @@ mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	use crate::_test_support::run_reflective_agent;
+	use std::path::Path;
 	use value_ext::JsonValueExt;
 
 	#[tokio::test]
 	async fn test_run_literals_devai_dir() -> Result<()> {
 		let script = r#"
 return #{
-		AGENT_FILE_PATH: CTX.AGENT_FILE_PATH,
-		AGENT_FILE_DIR: CTX.AGENT_FILE_DIR,
-		AGENT_FILE_NAME: CTX.AGENT_FILE_NAME,
-		AGENT_FILE_STEM: CTX.AGENT_FILE_STEM,
-		DEVAI_DIR: CTX.DEVAI_DIR,
-		DEVAI_PARENT_DIR: CTX.DEVAI_PARENT_DIR,
+	  DEVAI_PARENT_DIR: CTX.DEVAI_PARENT_DIR,
+		DEVAI_DIR:        CTX.DEVAI_DIR,
+		AGENT_FILE_PATH:  CTX.AGENT_FILE_PATH,
+		AGENT_FILE_DIR:   CTX.AGENT_FILE_DIR,
+		AGENT_FILE_NAME:  CTX.AGENT_FILE_NAME,
+		AGENT_FILE_STEM:  CTX.AGENT_FILE_STEM,
 }
 		"#;
 
@@ -97,15 +99,27 @@ return #{
 		let res = run_reflective_agent(script, None).await?;
 
 		// -- Check
+		// devai_parent_dir
+		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		assert!(
+			Path::new(devai_parent_dir).is_absolute(),
+			"devai_parent_dir must be absolute"
+		);
+		assert!(
+			devai_parent_dir.ends_with("tests-data/sandbox-01"),
+			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+		);
+
+		// devai dir
+		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
+
 		assert_eq!(
 			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"./dummy/path/agent-dir/dummy-agent.devai"
+			"./mock/reflective-agent.devai"
 		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./dummy/path/agent-dir");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "dummy-agent.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "dummy-agent");
-		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
-		assert_eq!(res.x_get_as::<&str>("DEVAI_PARENT_DIR")?, "./");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./mock");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "reflective-agent.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "reflective-agent");
 
 		Ok(())
 	}

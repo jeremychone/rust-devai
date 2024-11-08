@@ -6,10 +6,10 @@ use crate::init::embedded_files::{
 use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
 use crate::run::{find_devai_parent_dir, DevaiDir, DirContext};
 use crate::support::files::current_dir;
-use crate::{Error, Result};
+use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
 use std::collections::HashSet;
-use std::fs::{canonicalize, write};
+use std::fs::write;
 use std::path::Path;
 
 // -- Config Content
