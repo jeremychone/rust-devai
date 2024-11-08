@@ -26,10 +26,10 @@ pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: 
 	let item = serde_json::to_value(item)?;
 	let before_all_data = Value::Null;
 	let res_value = run_agent_item(
-		label,
 		runtime,
 		agent,
 		before_all_data,
+		label,
 		item,
 		run_solo_options.base_run_config(),
 	)
@@ -54,7 +54,7 @@ pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: 
 // region:    --- Tests
 
 #[cfg(test)]
-#[path = "../_tests/tests_ai_run_solo.rs"]
+#[path = "../_tests/tests_run_solo.rs"]
 mod tests;
 
 // endregion: --- Tests

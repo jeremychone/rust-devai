@@ -179,7 +179,7 @@ async fn run_command_agent_item(
 	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
 	hub.publish(format!("\n==== Running item: {}", label)).await;
 
-	let res_value = run_agent_item(&label, runtime, agent, before_all, item, run_base_options).await?;
+	let res_value = run_agent_item(runtime, agent, before_all, &label, item, run_base_options).await?;
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = res_value.as_str() {
@@ -235,7 +235,7 @@ fn get_genai_info(agent: &Agent) -> String {
 // region:    --- Tests
 
 #[cfg(test)]
-#[path = "../_tests/tests_ai_run_command.rs"]
+#[path = "../_tests/tests_run_command.rs"]
 mod tests;
 
 // endregion: --- Tests

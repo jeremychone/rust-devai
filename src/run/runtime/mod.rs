@@ -1,7 +1,5 @@
 // region:    --- Modules
 
-mod literals;
-
 mod base;
 mod runtime_context;
 

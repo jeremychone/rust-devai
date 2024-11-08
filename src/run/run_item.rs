@@ -1,29 +1,39 @@
 use crate::agent::Agent;
 use crate::hub::get_hub;
+use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
 use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::Result;
 use genai::chat::ChatRequest;
-use serde_json::{json, Value};
+use serde_json::{json, Map, Value};
 use std::collections::HashMap;
 
 /// Run and agent item for command agent or solo agent.
 pub async fn run_agent_item(
-	label: &str,
 	runtime: &Runtime,
 	agent: &Agent,
 	before_all_result: Value,
+	label: &str,
 	item: Value,
 	run_base_options: &RunBaseOptions,
 ) -> Result<Value> {
 	let hub = get_hub();
 	let client = runtime.genai_client();
 
+	// -- Build the _ctx
+	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
+	let mut _ctx = Map::new();
+	for (name, value) in literals {
+		_ctx.insert(name, value.into());
+	}
+	let _ctx = Value::Object(_ctx);
+
 	let data_rhai_scope = json!({
 		"item": item.clone(), // clone because item is reused later
-		"before_all": before_all_result.clone()
+		"before_all": before_all_result.clone(),
+		"CTX": _ctx
 	});
 
 	// -- Execute data

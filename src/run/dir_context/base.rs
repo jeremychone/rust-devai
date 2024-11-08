@@ -15,6 +15,7 @@ pub struct DirContext {
 	/// Absolute path of the parent of the devai_dir
 	devai_parent_dir: SPath,
 
+	#[allow(unused)]
 	/// Absolute path of were to run the file from
 	/// Typically teh parent dir of the devai_dir
 	ref_dir: SPath,
@@ -56,9 +57,8 @@ impl DirContext {
 }
 
 /// Property Getters
-#[allow(unused)]
 impl DirContext {
-	pub fn pwd(&self) -> &SPath {
+	pub fn current_dir(&self) -> &SPath {
 		&self.current_dir
 	}
 
@@ -70,6 +70,7 @@ impl DirContext {
 		&self.devai_parent_dir
 	}
 
+	#[allow(unused)]
 	pub fn ref_dir(&self) -> &SPath {
 		&self.ref_dir
 	}
