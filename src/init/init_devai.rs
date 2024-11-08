@@ -12,10 +12,10 @@ use std::fs::write;
 use std::path::Path;
 
 // -- Config Content
-const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_base/config.toml");
+const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_init/config.toml");
 
 // -- Doc Content
-const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_base/doc/rhai.md");
+const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_init/doc/rhai.md");
 
 pub fn init_devai_files() -> Result<DirContext> {
 	// TODO: Add more logic to tell the user what has been created, where ...

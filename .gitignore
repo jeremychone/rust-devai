@@ -5,6 +5,7 @@
 
 _*
 !_base/
+!_init/
 # '_' in src dir, ok.
 !**/src/**/_*
 

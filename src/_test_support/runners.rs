@@ -7,7 +7,6 @@ use serde_json::Value;
 /// A reflective agent just return the value of the data rhai section.
 /// It's useful for testing rhai module functions.
 ///
-/// Note: This will run a
 pub async fn run_reflective_agent(data_rhai_code: &str, item: Option<Value>) -> Result<Value> {
 	let runtime = Runtime::new_for_test()?;
 

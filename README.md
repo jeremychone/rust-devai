@@ -63,7 +63,7 @@ COHERE_API_KEY
 Usage: `devai run proof-rust-comments -f "./src/main.rs"`
 
 (or have any glob like `-f "./src/**/*.rs"`)
-- This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rust-comments.md` (see [.devai/defaults/proof-rust-comments.md`](./_base/agents/proof-rust-comments.md)) and run it with genai as follows: 
+- This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rust-comments.md` (see [.devai/defaults/proof-comments.md`](./_init/agents/proof-comments.devai)) and run it with genai as follows: 
     - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "item" for each file, which can then be accessed in the `# Data` scripting section.
     - `# Data`, which contains a ```rhai``` block that will get executed with the `item` value (the file reference in our example above).
         - With `rhai`, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
