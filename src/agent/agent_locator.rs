@@ -8,21 +8,32 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use strsim::levenshtein;
 
-pub fn find_agent(agent_name: &str, dir_context: &DirContext) -> Result<Agent> {
+pub enum LocatorMode {
+	CurrentDir,
+	DevaiParentDir,
+}
+
+/// - `from_cli` Used to decide which "reference dir" should be used.
+///              If from cli, the current_dir will be used, otherwise, the devai_parent_dir
+pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: LocatorMode) -> Result<Agent> {
 	let base_config = load_base_agent_config(dir_context)?;
 
 	let devai_dir = dir_context.devai_dir();
 
 	// -- First see if it is a direct path (starts with `./` or `/`)
 	let agent_path = if agent_name.starts_with("./") {
-		let agent_file = dir_context.current_dir().join(agent_name)?;
+		let ref_dir = match mode {
+			LocatorMode::CurrentDir => dir_context.current_dir(),
+			LocatorMode::DevaiParentDir => dir_context.devai_parent_dir(),
+		};
+		let agent_file = ref_dir.join(agent_name)?;
 		Some(agent_file)
 	} else if agent_name.starts_with("/") {
 		Some(SPath::new(agent_name)?)
 	} else {
 		None
 	};
-
+	// return the found direct agent
 	if let Some(agent_path) = agent_path {
 		let agent_file =
 			SFile::try_from(agent_path).map_err(|_| Error::CommandAgentNotFound(agent_name.to_string()))?;
@@ -269,7 +280,11 @@ mod tests {
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 
 		// -- Exec
-		let agent = find_agent("./agent-ctx-reflect.devai", runtime.dir_context())?;
+		let agent = find_agent(
+			"./agent-ctx-reflect.devai",
+			runtime.dir_context(),
+			LocatorMode::CurrentDir,
+		)?;
 		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
 
 		// -- Check
@@ -307,7 +322,7 @@ mod tests {
 		)?;
 
 		// -- Exec
-		let agent = find_agent("command-ctx-reflect", runtime.dir_context())?;
+		let agent = find_agent("command-ctx-reflect", runtime.dir_context(), LocatorMode::CurrentDir)?;
 		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
 
 		// -- Check

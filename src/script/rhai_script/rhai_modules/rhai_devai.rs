@@ -10,7 +10,7 @@
 //! * `devai::action_skip() -> SkipActionDict`
 //! * `devai::action_skip(reason: string) -> SkipActionDict`
 
-use crate::agent::find_agent;
+use crate::agent::{find_agent, LocatorMode};
 use crate::run::RunBaseOptions;
 use crate::run::{run_command_agent, RuntimeContext};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
@@ -46,7 +46,7 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 fn run_with_items(ctx: &RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
 	let items = dynamics_to_values(items)?;
 	// TODO: Might want to reuse the current one
-	let agent = find_agent(cmd_agent, ctx.dir_context())?;
+	let agent = find_agent(cmd_agent, ctx.dir_context(), LocatorMode::DevaiParentDir)?;
 
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
 
