@@ -36,7 +36,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_eval_file_load_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let runtime = Runtime::new_for_test()?;
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 		let script = r#"
         let file1 = file::load("src/main.rs");
         let file2 = file::load("src/error.rs");
@@ -63,7 +63,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_engine_eval_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let runtime = Runtime::new_for_test()?;
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 		let script_content = r#"
         let x = 10;
         let y = 20;

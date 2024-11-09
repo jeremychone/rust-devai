@@ -8,31 +8,43 @@ use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use strsim::levenshtein;
 
-pub fn find_agent(agent_path: &str, dir_context: &DirContext) -> Result<Agent> {
+pub fn find_agent(agent_name: &str, dir_context: &DirContext) -> Result<Agent> {
 	let base_config = load_base_agent_config(dir_context)?;
 
+	let devai_dir = dir_context.devai_dir();
+
 	// -- First see if it is a direct path (starts with `./` or `/`)
-	if agent_path.starts_with("./") || agent_path.starts_with("/") {
-		let sfile = SFile::new(agent_path).map_err(|_| Error::CommandAgentNotFound(agent_path.to_string()))?;
-		let doc = AgentDoc::from_file(sfile)?;
-		return doc.into_agent(base_config);
+	let agent_path = if agent_name.starts_with("./") {
+		let agent_file = dir_context.current_dir().join(agent_name)?;
+		Some(agent_file)
+	} else if agent_name.starts_with("/") {
+		Some(SPath::new(agent_name)?)
+	} else {
+		None
+	};
+
+	if let Some(agent_path) = agent_path {
+		let agent_file =
+			SFile::try_from(agent_path).map_err(|_| Error::CommandAgentNotFound(agent_name.to_string()))?;
+		let doc = AgentDoc::from_file(agent_file)?;
+		return doc.into_agent(agent_name, base_config);
 	}
 
 	// -- Otherwise, look in the command-agent dirs
-	let dirs = dir_context.devai_dir().get_command_agent_dirs()?;
+	let dirs = devai_dir.get_command_agent_dirs()?;
 	let dirs = dirs.iter().map(|dir| dir.path()).collect::<Vec<_>>();
 
 	// Attempt to find the agent in the specified directories
-	if let Some(agent_doc) = find_agent_doc_in_dir(agent_path, &dirs)? {
-		return agent_doc.into_agent(base_config);
+	if let Some(agent_doc) = find_agent_doc_in_dir(agent_name, &dirs)? {
+		return agent_doc.into_agent(agent_name, base_config);
 	}
 
 	// If not found, return an error with potential similar agents
-	let similar_paths = find_similar_agent_paths(agent_path, &dirs)?;
+	let similar_paths = find_similar_agent_paths(agent_name, &dirs)?;
 	let error_msg = if !similar_paths.is_empty() {
 		format!(
 			"Agent '{}' not found.\nDid you mean one of these?\n{}",
-			agent_path,
+			agent_name,
 			similar_paths
 				.iter()
 				.map(agent_sfile_as_bullet)
@@ -43,7 +55,7 @@ pub fn find_agent(agent_path: &str, dir_context: &DirContext) -> Result<Agent> {
 		let agent_files = list_all_agent_files(dir_context)?;
 		format!(
 			"Agent '{}' not found.\nHere is the list of available command agents:\n{}",
-			agent_path,
+			agent_name,
 			agent_files
 				.iter()
 				.map(agent_sfile_as_bullet)
@@ -53,6 +65,18 @@ pub fn find_agent(agent_path: &str, dir_context: &DirContext) -> Result<Agent> {
 	};
 
 	Err(error_msg.into())
+}
+
+pub fn load_solo_agent(solo_agent_path: impl AsRef<Path>, dir_context: &DirContext) -> Result<Agent> {
+	let base_config = load_base_agent_config(dir_context)?;
+
+	let solo_agent_name = SPath::new(solo_agent_path.as_ref())?;
+	let solo_agent_file = dir_context.current_dir().join(&solo_agent_name)?;
+
+	let solo_file = SFile::try_from(solo_agent_file).map_err(|err| format!("Solo file not found: {err}"))?;
+
+	let agent_doc = AgentDoc::from_file(&solo_file)?;
+	agent_doc.into_agent(solo_agent_name.to_str(), base_config)
 }
 
 /// Returns the (solo_path, target_path) tuple for a file path of either.
@@ -125,6 +149,9 @@ fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>>
 	for dir in dirs {
 		let files = list_files(dir, Some(&["*.devai"]), None)?;
 		if let Some(found_file) = files.into_iter().find(|f| match_agent(name, f)) {
+			// NOTE: Because the dirs are form the DevaiDir and might not be absolute, and relative to working dir
+			//       But later, need to remove from the current_dir of the DirContext, so, needs full path
+			let found_file = found_file.canonicalize()?;
 			let doc = AgentDoc::from_file(found_file)?;
 			return Ok(Some(doc));
 		}
@@ -198,6 +225,9 @@ pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentConfig> {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::_test_support::{run_simple_command_agent_item_for_test, SANDBOX_01_DIR};
+	use crate::run::Runtime;
+	use value_ext::JsonValueExt;
 
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
@@ -229,6 +259,113 @@ mod tests {
 			assert_eq!(solo_path.to_str(), *expected_solo_path);
 			assert_eq!(target_path.to_str(), *expected_target_path);
 		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_find_command_agent_direct_and_validate_ctx() -> Result<()> {
+		// -- Setup & Fixtures
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+
+		// -- Exec
+		let agent = find_agent("./agent-ctx-reflect.devai", runtime.dir_context())?;
+		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
+
+		// -- Check
+		// devai_parent_dir
+		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		assert!(
+			Path::new(devai_parent_dir).is_absolute(),
+			"devai_parent_dir must be absolute"
+		);
+		assert!(
+			devai_parent_dir.ends_with("tests-data/sandbox-01"),
+			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+		);
+
+		// devai dir
+		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
+
+		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "./agent-ctx-reflect.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_PATH")?, "./agent-ctx-reflect.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, ".");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "agent-ctx-reflect.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "agent-ctx-reflect");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_find_command_agent_custom_and_validate_ctx() -> Result<()> {
+		// -- Setup & Fixtures
+		// TODO: Probably need to run the init in sandbox_01
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		std::fs::copy(
+			Path::new(SANDBOX_01_DIR).join("agent-ctx-reflect.devai"),
+			"tests-data/sandbox-01/.devai/custom/command-agent/command-ctx-reflect.devai",
+		)?;
+
+		// -- Exec
+		let agent = find_agent("command-ctx-reflect", runtime.dir_context())?;
+		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
+
+		// -- Check
+		// devai_parent_dir
+		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		assert!(
+			Path::new(devai_parent_dir).is_absolute(),
+			"devai_parent_dir must be absolute"
+		);
+		assert!(
+			devai_parent_dir.ends_with("tests-data/sandbox-01"),
+			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+		);
+
+		// // devai dir
+		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "command-ctx-reflect");
+		assert_eq!(
+			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
+			"./.devai/custom/command-agent/command-ctx-reflect.devai"
+		);
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/command-agent");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "command-ctx-reflect.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "command-ctx-reflect");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_load_solo_agent_and_validate_ctx() -> Result<()> {
+		// -- Setup & Fixtures
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+
+		// -- Exec
+		let agent_path = "agent-ctx-reflect.devai";
+		let agent = load_solo_agent(agent_path, runtime.dir_context())?;
+		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
+
+		// -- Check
+		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		assert!(
+			Path::new(devai_parent_dir).is_absolute(),
+			"devai_parent_dir must be absolute"
+		);
+		assert!(
+			devai_parent_dir.ends_with("tests-data/sandbox-01"),
+			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+		);
+
+		// devai dir
+		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
+
+		// agent details
+		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "agent-ctx-reflect.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_PATH")?, "./agent-ctx-reflect.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, ".");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "agent-ctx-reflect.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "agent-ctx-reflect");
 
 		Ok(())
 	}

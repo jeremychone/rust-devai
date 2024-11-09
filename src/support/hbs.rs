@@ -36,7 +36,7 @@ mod tests {
 	#[tokio::test]
 	async fn test_hbs_with_rhai_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let runtime = Runtime::new_for_test()?;
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 		let script = r#"
         let file1 = file::load("src/main.rs");
         let file2 = file::load("src/error.rs");

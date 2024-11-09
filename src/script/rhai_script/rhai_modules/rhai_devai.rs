@@ -145,11 +145,7 @@ mod tests {
 	// Note: multi_thread required, because rhai devai::run is a sync calling a async.
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_rhai_devai_run_simple() -> Result<()> {
-		let res = run_reflective_agent(
-			r#"return devai::run("./tests-data/agents/agent-hello.md", ["one", "two"])"#,
-			None,
-		)
-		.await;
+		let res = run_reflective_agent(r#"return devai::run("./agent-hello.md", ["one", "two"])"#, None).await;
 
 		// NOTE: apparently when multi thread, need to print error
 		let res = match res {

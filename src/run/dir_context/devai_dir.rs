@@ -54,7 +54,7 @@ pub struct DevaiDir {
 	/// The devai_parent_dir.join(".devai")
 	devai_dir_full_path: SPath,
 
-	/// The absolute path of the parent
+	/// The path to the parent devai_parent_dir. Can be relative, to working dir for example.
 	devai_parent_dir: SPath,
 }
 
@@ -203,14 +203,12 @@ mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	use super::*;
+	use crate::_test_support::SANDBOX_01_DIR;
 
 	#[test]
 	fn test_devai_dir_simple() -> Result<()> {
-		// -- Setup & Fixtures
-		let fx_base_dir = "./tests-data/sandbox-01";
-
 		// -- Exec
-		let devai_dir = DevaiDir::from_parent_dir(fx_base_dir)?;
+		let devai_dir = DevaiDir::from_parent_dir(SANDBOX_01_DIR)?;
 
 		// -- Check
 		assert_eq!(

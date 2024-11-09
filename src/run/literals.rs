@@ -25,11 +25,14 @@ impl Literals {
 	pub(super) fn from_dir_context_and_agent_path(dir_context: &DirContext, agent: &Agent) -> Result<Literals> {
 		let mut literals = Literals::default();
 
-		let agent_path = SPath::new(agent.file_path())?;
+		let agent_path = dir_context.current_dir().join(agent.file_path())?;
+		let agent_path = agent_path.diff(dir_context.devai_parent_dir())?;
+		// Add back the './' prefix to follow convention of being relative to devai_parent_dir
+		let agent_path = SPath::new(format!("./{agent_path}"))?;
 
 		let agent_dir = agent_path
 			.parent()
-			.ok_or_else(|| format!("Agent with path '{agent_path}' does not have a parent path"))?;
+			.ok_or_else(|| format!("Agent {agent_path} does not have a parent dir"))?;
 
 		let devai_dir = dir_context.devai_dir();
 
@@ -50,9 +53,10 @@ impl Literals {
 
 		literals.append("DEVAI_DIR", devai_dir.devai_dir());
 
+		literals.append("AGENT_NAME", agent.name());
+		literals.append("AGENT_FILE_NAME", agent_path.name());
 		literals.append("AGENT_FILE_PATH", agent_path.to_str());
 		literals.append("AGENT_FILE_DIR", agent_dir);
-		literals.append("AGENT_FILE_NAME", agent_path.name());
 		literals.append("AGENT_FILE_STEM", agent_path.stem());
 
 		Ok(literals)
@@ -88,9 +92,9 @@ mod tests {
 return #{
 	  DEVAI_PARENT_DIR: CTX.DEVAI_PARENT_DIR,
 		DEVAI_DIR:        CTX.DEVAI_DIR,
+		AGENT_FILE_NAME:  CTX.AGENT_FILE_NAME,
 		AGENT_FILE_PATH:  CTX.AGENT_FILE_PATH,
 		AGENT_FILE_DIR:   CTX.AGENT_FILE_DIR,
-		AGENT_FILE_NAME:  CTX.AGENT_FILE_NAME,
 		AGENT_FILE_STEM:  CTX.AGENT_FILE_STEM,
 }
 		"#;

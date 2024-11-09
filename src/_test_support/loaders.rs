@@ -8,14 +8,15 @@ use std::path::Path;
 /// - `path` is just to be used as a path for the agent. Not used to load the content.
 pub fn load_inline_agent(path: &str, content: impl Into<String>) -> Result<Agent> {
 	let doc = AgentDoc::from_content(path, content)?;
-	let agent = doc.into_agent(default_agent_config_for_test())?;
+	let agent = doc.into_agent("inline-agent", default_agent_config_for_test())?;
 	Ok(agent)
 }
 
 pub fn load_test_agent(path: impl AsRef<Path>) -> Result<Agent> {
 	let path = path.as_ref();
 	let doc = AgentDoc::from_file(path)?;
-	let agent = doc.into_agent(default_agent_config_for_test())?;
+	let name = path.to_str().unwrap_or("NO_UTF8_NAME");
+	let agent = doc.into_agent(name, default_agent_config_for_test())?;
 	Ok(agent)
 }
 

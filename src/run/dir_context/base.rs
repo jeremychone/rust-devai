@@ -18,7 +18,12 @@ pub struct DirContext {
 impl DirContext {
 	pub fn new(devai_dir: DevaiDir) -> Result<Self> {
 		let current_dir = current_dir()?;
+		Self::from_devai_dir_and_current_dir(devai_dir, current_dir)
+	}
+
+	fn from_devai_dir_and_current_dir(devai_dir: DevaiDir, current_dir: SPath) -> Result<Self> {
 		let devai_parent_dir = devai_dir.parent_dir().canonicalize()?;
+		let current_dir = current_dir.canonicalize()?;
 		Ok(Self {
 			current_dir,
 			devai_dir,
@@ -27,10 +32,11 @@ impl DirContext {
 	}
 
 	#[cfg(test)]
-	pub fn from_parent_dir(parent_dir: impl AsRef<std::path::Path>) -> Result<Self> {
-		let parent_dir = SPath::new(parent_dir.as_ref())?;
-		let devai_dir = DevaiDir::from_parent_dir(&parent_dir)?;
-		Self::new(devai_dir)
+	pub fn from_parent_dir_and_current_dir_for_test(
+		parent_dir: impl AsRef<std::path::Path>,
+		current_dir: SPath,
+	) -> Result<Self> {
+		Self::from_devai_dir_and_current_dir(DevaiDir::from_parent_dir(parent_dir)?, current_dir)
 	}
 }
 

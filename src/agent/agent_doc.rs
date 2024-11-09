@@ -27,14 +27,14 @@ impl AgentDoc {
 		Ok(Self { spath, raw_content })
 	}
 
-	pub fn into_agent(self, config: AgentConfig) -> Result<Agent> {
-		let agent_inner = self.into_agent_inner(config)?;
+	pub fn into_agent(self, name: impl Into<String>, config: AgentConfig) -> Result<Agent> {
+		let agent_inner = self.into_agent_inner(name.into(), config)?;
 		let agent = Agent::new(agent_inner)?;
 		Ok(agent)
 	}
 
 	/// Internal method to create the first part of the agent inner
-	fn into_agent_inner(self, mut config: AgentConfig) -> Result<AgentInner> {
+	fn into_agent_inner(self, name: String, mut config: AgentConfig) -> Result<AgentInner> {
 		#[derive(Debug)]
 		enum CaptureMode {
 			None,
@@ -212,7 +212,8 @@ impl AgentDoc {
 		let agent_inner = AgentInner {
 			config,
 
-			name: self.spath.stem().to_string(),
+			name,
+
 			file_name: self.spath.name().to_string(),
 			file_path: self.spath.to_str().to_string(),
 
@@ -263,7 +264,7 @@ mod tests {
 
 		// -- Exec
 		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent(default_agent_config_for_test())?;
+		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
 
 		// -- Check
 		assert!(agent.inst().contains("Some paragraph for instruction"), "instruction");
@@ -288,7 +289,7 @@ mod tests {
 
 		// -- Exec
 		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent(default_agent_config_for_test())?;
+		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
 
 		// -- Check config
 		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
@@ -317,7 +318,7 @@ mod tests {
 
 		// -- Exec
 		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent(default_agent_config_for_test())?;
+		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
 
 		// -- Check config
 		assert_eq!(agent.config().model(), Some("test_model_for_demo"));

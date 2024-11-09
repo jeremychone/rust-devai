@@ -7,7 +7,7 @@ use simple_fs::read_to_string;
 #[tokio::test]
 async fn test_run_agent_s_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let runtime = Runtime::new_for_test()?;
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let (agent, solo_config) = load_test_solo_agent_and_solo_config("./tests-data/solo/simple.md.devai")?;
 	let fx_target_path = solo_config.target_path().to_string();
 

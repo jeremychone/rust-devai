@@ -71,8 +71,12 @@ impl Runtime {
 	}
 
 	#[cfg(test)]
-	pub fn new_for_test() -> Result<Self> {
-		let dir_context = DirContext::from_parent_dir("./tests-data/sandbox-01")?;
+	pub fn new_test_runtime_sandbox_01() -> Result<Self> {
+		use crate::_test_support::SANDBOX_01_DIR;
+		use simple_fs::SPath;
+
+		let dir_context =
+			DirContext::from_parent_dir_and_current_dir_for_test(SANDBOX_01_DIR, SPath::new(SANDBOX_01_DIR)?)?;
 		Self::new(dir_context)
 	}
 }

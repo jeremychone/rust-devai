@@ -1,12 +1,11 @@
 use super::support::open_vscode;
-use crate::agent::{get_solo_and_target_path, load_base_agent_config, Agent, AgentDoc};
+use crate::agent::{get_solo_and_target_path, load_solo_agent};
 use crate::cli::SoloArgs;
 use crate::hub::get_hub;
 use crate::run::{run_solo_agent, Runtime};
 use crate::run::{DirContext, RunSoloOptions};
 use crate::Result;
-use simple_fs::{watch, SEventKind, SFile};
-use std::path::Path;
+use simple_fs::{watch, SEventKind};
 
 /// Executes the Run command
 /// Can either perform a single run or run in watch mode
@@ -67,17 +66,3 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 
 	Ok(())
 }
-
-// region:    --- Support
-
-fn load_solo_agent(solo_agent_path: impl AsRef<Path>, dir_context: &DirContext) -> Result<Agent> {
-	let solo_agent_path = solo_agent_path.as_ref();
-
-	let solo_file = SFile::new(solo_agent_path).map_err(|err| format!("Solo file not found: {err}"))?;
-	let base_config = load_base_agent_config(dir_context)?;
-
-	let agent_doc = AgentDoc::from_file(solo_file)?;
-	agent_doc.into_agent(base_config)
-}
-
-// endregion: --- Support

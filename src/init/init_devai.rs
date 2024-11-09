@@ -20,7 +20,7 @@ const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_init/doc/rhai.md");
 
 /// Note: The `show_info_always` will make it that even if the `.devai/` is found, it will print the message
 ///       This is useful for the `devai init` to always show the status, but not on `devai run`
-pub async fn init_devai_files(ref_dir: Option<String>, show_info_always: bool) -> Result<DirContext> {
+pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> Result<DirContext> {
 	let hub = get_hub();
 
 	let devai_parent_dir = if let Some(dir) = ref_dir {

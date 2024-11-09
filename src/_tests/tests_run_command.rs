@@ -9,7 +9,7 @@ use value_ext::JsonValueExt;
 #[tokio::test]
 async fn test_run_agent_c_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let runtime = Runtime::new_for_test()?;
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./tests-data/agents/agent-simple.md")?;
 
 	// -- Execute
@@ -32,8 +32,8 @@ async fn test_run_agent_c_simple_ok() -> Result<()> {
 #[tokio::test]
 async fn test_run_agent_c_hello_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let runtime = Runtime::new_for_test()?;
-	let agent = load_test_agent("./tests-data/agents/agent-hello.md")?;
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
+	let agent = load_test_agent("./tests-data/sandbox-01/agent-hello.md")?;
 
 	// -- Execute
 	let res = run_command_agent_item(
@@ -59,7 +59,7 @@ async fn test_run_agent_c_hello_ok() -> Result<()> {
 #[tokio::test]
 async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
-	let runtime = Runtime::new_for_test()?;
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./tests-data/agents/agent-on-file.md")?;
 
 	// -- Execute
@@ -83,7 +83,7 @@ async fn test_run_agent_c_on_file_ok() -> Result<()> {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
-	let runtime = Runtime::new_for_test()?;
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./tests-data/agents/agent-before-all.md")?;
 	let hub_capture = HubCapture::new_and_start();
 
@@ -115,7 +115,7 @@ async fn test_run_agent_c_skip_reason() -> Result<()> {
 }
 
 async fn common_test_run_agent_c_skip(reason: Option<&str>) -> Result<()> {
-	let runtime = Runtime::new_for_test()?;
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 
 	let reason_str = reason.map(|v| format!("\"{v}\"")).unwrap_or_default();
 	// -- Setup & Fixtures

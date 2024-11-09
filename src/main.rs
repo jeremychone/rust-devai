@@ -48,7 +48,7 @@ async fn main_inner(args: AppArgs) -> Result<()> {
 	match args.cmd {
 		// Initialize the device for this folder
 		cli::Commands::Init(init_args) => {
-			init_devai_files(init_args.path, true).await?;
+			init_devai_files(init_args.path.as_deref(), true).await?;
 		}
 
 		// Create a new agent
