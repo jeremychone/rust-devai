@@ -110,7 +110,7 @@ async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	let hub_content = hub_capture.into_content().await?;
 	assert!(
 		hub_content.contains("-> Agent Output: Some Before All - Some Data - ./src/main.rs"),
-		"Agent Output not matching!"
+		"Agent Output not matching!. Was: {hub_content}",
 	);
 
 	Ok(())
