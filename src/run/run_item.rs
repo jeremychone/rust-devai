@@ -7,7 +7,7 @@ use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::Result;
 use genai::chat::ChatRequest;
-use serde_json::{json, Map, Value};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 
 /// Run and agent item for command agent or solo agent.
@@ -17,23 +17,17 @@ pub async fn run_agent_item(
 	before_all_result: Value,
 	label: &str,
 	item: Value,
+	literals: &Literals,
 	run_base_options: &RunBaseOptions,
 ) -> Result<Value> {
 	let hub = get_hub();
 	let client = runtime.genai_client();
 
 	// -- Build the _ctx
-	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
-	let mut _ctx = Map::new();
-	for (name, value) in literals {
-		_ctx.insert(name, value.into());
-	}
-	let _ctx = Value::Object(_ctx);
-
 	let data_rhai_scope = json!({
 		"item": item.clone(), // clone because item is reused later
 		"before_all": before_all_result.clone(),
-		"CTX": _ctx
+		"CTX": literals.to_ctx_value()
 	});
 
 	// -- Execute data

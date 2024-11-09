@@ -1,5 +1,6 @@
 use crate::agent::Agent;
 use crate::hub::get_hub;
+use crate::run::literals::Literals;
 use crate::run::run_item::run_agent_item;
 use crate::run::support::get_genai_info;
 use crate::run::{RunSoloOptions, Runtime};
@@ -20,6 +21,8 @@ pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: 
 	))
 	.await;
 
+	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
+
 	// -- Run the agent
 	let label = agent.file_path();
 	let item = FileRef::from(run_solo_options.target_path());
@@ -31,6 +34,7 @@ pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: 
 		before_all_data,
 		label,
 		item,
+		&literals,
 		run_solo_options.base_run_config(),
 	)
 	.await?;

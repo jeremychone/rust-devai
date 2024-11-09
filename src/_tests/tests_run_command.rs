@@ -11,7 +11,7 @@ async fn test_run_agent_c_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./tests-data/agents/agent-simple.md")?;
-
+	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), &agent)?;
 	// -- Execute
 	let res = run_command_agent_item(
 		0,
@@ -19,6 +19,7 @@ async fn test_run_agent_c_simple_ok() -> Result<()> {
 		&agent,
 		Value::Null,
 		Value::Null,
+		&literals,
 		&RunBaseOptions::default(),
 	)
 	.await?;
@@ -34,6 +35,7 @@ async fn test_run_agent_c_hello_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./tests-data/sandbox-01/agent-hello.md")?;
+	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), &agent)?;
 
 	// -- Execute
 	let res = run_command_agent_item(
@@ -42,6 +44,7 @@ async fn test_run_agent_c_hello_ok() -> Result<()> {
 		&agent,
 		Value::Null,
 		Value::Null,
+		&literals,
 		&RunBaseOptions::default(),
 	)
 	.await?;
@@ -61,13 +64,22 @@ async fn test_run_agent_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./tests-data/agents/agent-on-file.md")?;
+	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), &agent)?;
 
 	// -- Execute
 	let on_file = SFile::new("./src/main.rs")?;
 	let file_ref = FileRef::from(on_file);
 
-	let run_output =
-		run_command_agent_item(0, &runtime, &agent, Value::Null, file_ref, &RunBaseOptions::default()).await?;
+	let run_output = run_command_agent_item(
+		0,
+		&runtime,
+		&agent,
+		Value::Null,
+		file_ref,
+		&literals,
+		&RunBaseOptions::default(),
+	)
+	.await?;
 
 	// -- Check
 	// The output return the {data_path: data.file.path, item_name: item.name}

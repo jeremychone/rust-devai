@@ -1,29 +1,24 @@
 use crate::agent::Agent;
 use crate::run::DirContext;
 use crate::Result;
+use serde_json::{Map, Value};
 use simple_fs::SPath;
+use std::sync::Arc;
 
+/// TODO: Will need to put the Vec in Arc, since this clone what a bit
 #[derive(Debug, Default, Clone)]
 pub struct Literals {
 	/// The store of all literals, pattern and value
 	/// e.g. `vec![("&DEVAI_AGENT_DIR","./.devai/custom/command-agent/some.devai")]`
-	store: Vec<(String, String)>,
-}
-
-/// Consuming iterator
-impl IntoIterator for Literals {
-	type Item = (String, String);
-	type IntoIter = std::vec::IntoIter<Self::Item>;
-
-	fn into_iter(self) -> Self::IntoIter {
-		self.store.into_iter()
-	}
+	store: Arc<Vec<(&'static str, String)>>,
 }
 
 /// Constructors
 impl Literals {
 	pub(super) fn from_dir_context_and_agent_path(dir_context: &DirContext, agent: &Agent) -> Result<Literals> {
-		let mut literals = Literals::default();
+		// let mut literals = Literals::default();
+
+		let mut store = Vec::new();
 
 		let agent_path = dir_context.current_dir().join(agent.file_path())?;
 		let agent_path = agent_path.diff(dir_context.devai_parent_dir())?;
@@ -36,7 +31,7 @@ impl Literals {
 
 		let devai_dir = dir_context.devai_dir();
 
-		literals.append("PWD", dir_context.current_dir());
+		store.push(("PWD", dir_context.current_dir().to_string()));
 
 		// resolved name from the command
 		//   - (so, when pc, it's `proof-comment`)
@@ -49,30 +44,41 @@ impl Literals {
 		// literals.append("AGENT_NAME", ???);
 
 		// The devai_parent_dir should be absolute, and all of the other paths will relative to it.
-		literals.append("DEVAI_PARENT_DIR", dir_context.devai_parent_dir());
+		store.push(("DEVAI_PARENT_DIR", dir_context.devai_parent_dir().to_string()));
 
-		literals.append("DEVAI_DIR", devai_dir.devai_dir());
+		store.push(("DEVAI_DIR", devai_dir.devai_dir().to_string()));
 
-		literals.append("AGENT_NAME", agent.name());
-		literals.append("AGENT_FILE_NAME", agent_path.name());
-		literals.append("AGENT_FILE_PATH", agent_path.to_str());
-		literals.append("AGENT_FILE_DIR", agent_dir);
-		literals.append("AGENT_FILE_STEM", agent_path.stem());
+		store.push(("AGENT_NAME", agent.name().to_string()));
+		store.push(("AGENT_FILE_NAME", agent_path.name().to_string()));
+		store.push(("AGENT_FILE_PATH", agent_path.to_str().to_string()));
+		store.push(("AGENT_FILE_DIR", agent_dir.to_string()));
+		store.push(("AGENT_FILE_STEM", agent_path.stem().to_string()));
 
-		Ok(literals)
+		Ok(Self { store: Arc::new(store) })
 	}
 }
 
 /// Getters
 impl Literals {
-	pub fn append(&mut self, pattern: impl Into<String>, value: impl Into<String>) {
-		self.store.push((pattern.into(), value.into()));
-	}
+	// pub fn append(&mut self, pattern: impl Into<String>, value: impl Into<String>) {
+
+	// }
 
 	// Your existing add method...
 	#[allow(unused)]
 	pub fn as_strs(&self) -> Vec<(&str, &str)> {
-		self.store.iter().map(|(p, v)| (p.as_str(), v.as_str())).collect()
+		self.store.iter().map(|(p, v)| (*p, v.as_str())).collect()
+	}
+}
+
+/// Transformers
+impl Literals {
+	pub fn to_ctx_value(&self) -> Value {
+		let mut _ctx = Map::new();
+		for (name, value) in self.as_strs() {
+			_ctx.insert(name.to_string(), value.into());
+		}
+		Value::Object(_ctx)
 	}
 }
 
