@@ -1,4 +1,37 @@
-# RHAI Modules Documentation
+# devai Rhai CTX in script
+
+All of the rhai script, the following `CTX` are available. 
+
+| Key                  | Value                                                     |
+|----------------------|-----------------------------------------------------------|
+| CTX.AGENT_FILE_DIR   | `./.devai/custom/command-agent`                           |
+| CTX.AGENT_FILE_NAME  | `command-ctx-reflect.devai`                               |
+| CTX.AGENT_FILE_PATH  | `./.devai/custom/command-agent/command-ctx-reflect.devai` |
+| CTX.AGENT_FILE_STEM  | `command-ctx-reflect`                                     |
+| CTX.AGENT_NAME       | `command-ctx-reflect`                                     |
+| CTX.DEVAI_DIR        | `./.devai`                                                |
+| CTX.DEVAI_PARENT_DIR | `/absolute/path/to/devai_parent_dir`                      |
+
+- All path are relative `DEVAI_PARENT_DIR`
+- The `AGENT_NAME` is the name given that resolve to the `AGENT_FILE_PATH`. Can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
+- Those are available in `devai run ..` and well as `devai solo ...`
+
+
+For example, put this in your `# Output`
+
+```rhai
+return #{
+	DEVAI_PARENT_DIR: CTX.DEVAI_PARENT_DIR,
+    DEVAI_DIR:        CTX.DEVAI_DIR,
+    AGENT_NAME:       CTX.AGENT_NAME,
+    AGENT_FILE_PATH:  CTX.AGENT_FILE_PATH,
+    AGENT_FILE_DIR:   CTX.AGENT_FILE_DIR,
+    AGENT_FILE_NAME:  CTX.AGENT_FILE_NAME,
+    AGENT_FILE_STEM:  CTX.AGENT_FILE_STEM,
+}
+```
+
+# devai Rhai Modules Documentation
 
 This document provides an overview of the RHAI modules implemented in the project. Each module exposes specific functions that can be utilized within the RHAI scripting engine. Examples are provided for each function to demonstrate their usage and the structure of their return values.
 
