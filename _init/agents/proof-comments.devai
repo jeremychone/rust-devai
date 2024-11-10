@@ -4,8 +4,8 @@
 
 // Notes:
 //   - item: This is the FileRef (with .path, .name, .stem, .ext) for each file matching the -f glob.
-//   - file::load(item.path) will return a FileRecord, adding .content for the content of the file.
-//   - In Rhai, to return a dictionary/object, the notation is #{ name: value, … }.
+//   - file::load(item.path) will return a FileRecord, including .content for the file's content.
+//   - In Rhai, to return a dictionary/object, use the notation #{ name: value, … }.
 
 return #{
     file: file::load(item.path)
@@ -14,7 +14,7 @@ return #{
 
 # Instruction
 
-For the following mardown file file: 
+For the following markdown file:
 
 {{data.file.path}}
 
@@ -22,20 +22,20 @@ For the following mardown file file:
 {{data.file.content}}
 ```
 
-- Correct english of all the comments if it is a code base (do not correct code)
-- Correct english all content if it is a markdown file
-- Preserve the whitespace (do not change tabs into spaces and vice versa)
-- Return the correct content without any explanation
+- Correct the English of all comments if it is a codebase (do not correct the code).
+- Correct the English of all content if it is a Markdown file.
+- Preserve the whitespace (do not convert tabs to spaces and vice versa).
+- Return the corrected content without any explanation.
 
 # Output
 
 ```rhai
-// Note: LLMs often but not always return a code block for the result. 
-//       The md::outer_block_content_or_raw function will get the content between the first 
+// Note: LLMs often, but not always, return a code block for the result. 
+//       The md::outer_block_content_or_raw function will extract the content between the first 
 //       and last triple backticks or return ai_output if there are no triple backticks.
 let content = md::outer_block_content_or_raw(ai_output);
 
-// Example how to save to the same file
+// Example of how to save to the same file
 file::save(data.file.path, content);
 
 // This will be printed by devai if it is a string
