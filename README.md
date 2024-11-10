@@ -23,11 +23,13 @@ devai run proof-rust-comments -f "./src/m*.rs"
 # IMPORTANT: Make sure everything is committed before usage.
 ```
 
+**TOP COLLABORATOR** Big **thanks** to [Stephan Philipakis](https://github.com/sphilipakis), a top **devai** collaborator contributing to the next-generation methodology for production coding with GenAI.
+
 ONE **Command Agent Markdown File** that defines the full agent flow:
 - `items` get expanded from the `-f` file matches (more ways to generate items later).
-- `-> Data` **scripting** for getting full control over what data to put in the context.
+- `-> Data` **scripting** for gaining full control over what data to put in the context.
 - `-> Instruction` templating (Handlebars) to have full control over the prompt layout.
-- `-> Output` **scripting** to get full control over how to manage the AI output.
+- `-> Output` **scripting** to gain full control over how to manage the AI output.
 
 `Data`, `Instruction`, `Output` (and more later) are all defined in a single file (see below), which is called the **Command Agent File**.
 
@@ -41,7 +43,7 @@ You can customize the model and concurrency in `.devai/config.toml`.
 
 **IMPORTANT**: Make sure to run this command line when everything is committed so that overwritten files can be reverted easily.
 
-_P.S. If possible, try to refrain from publishing `devai-custom` type crates on crates.io, as this might be more confusing than helpful. However._
+_P.S. If possible, please refrain from publishing `devai-custom` type crates on crates.io, as this might be more confusing than helpful. However feel free to fork and code as you wish._
 
 ## API Keys
 
@@ -87,27 +89,27 @@ devai init
 # any file matching `./**/mod.rs` (those will become 'items' in the data section)
 devai run proof-rust-comments -f mod.rs
 
-# Verbose mode, will print in the console what is sent to the AI, the AI response, and the output return if string-like
+# Verbose mode will print in the console what is sent to the AI, the AI response, and the output return if string-like
 devai run proof-rust-comments -f mod.rs --verbose 
 
 # Verbose and watch mode. Every time proof-rust-comments is updated, it will run it again
 devai run proof-rust-comments -f main.rs -v -w
 
-# Will do the verbose, watch, but in dry mode request, will print only the rendered instruction
+# Will perform the verbose, watch, but in dry mode request, will print only the rendered instruction
 devai run proof-rust-comments -f main.rs -v -w --dry req
 
-# Will do the verbose, watch, but in dry mode response, will print rendered instruction, AI response
+# Will perform the verbose, watch, but in dry mode response, will print rendered instruction, AI response
 # and will NOT execute the data
 devai run proof-rust-comments -f main.rs -v -w --dry res
 
 # Happy coding!
 ```
 
-- `init` sub-command - initialize or update the `.devai/` folder (non-destructive, only adds files missing)
+- `init` sub-command - initialize or update the `.devai/` folder (non-destructive, only adds files that are missing)
 - `run` sub-command
     - First argument is the command name. 
     - `-f` the file name or glob input files as items. Can have multiple `-f`
-    - `--verbose` (`-v`) will print in the command line the rendered output.
+    - `--verbose` (`-v`) will print the rendered output in the command line.
     - `--dry req` will perform a dry run of the request by just running the **data** and **instruction** sections. Use `--verbose` to print out the sections.
     - `--dry res` will perform a dry run of the request, send it to the AI, and return the AI output (does not return data). Use `--verbose` to see what has been sent and returned.
 
@@ -116,7 +118,7 @@ devai run proof-rust-comments -f main.rs -v -w --dry res
 (Updated in version `0.1.1` - migration from `0.1.0` implemented on `devai run` and `devai init`)
 
 - `.devai/` - The root folder of devai
-    - `custom/` - Where the user custom agents and templates. These will take precedence over the `.devai/default/...` matching files.
+    - `custom/` - Where user custom agents and templates are stored. These will take precedence over the `.devai/default/...` matching files.
         - `command-agent/` - The custom agents. 
         - `new-template/` - Template(s) used to create new agents, e.g., `devai new my-new-cool-agent`
             - `command-agent/` - The folder containing the custom templates for command agents.
@@ -126,7 +128,6 @@ devai run proof-rust-comments -f main.rs -v -w --dry res
         - `new-template/` - The default template(s) used to create new agents, e.g., `devai new my-new-cool-agent`
             - `command-agent/` - The folder containing the default templates for command agents.
             - `solo-agent/` - The folder containing the default templates for solo agents (coming later)
-        
 
 ## Example of a Command Agent File
 
@@ -142,7 +143,7 @@ On `devai run` or `devai init`, a `.devai/config.toml` will be created with the 
 model = "gpt-4o-mini" 
 
 [runtime]
-# Default to 1 if absent. Great way to increase speed when remote AI services.
+# Default to 1 if absent. A great way to increase speed when using remote AI services.
 items_concurrency = 1 
 ```
 
