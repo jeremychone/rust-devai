@@ -255,29 +255,27 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
-	use crate::_test_support::default_agent_config_for_test;
+	use crate::_test_support::{assert_contains, default_agent_config_for_test};
 
 	#[test]
 	fn test_agent_doc_demo_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let agent_doc_path = "./tests-data/agents/agent-demo.md";
+		let agent_doc_path = "./tests-data/agent-doc/agent-demo.md";
 
 		// -- Exec
 		let doc = AgentDoc::from_file(agent_doc_path)?;
 		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
 
 		// -- Check
-		assert!(agent.inst().contains("Some paragraph for instruction"), "instruction");
+		let inst = agent.inst();
+		assert_contains(inst, "Some paragraph for instruction");
+		assert_contains(inst, "- Two");
+		assert_contains(inst, "block-01");
+		assert_contains(inst, "block-02");
 		let data_script = agent.data_script().ok_or("Should have data_script")?;
-		assert!(
-			data_script.contains("// Some scripts that load the data"),
-			"data_script"
-		);
+		assert_contains(data_script, "// Some scripts that load the data");
 		let output_script = agent.output_script().ok_or("Should have output_script")?;
-		assert!(
-			output_script.contains("/// Optional output processing."),
-			"output_script does not contain."
-		);
+		assert_contains(output_script, "/// Optional output processing.");
 
 		Ok(())
 	}
@@ -285,7 +283,7 @@ mod tests {
 	#[test]
 	fn test_agent_doc_config_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let agent_doc_path = "./tests-data/agents/agent-demo.md";
+		let agent_doc_path = "./tests-data/agent-doc/agent-demo.md";
 
 		// -- Exec
 		let doc = AgentDoc::from_file(agent_doc_path)?;
@@ -293,20 +291,14 @@ mod tests {
 
 		// -- Check config
 		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.config().items_concurrency(), Some(8));
+		assert_eq!(agent.config().items_concurrency(), Some(8), "concurrency");
 
 		// -- Check Other
-		assert!(agent.inst().contains("Some paragraph for instruction"), "instruction");
+		assert_contains(agent.inst(), "Some paragraph for instruction");
 		let data_script = agent.data_script().ok_or("Should have data_script")?;
-		assert!(
-			data_script.contains("// Some scripts that load the data"),
-			"data_script"
-		);
+		assert_contains(data_script, "// Some scripts that load the data");
 		let output_script = agent.output_script().ok_or("Should have output_script")?;
-		assert!(
-			output_script.contains("/// Optional output processing."),
-			"output_script does not contain."
-		);
+		assert_contains(output_script, "/// Optional output processing.");
 
 		Ok(())
 	}
@@ -314,7 +306,7 @@ mod tests {
 	#[test]
 	fn test_agent_doc_all_sections_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let agent_doc_path = "./tests-data/agents/agent-all-sections.md";
+		let agent_doc_path = "./tests-data/agent-doc/agent-all-sections.md";
 
 		// -- Exec
 		let doc = AgentDoc::from_file(agent_doc_path)?;
@@ -325,29 +317,29 @@ mod tests {
 		assert_eq!(agent.config().items_concurrency(), None);
 
 		// -- Check Sections
-		assert_eq!(
+		assert_contains(
 			agent.before_all_script().ok_or("No before_all script")?,
 			"let before_all = \"before_all\";\n",
 		);
 
-		assert_eq!(
+		assert_contains(
 			agent.data_script().ok_or("No data script")?,
 			"let some_data = \"Some Data\";\nreturn some_data;\n",
 		);
 
-		assert_eq!(agent.inst(), "\nSome instruction\n\n");
+		assert_contains(agent.inst(), "\nSome instruction\n\n");
 
-		assert_eq!(
+		assert_contains(
 			agent.data_script().ok_or("Data Script missing")?,
 			"let some_data = \"Some Data\";\nreturn some_data;\n",
 		);
 
-		assert_eq!(
+		assert_contains(
 			agent.output_script().ok_or("No output script")?,
 			"let some_output = \"Some Output\";\n",
 		);
 
-		assert_eq!(
+		assert_contains(
 			agent.after_all_script().ok_or("No after all script")?,
 			"let after_all = \"after_all\";\n",
 		);

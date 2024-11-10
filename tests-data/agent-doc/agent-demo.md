@@ -26,23 +26,23 @@ return "hello"
 
 Some paragraph for instruction
 
+```some
+block-01
+```
+
+```some
+block-02
+```
+
 - One 
 - Two
-* Thre
+* Three
 
 1. four
 2. five
 
 - . some instruction, will support handlebars in this block (first system content) ..
-* stuff
-
-# message: System
-
-- . possible extra system message (will support handlebars) ...
-
-# message: User
-
-- . possible extra user message (will support handlebars) ...
+* final stuff
 
 # Output
 
