@@ -4,13 +4,14 @@ All of the rhai script, the following `CTX` are available.
 
 | Key                  | Value                                                     |
 |----------------------|-----------------------------------------------------------|
+| CTX.DEVAI_PARENT_DIR | `/absolute/path/to/devai_parent_dir`                      |
+| CTX.DEVAI_DIR        | `./.devai`                                                |
+| CTX.AGENT_NAME       | `command-ctx-reflect`                                     |
+| CTX.AGENT_FILE_PATH  | `./.devai/custom/command-agent/command-ctx-reflect.devai` |
 | CTX.AGENT_FILE_DIR   | `./.devai/custom/command-agent`                           |
 | CTX.AGENT_FILE_NAME  | `command-ctx-reflect.devai`                               |
-| CTX.AGENT_FILE_PATH  | `./.devai/custom/command-agent/command-ctx-reflect.devai` |
 | CTX.AGENT_FILE_STEM  | `command-ctx-reflect`                                     |
-| CTX.AGENT_NAME       | `command-ctx-reflect`                                     |
-| CTX.DEVAI_DIR        | `./.devai`                                                |
-| CTX.DEVAI_PARENT_DIR | `/absolute/path/to/devai_parent_dir`                      |
+
 
 - All path are relative `DEVAI_PARENT_DIR`
 - The `AGENT_NAME` is the name given that resolve to the `AGENT_FILE_PATH`. Can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
