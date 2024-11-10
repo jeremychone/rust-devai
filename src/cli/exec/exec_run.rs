@@ -48,10 +48,12 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 									Ok(_) => (),
 									Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 								}
+								// NOTE: No need to notify for now
 								// Handle the modify event here
 								// hub.publish(format!("File modified: {:?}", event.spath)).await; // Uncomment if needed
 							}
 							_ => {
+								// NOTE: No need to notify for now
 								// Handle other event kinds if needed
 								// hub.publish(format!("Other event: {:?}", event)).await; // Uncomment if needed
 							}
@@ -72,8 +74,9 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 
 /// Do one run
 async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agent: &Agent) -> Result<()> {
-	let on_file_globs = run_command_options.on_file_globs();
-	let file_refs = if let Some(on_file_globs) = on_file_globs {
+	let items = if let Some(on_items) = run_command_options.on_items() {
+		Some(into_values(on_items)?)
+	} else if let Some(on_file_globs) = run_command_options.on_file_globs() {
 		let files = list_files("./", Some(&on_file_globs), None)?;
 		let file_refs = files.into_iter().map(FileRef::from).collect::<Vec<_>>();
 		Some(into_values(file_refs)?)
@@ -81,7 +84,7 @@ async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agen
 		None
 	};
 
-	run_command_agent(runtime, agent, file_refs, run_command_options.base_run_config(), false).await?;
+	run_command_agent(runtime, agent, items, run_command_options.base_run_config(), false).await?;
 
 	Ok(())
 }
