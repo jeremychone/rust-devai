@@ -29,8 +29,8 @@ use rhai::Engine;
 pub fn new_rhai_engine(runtime_context: RuntimeContext) -> Result<Engine> {
 	let mut engine = Engine::new();
 
-	engine.register_static_module("file", rhai_file::rhai_module().into());
-	engine.register_static_module("path", rhai_path::rhai_module().into());
+	engine.register_static_module("file", rhai_file::rhai_module(&runtime_context).into());
+	engine.register_static_module("path", rhai_path::rhai_module(&runtime_context).into());
 	engine.register_static_module("devai", rhai_devai::rhai_module(&runtime_context).into());
 	engine.register_static_module("web", rhai_web::rhai_module().into());
 	engine.register_static_module("git", rhai_git::rhai_module().into());

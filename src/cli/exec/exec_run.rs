@@ -1,8 +1,8 @@
 use super::support::open_vscode;
-use crate::agent::{find_agent, Agent, LocatorMode};
+use crate::agent::{find_agent, Agent};
 use crate::cli::RunArgs;
 use crate::hub::get_hub; // Importing get_hub
-use crate::run::{run_command_agent, Runtime};
+use crate::run::{run_command_agent, PathResolver, Runtime};
 use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
 use crate::types::FileRef;
@@ -18,7 +18,7 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 
 	// -- Get the AI client and agent
 	let runtime = Runtime::new(dir_context)?;
-	let agent = find_agent(cmd_agent_name, runtime.dir_context(), LocatorMode::CurrentDir)?;
+	let agent = find_agent(cmd_agent_name, runtime.dir_context(), PathResolver::CurrentDir)?;
 
 	let run_options = RunCommandOptions::new(run_args)?;
 
@@ -42,7 +42,7 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 							SEventKind::Modify => {
 								hub.publish("\n==== Agent file modified, running agent again\n").await;
 								// Make sure to change reload the agent
-								let agent = find_agent(agent.name(), runtime.dir_context(), LocatorMode::CurrentDir)?;
+								let agent = find_agent(agent.name(), runtime.dir_context(), PathResolver::CurrentDir)?;
 
 								match do_run(&run_options, &runtime, &agent).await {
 									Ok(_) => (),

@@ -3,13 +3,18 @@ use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::run_item::run_agent_item;
 use crate::run::support::get_genai_info;
-use crate::run::{RunSoloOptions, Runtime};
+use crate::run::{PathResolver, RunSoloOptions, Runtime};
 use crate::types::FileRef;
 use crate::Result;
 use serde_json::Value;
 use std::fs::write;
 
-pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: &RunSoloOptions) -> Result<()> {
+pub async fn run_solo_agent(
+	runtime: &Runtime,
+	agent: &Agent,
+	run_solo_options: &RunSoloOptions,
+	mode: PathResolver,
+) -> Result<()> {
 	let hub = get_hub();
 
 	// -- Print the run info
@@ -40,7 +45,9 @@ pub async fn run_solo_agent(runtime: &Runtime, agent: &Agent, run_solo_options: 
 	.await?;
 
 	if let Value::String(text) = res_value {
-		write(run_solo_options.target_path(), text)?;
+		let target_path = run_solo_options.target_path();
+		let target_full_path = runtime.dir_context().resolve_path(target_path, mode)?;
+		write(target_full_path, text)?;
 		hub.publish(format!(
 			"-> Solo Agent ouput saved to: {}",
 			run_solo_options.target_path()

@@ -2,7 +2,7 @@ use super::support::open_vscode;
 use crate::agent::get_solo_and_target_path;
 use crate::cli::NewSoloArgs;
 use crate::hub::get_hub;
-use crate::run::DirContext;
+use crate::run::{DirContext, PathResolver};
 use crate::support::files::first_file_from_dirs;
 use crate::Result;
 use simple_fs::ensure_file_dir;
@@ -53,8 +53,9 @@ pub async fn exec_new_solo(new_config: impl Into<NewSoloConfig>, dir_context: Di
 	if new_config.open {
 		// open the target file if exists
 		let (_, target_path) = get_solo_and_target_path(solo_file_path)?;
-		if target_path.path().exists() {
-			open_vscode(target_path.path()).await;
+		let target_path = dir_context.resolve_path(target_path, PathResolver::CurrentDir)?;
+		if target_path.exists() {
+			open_vscode(target_path).await;
 		}
 
 		open_vscode(solo_file_path).await;

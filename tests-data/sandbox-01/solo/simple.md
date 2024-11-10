@@ -1,0 +1,1 @@
+Output - ./solo/simple.md - From Data (item.path: ./solo/simple.md)

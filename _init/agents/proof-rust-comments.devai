@@ -1,0 +1,53 @@
+# Description
+
+This is the agent to proof read of the comments of rust source code file. 
+
+It's a little more optimized for rust version of the `proof-comments.devai` version. 
+For example, at the end, we have a `text::ensure_single_ending_newline(content);` to make sure we end each rust file with a single new line which is the convention in rust (and LLMs often forget bout this one)
+
+# Data
+
+```rhai
+
+// Notes:
+//   - item: This is the FileRef (with .path, .name, .stem, .ext) for each file matching the -f glob.
+//   - file::load(item.path) will return a FileRecord, adding .content for the content of the file.
+//   - In Rhai, to return a dictionary/object, the notation is #{ name: value, … }.
+
+return #{
+    file: file::load(item.path)
+};
+```
+
+# Instruction
+
+For the following rust file: 
+
+{{data.file.path}}
+
+```
+{{data.file.content}}
+```
+
+- Correct english of all the comments if it is a code base (do not correct code)
+- Correct english all content if it is a markdown file
+- Only correct comments if necessary. 
+- Preserve the whitespace (do not change tabs into spaces and vice versa)
+- Return the correct content without any explanation
+
+# Output
+
+```rhai
+// Note: LLMs often but not always return a code block for the result. 
+//       The md::outer_block_content_or_raw function will get the content between the first 
+//       and last triple backticks or return ai_output if there are no triple backticks.
+let content = md::outer_block_content_or_raw(ai_output);
+// Make sure that it ends with only one and only newline
+let content = text::ensure_single_ending_newline(content);
+
+// Example how to save to the same file
+file::save(data.file.path, content);
+
+// This will be printed by devai if it is a string
+return "File processed: " + data.file.path
+```

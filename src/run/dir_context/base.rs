@@ -2,6 +2,12 @@ use crate::run::DevaiDir;
 use crate::support::files::current_dir;
 use crate::Result;
 use simple_fs::SPath;
+use std::path::Path;
+
+pub enum PathResolver {
+	CurrentDir,
+	DevaiParentDir,
+}
 
 #[derive(Debug, Clone)]
 pub struct DirContext {
@@ -56,5 +62,21 @@ impl DirContext {
 
 	pub fn devai_parent_dir(&self) -> &SPath {
 		&self.devai_parent_dir
+	}
+}
+
+/// Resolvers
+impl DirContext {
+	pub fn resolve_path(&self, path: impl AsRef<Path>, mode: PathResolver) -> Result<SPath> {
+		let path = SPath::from_path(path)?;
+
+		if path.path().is_absolute() {
+			Ok(path)
+		} else {
+			match mode {
+				PathResolver::CurrentDir => Ok(self.current_dir.join(path)?),
+				PathResolver::DevaiParentDir => Ok(self.devai_parent_dir.join(path)?),
+			}
+		}
 	}
 }

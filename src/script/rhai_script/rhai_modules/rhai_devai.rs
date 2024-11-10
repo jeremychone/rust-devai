@@ -10,9 +10,9 @@
 //! * `devai::action_skip() -> SkipActionDict`
 //! * `devai::action_skip(reason: string) -> SkipActionDict`
 
-use crate::agent::{find_agent, LocatorMode};
-use crate::run::RunBaseOptions;
+use crate::agent::find_agent;
 use crate::run::{run_command_agent, RuntimeContext};
+use crate::run::{PathResolver, RunBaseOptions};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
 use crate::Error;
 use rhai::plugin::RhaiResult;
@@ -46,7 +46,7 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 fn run_with_items(ctx: &RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
 	let items = dynamics_to_values(items)?;
 	// TODO: Might want to reuse the current one
-	let agent = find_agent(cmd_agent, ctx.dir_context(), LocatorMode::DevaiParentDir)?;
+	let agent = find_agent(cmd_agent, ctx.dir_context(), PathResolver::DevaiParentDir)?;
 
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
 
@@ -145,7 +145,11 @@ mod tests {
 	// Note: multi_thread required, because rhai devai::run is a sync calling a async.
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_rhai_devai_run_simple() -> Result<()> {
-		let res = run_reflective_agent(r#"return devai::run("./agent-hello.md", ["one", "two"])"#, None).await;
+		let res = run_reflective_agent(
+			r#"return devai::run("./agent-script/agent-hello.md", ["one", "two"])"#,
+			None,
+		)
+		.await;
 
 		// NOTE: apparently when multi thread, need to print error
 		let res = match res {

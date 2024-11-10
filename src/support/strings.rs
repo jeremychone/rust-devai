@@ -25,8 +25,8 @@ pub fn replace_all(content: &str, patterns: &[&str], values: &[&str]) -> Result<
 }
 
 /// Make sure that the text end with one and only one single newline
-/// NOT USED FOR NOW - not sure we need this
-pub fn _adjust_single_ending_newline(mut text: String) -> String {
+/// Useful for code sanitization
+pub fn ensure_single_ending_newline(mut text: String) -> String {
 	if text.is_empty() {
 		text.push('\n'); // If the string is empty, just add a newline
 		return text;

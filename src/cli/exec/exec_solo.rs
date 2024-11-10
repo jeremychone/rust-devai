@@ -2,7 +2,7 @@ use super::support::open_vscode;
 use crate::agent::{get_solo_and_target_path, load_solo_agent};
 use crate::cli::SoloArgs;
 use crate::hub::get_hub;
-use crate::run::{run_solo_agent, Runtime};
+use crate::run::{run_solo_agent, PathResolver, Runtime};
 use crate::run::{DirContext, RunSoloOptions};
 use crate::Result;
 use simple_fs::{watch, SEventKind};
@@ -25,13 +25,13 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 
 	// -- If NOT in watch mode, then just run once
 	if !solo_options.base_run_config().watch() {
-		run_solo_agent(&runtime, &agent, &solo_options).await?;
+		run_solo_agent(&runtime, &agent, &solo_options, PathResolver::CurrentDir).await?;
 	}
 	// -- If in watch mode
 	else {
 		// Do the first run
 		let agent = load_solo_agent(agent.file_path(), runtime.dir_context())?;
-		match run_solo_agent(&runtime, &agent, &solo_options).await {
+		match run_solo_agent(&runtime, &agent, &solo_options, PathResolver::CurrentDir).await {
 			Ok(_) => (),
 			Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 		}
@@ -49,7 +49,7 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 						// Ensure to reload the agent
 						let agent = load_solo_agent(agent.file_path(), runtime.dir_context())?;
 
-						match run_solo_agent(&runtime, &agent, &solo_options).await {
+						match run_solo_agent(&runtime, &agent, &solo_options, PathResolver::CurrentDir).await {
 							Ok(_) => (),
 							Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 						}

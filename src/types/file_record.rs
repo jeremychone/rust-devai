@@ -2,9 +2,8 @@ use crate::script::DynamicMap;
 use crate::Result;
 use rhai::Dynamic;
 use serde::Serialize;
-use simple_fs::SFile;
+use simple_fs::SPath;
 use std::fs::read_to_string;
-use std::path::Path;
 
 /// FileRecord contains the metadata information about the file (name, ext, etc.) as well as the content.
 #[derive(Serialize)]
@@ -23,18 +22,15 @@ pub struct FileRecord {
 
 /// Constructors
 impl FileRecord {
-	pub fn new(path: impl AsRef<Path>) -> Result<Self> {
-		let sfile = SFile::from_path(path.as_ref())?;
-		Self::from_sfile(sfile)
-	}
+	pub fn load(base_path: SPath, rel_path: SPath) -> Result<Self> {
+		let full_path = base_path.join(&rel_path)?;
+		let content = read_to_string(&full_path)?;
 
-	pub fn from_sfile(sfile: SFile) -> Result<Self> {
-		let content = read_to_string(&sfile)?;
 		Ok(FileRecord {
-			path: sfile.to_string(),
-			name: sfile.name().to_string(),
-			stem: sfile.stem().to_string(),
-			ext: sfile.ext().to_string(),
+			path: rel_path.to_string(),
+			name: rel_path.name().to_string(),
+			stem: rel_path.stem().to_string(),
+			ext: rel_path.ext().to_string(),
 			content,
 		})
 	}

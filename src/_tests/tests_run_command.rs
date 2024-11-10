@@ -1,116 +1,93 @@
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 use super::*;
-use crate::_test_support::{load_inline_agent, load_test_agent, HubCapture};
+use crate::_test_support::{
+	assert_contains, load_inline_agent, load_test_agent, run_test_agent, run_test_agent_with_item, HubCapture,
+};
 use crate::types::FileRef;
-use simple_fs::SFile;
+use simple_fs::SPath;
 use value_ext::JsonValueExt;
 
 #[tokio::test]
-async fn test_run_agent_c_simple_ok() -> Result<()> {
+async fn test_run_agent_llm_c_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./tests-data/agents/agent-simple.md")?;
-	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), &agent)?;
+	let agent = load_test_agent("./agent-llm/agent-simple.md", &runtime)?;
+
 	// -- Execute
-	let res = run_command_agent_item(
-		0,
-		&runtime,
-		&agent,
-		Value::Null,
-		Value::Null,
-		&literals,
-		&RunBaseOptions::default(),
-	)
-	.await?;
+	let res = run_test_agent(&runtime, &agent).await?;
 
 	// -- Check
-	assert_eq!(res.as_str().ok_or("Should have output result")?, "./src/main.rs");
+	assert_contains(res.as_str().ok_or("Should have output result")?, "sky");
+
+	Ok(())
+}
+
+/// NOTE: RUN REAL AGENT
+#[tokio::test]
+async fn test_run_agent_llm_c_on_file_ok() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
+	let agent = load_test_agent("./agent-llm/agent-on-file.md", &runtime)?;
+
+	// -- Execute
+	let on_file = SPath::new("./other/hello.txt")?;
+	let file_ref = FileRef::from(on_file);
+
+	let res = run_test_agent_with_item(&runtime, &agent, file_ref).await?;
+
+	// -- Check
+	// The output return the {data_path: data.file.path, item_name: item.name}
+	assert_eq!(res.x_get_str("data_path")?, "./other/hello.txt");
+	assert_eq!(res.x_get_str("item_name")?, "hello.txt");
+	let ai_content = res.x_get_str("ai_content")?;
+	assert!(ai_content.len() > 10, "The AI response should have some content");
+	assert_contains(ai_content, "from the other/hello.txt");
 
 	Ok(())
 }
 
 #[tokio::test]
-async fn test_run_agent_c_hello_ok() -> Result<()> {
+async fn test_run_agent_script_c_hello_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./tests-data/sandbox-01/agent-hello.md")?;
-	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), &agent)?;
+	let agent = load_test_agent("./agent-script/agent-hello.md", &runtime)?;
 
 	// -- Execute
-	let res = run_command_agent_item(
-		0,
-		&runtime,
-		&agent,
-		Value::Null,
-		Value::Null,
-		&literals,
-		&RunBaseOptions::default(),
-	)
-	.await?;
+	let res = run_test_agent_with_item(&runtime, &agent, "item-01").await?;
 
 	// -- Check
 	// Note here '' because item is null
 	assert_eq!(
 		res.as_str().ok_or("Should have output result")?,
-		"hello '' from agent-hello.md"
+		"hello 'item-01' from agent-hello.md"
 	);
 
 	Ok(())
 }
 
+/// TODO: This test needs to be fixed. It sometimes fails, which is not an issue (yet) for production.
+///       However, when multiple runtimes are used (as is the case for testing), the hub is shared, and the capture might be off.
+///       The hub will need to be per runtime, or there should be a way to ensure that all events are sent or something similar.
 #[tokio::test]
-async fn test_run_agent_c_on_file_ok() -> Result<()> {
-	// -- Setup & Fixtures
-	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./tests-data/agents/agent-on-file.md")?;
-	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), &agent)?;
-
-	// -- Execute
-	let on_file = SFile::new("./src/main.rs")?;
-	let file_ref = FileRef::from(on_file);
-
-	let run_output = run_command_agent_item(
-		0,
-		&runtime,
-		&agent,
-		Value::Null,
-		file_ref,
-		&literals,
-		&RunBaseOptions::default(),
-	)
-	.await?;
-
-	// -- Check
-	// The output return the {data_path: data.file.path, item_name: item.name}
-	assert_eq!(run_output.x_get::<String>("data_path")?, "./src/main.rs");
-	assert_eq!(run_output.x_get::<String>("item_name")?, "main.rs");
-	let ai_content = run_output.x_get::<String>("ai_content")?;
-	assert!(ai_content.len() > 300, "The AI response should have some content");
-
-	Ok(())
-}
-
-// #[tokio::test]
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_run_agent_c_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./tests-data/agents/agent-before-all.md")?;
+	let agent = load_test_agent("./agent-script/agent-before-all.md", &runtime)?;
 	let hub_capture = HubCapture::new_and_start();
 
 	// -- Execute
-	let on_file = SFile::new("./src/main.rs")?;
-	let file_ref = FileRef::from(on_file);
-	let items = vec![serde_json::to_value(file_ref)?];
+	let on_path = SPath::new("./some-random/file.txt")?;
+	let path_ref = FileRef::from(on_path);
+	let items = vec![serde_json::to_value(path_ref)?];
 
 	let _res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), false).await;
 
 	// -- Check
 	let hub_content = hub_capture.into_content().await?;
-	assert!(
-		hub_content.contains("-> Agent Output: Some Before All - Some Data - ./src/main.rs"),
-		"Agent Output not matching!. Was: {hub_content}",
+	assert_contains(
+		&hub_content,
+		"Agent Output: Some Before All - Some Data - ./some-random/file.txt",
 	);
 
 	Ok(())

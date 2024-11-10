@@ -30,6 +30,7 @@ mod tests {
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
 	use super::*;
+	use crate::_test_support::assert_contains;
 	use crate::run::Runtime;
 	use crate::script::rhai_eval;
 
@@ -38,8 +39,8 @@ mod tests {
 		// -- Setup & Fixtures
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 		let script = r#"
-        let file1 = file::load("src/main.rs");
-        let file2 = file::load("src/error.rs");
+        let file1 = file::load("file-01.txt");
+        let file2 = file::load("agent-script/agent-before-all.md");
         [file1, file2]  // Return an array of File structs
     "#;
 		let tmpl = r#"
@@ -56,8 +57,8 @@ The files are:
 		let res = hbs_render(tmpl, &data)?;
 
 		// -- Check
-		assert!(res.contains("- src/main.rs"), "- src/main.rs");
-		assert!(res.contains("- src/error.rs"), "- src/error.rs");
+		assert_contains(&res, "- file-01.txt");
+		assert_contains(&res, "- agent-script/agent-before-all.md");
 
 		Ok(())
 	}

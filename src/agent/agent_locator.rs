@@ -1,42 +1,25 @@
 use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentDoc};
-use crate::run::DirContext;
+use crate::run::{DirContext, PathResolver};
 use crate::support::tomls::parse_toml;
 use crate::{Error, Result};
 use simple_fs::{list_files, read_to_string, SFile, SPath};
 use std::collections::HashSet;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use strsim::levenshtein;
-
-pub enum LocatorMode {
-	CurrentDir,
-	DevaiParentDir,
-}
 
 /// - `from_cli` Used to decide which "reference dir" should be used.
 ///              If from cli, the current_dir will be used, otherwise, the devai_parent_dir
-pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: LocatorMode) -> Result<Agent> {
+pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver) -> Result<Agent> {
 	let base_config = load_base_agent_config(dir_context)?;
 
 	let devai_dir = dir_context.devai_dir();
 
 	// -- First see if it is a direct path (starts with `./` or `/`)
-	let agent_path = if agent_name.starts_with("./") {
-		let ref_dir = match mode {
-			LocatorMode::CurrentDir => dir_context.current_dir(),
-			LocatorMode::DevaiParentDir => dir_context.devai_parent_dir(),
-		};
-		let agent_file = ref_dir.join(agent_name)?;
-		Some(agent_file)
-	} else if agent_name.starts_with("/") {
-		Some(SPath::new(agent_name)?)
-	} else {
-		None
-	};
-	// return the found direct agent
-	if let Some(agent_path) = agent_path {
+	if agent_name.starts_with("./") || agent_name.starts_with("/") {
+		let agent_file = dir_context.resolve_path(agent_name, mode)?;
 		let agent_file =
-			SFile::try_from(agent_path).map_err(|_| Error::CommandAgentNotFound(agent_name.to_string()))?;
+			SFile::try_from(agent_file).map_err(|_| Error::CommandAgentNotFound(agent_name.to_string()))?;
 		let doc = AgentDoc::from_file(agent_file)?;
 		return doc.into_agent(agent_name, base_config);
 	}
@@ -91,12 +74,16 @@ pub fn load_solo_agent(solo_agent_path: impl AsRef<Path>, dir_context: &DirConte
 }
 
 /// Returns the (solo_path, target_path) tuple for a file path of either.
+///
+/// IMPORTANT: This just work on the path, and do not check the file system.
+///            So the path does not have to match a file system file.
+///
 /// - If the path ends with `.devai`, then it is the solo path
 ///   - If the solo stem has an extension, then, the target path is the path without .devai
 ///   - If the solo stem does not have an extension, then, .md is added for the target path
 /// - Otherwise, add `.devai` to the file name in the same path.
-pub fn get_solo_and_target_path(path: impl Into<PathBuf>) -> Result<(SPath, SPath)> {
-	let path = SPath::new(path)?;
+pub fn get_solo_and_target_path(path: impl AsRef<Path>) -> Result<(SPath, SPath)> {
+	let path = SPath::from_path(path)?;
 
 	// returns (solo_path, target_path)
 	// path is the solo_path
@@ -236,7 +223,7 @@ pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentConfig> {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::_test_support::{run_simple_command_agent_item_for_test, SANDBOX_01_DIR};
+	use crate::_test_support::{run_test_agent, SANDBOX_01_DIR};
 	use crate::run::Runtime;
 	use value_ext::JsonValueExt;
 
@@ -255,8 +242,8 @@ mod tests {
 		Ok(())
 	}
 
-	#[test]
-	fn test_get_solo_and_target_path() -> Result<()> {
+	#[tokio::test]
+	async fn test_get_solo_and_target_path() -> Result<()> {
 		let data = &[
 			// (path, expected_solo_path, expected_target_path)
 			("./some/file.md", "./some/file.md.devai", "./some/file.md"),
@@ -278,14 +265,11 @@ mod tests {
 	async fn test_find_command_agent_direct_and_validate_ctx() -> Result<()> {
 		// -- Setup & Fixtures
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		let fx_agent_name = "./agent-script/agent-ctx-reflect.devai";
 
 		// -- Exec
-		let agent = find_agent(
-			"./agent-ctx-reflect.devai",
-			runtime.dir_context(),
-			LocatorMode::CurrentDir,
-		)?;
-		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
+		let agent = find_agent(fx_agent_name, runtime.dir_context(), PathResolver::CurrentDir)?;
+		let res = run_test_agent(&runtime, &agent).await?;
 
 		// -- Check
 		// devai_parent_dir
@@ -302,9 +286,9 @@ mod tests {
 		// devai dir
 		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
 
-		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "./agent-ctx-reflect.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_PATH")?, "./agent-ctx-reflect.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, ".");
+		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, fx_agent_name);
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_PATH")?, fx_agent_name);
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./agent-script");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "agent-ctx-reflect.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "agent-ctx-reflect");
 
@@ -317,13 +301,12 @@ mod tests {
 		// TODO: Probably need to run the init in sandbox_01
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 		std::fs::copy(
-			Path::new(SANDBOX_01_DIR).join("agent-ctx-reflect.devai"),
+			Path::new(SANDBOX_01_DIR).join("agent-script/agent-ctx-reflect.devai"),
 			"tests-data/sandbox-01/.devai/custom/command-agent/command-ctx-reflect.devai",
 		)?;
-
 		// -- Exec
-		let agent = find_agent("command-ctx-reflect", runtime.dir_context(), LocatorMode::CurrentDir)?;
-		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
+		let agent = find_agent("command-ctx-reflect", runtime.dir_context(), PathResolver::CurrentDir)?;
+		let res = run_test_agent(&runtime, &agent).await?;
 
 		// -- Check
 		// devai_parent_dir
@@ -355,11 +338,11 @@ mod tests {
 	async fn test_load_solo_agent_and_validate_ctx() -> Result<()> {
 		// -- Setup & Fixtures
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		let fx_agent_name = "agent-script/agent-ctx-reflect.devai";
 
 		// -- Exec
-		let agent_path = "agent-ctx-reflect.devai";
-		let agent = load_solo_agent(agent_path, runtime.dir_context())?;
-		let res = run_simple_command_agent_item_for_test(&runtime, &agent).await?;
+		let agent = load_solo_agent(fx_agent_name, runtime.dir_context())?;
+		let res = run_test_agent(&runtime, &agent).await?;
 
 		// -- Check
 		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
@@ -376,9 +359,12 @@ mod tests {
 		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
 
 		// agent details
-		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "agent-ctx-reflect.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_PATH")?, "./agent-ctx-reflect.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, ".");
+		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, fx_agent_name);
+		assert_eq!(
+			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
+			"./agent-script/agent-ctx-reflect.devai"
+		);
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./agent-script");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "agent-ctx-reflect.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "agent-ctx-reflect");
 

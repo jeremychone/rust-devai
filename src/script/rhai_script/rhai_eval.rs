@@ -29,35 +29,7 @@ mod tests {
 	type Error = Box<dyn std::error::Error>;
 	type Result<T> = core::result::Result<T, Error>; // For tests.
 
-	use super::*;
 	use crate::run::Runtime;
-	use value_ext::JsonValueExt;
-
-	#[tokio::test]
-	async fn test_eval_file_load_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		let script = r#"
-        let file1 = file::load("src/main.rs");
-        let file2 = file::load("src/error.rs");
-        [file1, file2]  // Return an array of File structs
-    "#;
-
-		// -- Exec
-		let result = rhai_eval(runtime.rhai_engine(), script, None)?;
-
-		// -- Check
-		if let Value::Array(values) = result {
-			let zipped = values.iter().zip(["src/main.rs", "src/error.rs"].iter());
-
-			for (val, expected_path) in zipped {
-				let val_path = val.x_get::<String>("path")?;
-				assert_eq!(expected_path, &val_path);
-			}
-		}
-
-		Ok(())
-	}
 
 	/// Lower engine-level eval test
 	#[tokio::test]

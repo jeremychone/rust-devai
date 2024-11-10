@@ -47,10 +47,33 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, remove_last_line);
 
+	FuncRegistration::new("remove_last_line")
+		.in_global_namespace()
+		.set_into_module(&mut module, remove_last_line);
+
+	// ensure_single_ending_newline
+	FuncRegistration::new("ensure_single_ending_newline")
+		.in_global_namespace()
+		.set_into_module(&mut module, ensure_single_ending_newline);
+
 	module
 }
 
 // region:    --- Strings
+
+/// ## RHAI Documentation
+/// ```rhai
+/// text::ensure_single_ending_newline(content: string) -> string
+/// ```
+///
+/// Ensures that `content` ends with a single newline character.
+/// If `content` is empty, it returns a newline character.
+///
+/// This function is useful for code sanitization.
+fn ensure_single_ending_newline(content: &str) -> String {
+	// Note: This string::ensure... is optimized to
+	crate::support::strings::ensure_single_ending_newline(content.to_string())
+}
 
 ///  ## RHAI Documentation
 /// ```rhai

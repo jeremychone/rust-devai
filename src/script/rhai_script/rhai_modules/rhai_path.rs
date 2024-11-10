@@ -11,29 +11,34 @@
 //! * `path::is_dir(path: string) -> bool`
 //! * `path::parent(path: string) -> string | void`
 
+use crate::run::{PathResolver, RuntimeContext};
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
 use std::path::Path;
 
-pub fn rhai_module() -> Module {
+pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	// Create a module for path functions
 	let mut module = Module::new();
 
+	let ctx = runtime_context.clone();
 	FuncRegistration::new("exists")
 		.in_global_namespace()
-		.set_into_module(&mut module, path_exists);
+		.set_into_module(&mut module, move |path: &str| path_exists(&ctx, path));
 
+	let ctx = runtime_context.clone();
 	FuncRegistration::new("is_file")
 		.in_global_namespace()
-		.set_into_module(&mut module, path_is_file);
+		.set_into_module(&mut module, move |path: &str| path_is_file(&ctx, path));
 
+	let ctx = runtime_context.clone();
 	FuncRegistration::new("is_dir")
 		.in_global_namespace()
-		.set_into_module(&mut module, path_is_dir);
+		.set_into_module(&mut module, move |path: &str| path_is_dir(&ctx, path));
 
+	let ctx = runtime_context.clone();
 	FuncRegistration::new("parent")
 		.in_global_namespace()
-		.set_into_module(&mut module, path_parent);
+		.set_into_module(&mut module, move |path: &str| path_parent(&ctx, path));
 
 	module
 }
@@ -46,9 +51,9 @@ pub fn rhai_module() -> Module {
 /// ```
 ///
 /// Checks if the specified path exists.
-fn path_exists(path: &str) -> RhaiResult {
-	let exists = Path::new(path).exists();
-	Ok(Dynamic::from(exists))
+fn path_exists(ctx: &RuntimeContext, path: &str) -> RhaiResult {
+	let path = ctx.dir_context().resolve_path(path, PathResolver::DevaiParentDir)?;
+	Ok(Dynamic::from(path.exists()))
 }
 
 /// ## RHAI Documentation
@@ -57,9 +62,9 @@ fn path_exists(path: &str) -> RhaiResult {
 /// ```
 ///
 /// Checks if the specified path is a file.
-fn path_is_file(path: &str) -> RhaiResult {
-	let is_file = Path::new(path).is_file();
-	Ok(Dynamic::from(is_file))
+fn path_is_file(ctx: &RuntimeContext, path: &str) -> RhaiResult {
+	let path = ctx.dir_context().resolve_path(path, PathResolver::DevaiParentDir)?;
+	Ok(Dynamic::from(path.is_file()))
 }
 
 /// ## RHAI Documentation
@@ -68,9 +73,9 @@ fn path_is_file(path: &str) -> RhaiResult {
 /// ```
 ///
 /// Checks if the specified path is a directory.
-fn path_is_dir(path: &str) -> RhaiResult {
-	let is_dir = Path::new(path).is_dir();
-	Ok(Dynamic::from(is_dir))
+fn path_is_dir(ctx: &RuntimeContext, path: &str) -> RhaiResult {
+	let path = ctx.dir_context().resolve_path(path, PathResolver::DevaiParentDir)?;
+	Ok(Dynamic::from(path.is_dir()))
 }
 
 /// ## RHAI Documentation
@@ -79,7 +84,8 @@ fn path_is_dir(path: &str) -> RhaiResult {
 /// ```
 ///
 /// Returns the parent directory of the specified path, or null/void if there is no parent.
-fn path_parent(path: &str) -> RhaiResult {
+/// (follows the Rust Path::parent(&self) logic)
+fn path_parent(_ctx: &RuntimeContext, path: &str) -> RhaiResult {
 	match Path::new(path).parent() {
 		Some(parent) => match parent.to_str() {
 			Some(parent_str) => Ok(Dynamic::from(parent_str.to_string())),
@@ -95,9 +101,11 @@ fn path_parent(path: &str) -> RhaiResult {
 
 #[cfg(test)]
 mod tests {
-	//! NOTE: Here we are testing these functions in the context of an agent to ensure they work in that context.
-	//!       A more purist approach would be to test the Rhai functions in a blank Rhai engine, but the net value of testing
-	//!       them in the context where they will run is higher. Height wins.
+	//! NOTE 1: Here we are testing these functions in the context of an agent to ensure they work in that context.
+	//!         A more purist approach would be to test the Rhai functions in a blank Rhai engine, but the net value of testing
+	//!         them in the context where they will run is higher. Height wins.
+	//!
+	//! NOTE 2: All the tests here are with run_reflective_agent that have the tests-data/sandbox-01 as current dir.
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	use crate::_test_support::run_reflective_agent;
@@ -107,12 +115,15 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./",
-			"./src/run",
-			"./src/run/",
-			"./src/main.rs",
-			"src/main.rs",
-			"Cargo.toml",
+			"./agent-script/agent-hello.md",
+			"agent-script/agent-hello.md",
+			"./sub-dir-a/agent-hello-2.md",
+			"sub-dir-a/agent-hello-2.md",
+			"sub-dir-a/",
+			"sub-dir-a",
+			"./sub-dir-a/",
+			"./sub-dir-a/../",
+			"./sub-dir-a/..",
 		];
 
 		// -- Exec & Check
@@ -132,9 +143,10 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./src/main .rs",
-			"src/lib.rs",
-			"./s rc/",
+			"./no file .rs",
+			"some/no-file.md",
+			"./s do/",
+			"no-dir/at/all",
 		];
 
 		// -- Exec & Check
@@ -154,9 +166,11 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./src/main.rs",
-			"src/main.rs",
-			"Cargo.toml",
+			"./agent-script/agent-hello.md",
+			"agent-script/agent-hello.md",
+			"./sub-dir-a/agent-hello-2.md",
+			"sub-dir-a/agent-hello-2.md",
+			"sub-dir-a/../agent-script/agent-hello.md",
 		];
 
 		// -- Exec & Check
@@ -176,9 +190,9 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./src",
-			"./",
-			"./no-file.none",
+			"./no-file",
+			"no-file.txt",
+			"sub-dir-a/",
 		];
 
 		// -- Exec & Check
@@ -198,9 +212,11 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./src",
-			"./",
-			"./src/run/",
+			"./sub-dir-a",
+			"sub-dir-a",
+			"./sub-dir-a/..",
+			// Note: below does not work for now becsuse some-other-dir does not exists. Might want to use clean.
+			// "./sub-dir-a/some-other-dir/..",
 		];
 
 		// -- Exec & Check
@@ -220,9 +236,11 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./src/main.rs",
-			"src/main.rs",
-			"Cargo.toml",
+			"./agent-hello.md",
+			"agent-hello.md",
+			"./sub-dir-a/agent-hello-2.md",
+			"./sub-dir-a/other-path",
+			"nofile.txt",
 			"./s rc/",
 		];
 
@@ -233,6 +251,31 @@ mod tests {
 				!res.as_bool().ok_or("Result should be a bool")?,
 				"'{path}' should NOT be is_dir"
 			);
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_rhai_path_parent() -> Result<()> {
+		// -- Fixtures
+		// This is the rust Path logic
+		let paths = &[
+			//
+			("./agent-hello.md", "."),
+			("./", ""),
+			(".", ""),
+			("./sub-dir/file.txt", "./sub-dir"),
+			("./sub-dir/file", "./sub-dir"),
+			("./sub-dir/", "."),
+			("./sub-dir", "."),
+		];
+
+		// -- Exec & Check
+		for (path, expected) in paths {
+			let res = run_reflective_agent(&format!(r#"return path::parent("{path}");"#), None).await?;
+			let res = res.as_str().ok_or("Should be a string")?;
+			assert_eq!(res, *expected);
 		}
 
 		Ok(())

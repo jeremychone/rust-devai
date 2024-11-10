@@ -1,8 +1,7 @@
-use crate::agent::{get_solo_and_target_path, Agent, AgentDoc};
+use crate::agent::{find_agent, get_solo_and_target_path, Agent, AgentDoc};
 use crate::Result;
 use crate::_test_support::default_agent_config_for_test;
-use crate::run::RunSoloOptions;
-use std::path::Path;
+use crate::run::{PathResolver, RunSoloOptions, Runtime};
 
 /// Load a Agent form a content.
 /// - `path` is just to be used as a path for the agent. Not used to load the content.
@@ -12,20 +11,16 @@ pub fn load_inline_agent(path: &str, content: impl Into<String>) -> Result<Agent
 	Ok(agent)
 }
 
-pub fn load_test_agent(path: impl AsRef<Path>) -> Result<Agent> {
-	let path = path.as_ref();
-	let doc = AgentDoc::from_file(path)?;
-	let name = path.to_str().unwrap_or("NO_UTF8_NAME");
-	let agent = doc.into_agent(name, default_agent_config_for_test())?;
-	Ok(agent)
+pub fn load_test_agent(name: &str, runtime: &Runtime) -> Result<Agent> {
+	find_agent(name, runtime.dir_context(), PathResolver::DevaiParentDir)
 }
 
-pub fn load_test_solo_agent_and_solo_config(path: &str) -> Result<(Agent, RunSoloOptions)> {
-	let (agent_path, target_path) = get_solo_and_target_path(path)?;
+pub fn load_test_solo_agent_and_solo_config(path: &str, runtime: &Runtime) -> Result<(Agent, RunSoloOptions)> {
+	let (_, target_path) = get_solo_and_target_path(path)?;
 
-	let agent = load_test_agent(agent_path)?;
+	let agent = load_test_agent(path, runtime)?;
+
 	let solo_config = RunSoloOptions::from_target_path(target_path.to_str())?;
-
 	Ok((agent, solo_config))
 }
 

@@ -21,6 +21,17 @@ impl From<&SPath> for FileRef {
 	}
 }
 
+impl From<SPath> for FileRef {
+	fn from(spath: SPath) -> Self {
+		FileRef {
+			name: spath.name().to_string(),
+			path: spath.to_string(),
+			stem: spath.stem().to_string(),
+			ext: spath.ext().to_string(),
+		}
+	}
+}
+
 impl From<SFile> for FileRef {
 	fn from(file: SFile) -> Self {
 		FileRef {
