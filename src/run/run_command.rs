@@ -244,7 +244,11 @@ fn get_genai_info(agent: &Agent) -> String {
 // region:    --- Tests
 
 #[cfg(test)]
-#[path = "../_tests/tests_run_command.rs"]
-mod tests;
+#[path = "../_tests/tests_run_agent_llm.rs"]
+mod tests_run_agent_llm;
+
+#[cfg(test)]
+#[path = "../_tests/tests_run_agent_script.rs"]
+mod tests_run_agent_script;
 
 // endregion: --- Tests

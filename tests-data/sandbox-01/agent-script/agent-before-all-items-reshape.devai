@@ -1,0 +1,23 @@
+# Before All
+
+```rhai
+
+return "Before All Content";
+
+```
+
+# Data 
+
+```rhai
+
+return "Data with item: '" + item + "'"
+
+```
+
+# Output
+
+```rhai
+
+return data
+
+```

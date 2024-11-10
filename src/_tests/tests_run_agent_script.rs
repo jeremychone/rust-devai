@@ -1,54 +1,12 @@
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 use super::*;
-use crate::_test_support::{
-	assert_contains, load_inline_agent, load_test_agent, run_test_agent, run_test_agent_with_item, HubCapture,
-};
+use crate::_test_support::{assert_contains, load_inline_agent, load_test_agent, run_test_agent_with_item, HubCapture};
 use crate::types::FileRef;
 use simple_fs::SPath;
-use value_ext::JsonValueExt;
 
 #[tokio::test]
-async fn test_run_agent_llm_c_simple_ok() -> Result<()> {
-	// -- Setup & Fixtures
-	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-llm/agent-simple.md", &runtime)?;
-
-	// -- Execute
-	let res = run_test_agent(&runtime, &agent).await?;
-
-	// -- Check
-	assert_contains(res.as_str().ok_or("Should have output result")?, "sky");
-
-	Ok(())
-}
-
-/// NOTE: RUN REAL AGENT
-#[tokio::test]
-async fn test_run_agent_llm_c_on_file_ok() -> Result<()> {
-	// -- Setup & Fixtures
-	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-llm/agent-on-file.md", &runtime)?;
-
-	// -- Execute
-	let on_file = SPath::new("./other/hello.txt")?;
-	let file_ref = FileRef::from(on_file);
-
-	let res = run_test_agent_with_item(&runtime, &agent, file_ref).await?;
-
-	// -- Check
-	// The output return the {data_path: data.file.path, item_name: item.name}
-	assert_eq!(res.x_get_str("data_path")?, "./other/hello.txt");
-	assert_eq!(res.x_get_str("item_name")?, "hello.txt");
-	let ai_content = res.x_get_str("ai_content")?;
-	assert!(ai_content.len() > 10, "The AI response should have some content");
-	assert_contains(ai_content, "from the other/hello.txt");
-
-	Ok(())
-}
-
-#[tokio::test]
-async fn test_run_agent_script_c_hello_ok() -> Result<()> {
+async fn test_run_agent_script_hello_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./agent-script/agent-hello.md", &runtime)?;
@@ -70,7 +28,7 @@ async fn test_run_agent_script_c_hello_ok() -> Result<()> {
 ///       However, when multiple runtimes are used (as is the case for testing), the hub is shared, and the capture might be off.
 ///       The hub will need to be per runtime, or there should be a way to ensure that all events are sent or something similar.
 #[tokio::test]
-async fn test_run_agent_c_before_all_simple() -> Result<()> {
+async fn test_run_agent_script_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./agent-script/agent-before-all.md", &runtime)?;
@@ -94,16 +52,16 @@ async fn test_run_agent_c_before_all_simple() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_run_agent_c_skip_simple() -> Result<()> {
-	common_test_run_agent_c_skip(None).await
+async fn test_run_agent_script_skip_simple() -> Result<()> {
+	common_test_run_agent_script_skip(None).await
 }
 
 #[tokio::test]
-async fn test_run_agent_c_skip_reason() -> Result<()> {
-	common_test_run_agent_c_skip(Some("Some reason")).await
+async fn test_run_agent_script_skip_reason() -> Result<()> {
+	common_test_run_agent_script_skip(Some("Some reason")).await
 }
 
-async fn common_test_run_agent_c_skip(reason: Option<&str>) -> Result<()> {
+async fn common_test_run_agent_script_skip(reason: Option<&str>) -> Result<()> {
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 
 	let reason_str = reason.map(|v| format!("\"{v}\"")).unwrap_or_default();
