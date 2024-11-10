@@ -52,8 +52,8 @@ pub async fn run_command_agent(
 					.await;
 				return Ok(None);
 			}
-			FromValue::DevaiCustom(DevaiCustom::BeforeAll {
-				items_override,
+			FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse {
+				items: items_override,
 				before_all,
 			}) => (items_override.or(items), before_all),
 			FromValue::OriginalValue(value) => (items, Some(value)),

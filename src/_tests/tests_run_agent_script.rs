@@ -52,6 +52,28 @@ async fn test_run_agent_script_before_all_simple() -> Result<()> {
 }
 
 #[tokio::test]
+async fn test_run_agent_script_before_all_items_reshape() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
+	let agent = load_test_agent("./agent-script/agent-before-all-items-reshape.devai", &runtime)?;
+	// let hub_capture = HubCapture::new_and_start();
+
+	// -- Exec
+	let items = vec!["one".into(), "two".into()];
+	let res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true)
+		.await?
+		.ok_or("Should have output values")?;
+
+	// -- Check
+	let res = res.iter().map(|v| v.as_str().unwrap_or_default()).collect::<Vec<_>>();
+	assert_eq!(res[0], "Data with item: 'one-0'");
+	assert_eq!(res[1], "Data with item: 'two-1'");
+	assert_eq!(res[2], "Data with item: 'C'");
+
+	Ok(())
+}
+
+#[tokio::test]
 async fn test_run_agent_script_skip_simple() -> Result<()> {
 	common_test_run_agent_script_skip(None).await
 }

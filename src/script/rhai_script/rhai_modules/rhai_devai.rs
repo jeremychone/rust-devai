@@ -14,6 +14,7 @@ use crate::agent::find_agent;
 use crate::run::{run_command_agent, RuntimeContext};
 use crate::run::{PathResolver, RunBaseOptions};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
+use crate::script::DynamicMap;
 use crate::Error;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
@@ -30,6 +31,10 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	FuncRegistration::new("action_skip")
 		.in_global_namespace()
 		.set_into_module(&mut module, action_skip_with_reason);
+
+	FuncRegistration::new("before_all_response")
+		.in_global_namespace()
+		.set_into_module(&mut module, before_all_response);
 
 	let ctx = runtime_context.clone();
 	FuncRegistration::new("run")
@@ -68,6 +73,37 @@ fn run_with_items(ctx: &RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) ->
 }
 
 // endregion: --- run...
+
+// region:    --- before_all_response
+
+fn before_all_response(data: Dynamic) -> RhaiResult {
+	// validate it is a map
+	let map = DynamicMap::new(data)
+		.map_err(|err| crate::Error::cc("devai::before_all_response take a object map only", err))?;
+
+	// Now building the following structure.
+	// Note: The data send by the user will be assume to be of right format for now
+	//       As the valuation happen later at the DevaiCustom level
+	//	"_devai_": {
+	//		"kind": "BeforeAllResponse",
+	//		"data": {
+	//			"items": ["A", "B", 123],
+	//			"before_all": "Some before all data"
+	//		}
+	//	}
+
+	// now build the new
+	let data = map.into_dynamic();
+	let mut custom = rhai::Map::new();
+	custom.insert("kind".into(), "BeforeAllResponse".into());
+	custom.insert("data".into(), data);
+	let mut res = rhai::Map::new();
+	res.insert("_devai_".into(), custom.into());
+
+	Ok(res.into())
+}
+
+// endregion: --- before_all_response
 
 // region:    --- action_skip..
 

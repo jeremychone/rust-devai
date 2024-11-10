@@ -2,7 +2,13 @@
 
 ```rhai
 
-return "Before All Content";
+items[0] = items[0] + "-0";
+items[1] = items[1] + "-1";
+items.push("C");
+return devai::before_all_response(#{
+    before_all: "some before all data",
+    items: items
+});
 
 ```
 

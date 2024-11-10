@@ -32,6 +32,15 @@ impl DynamicMap {
 
 		Ok(res)
 	}
+
+	#[allow(unused)]
+	pub fn remove_to_dynamic(&mut self, name: &str) -> Result<Option<Dynamic>, DynamicSupportError> {
+		let map = &mut self.0;
+
+		let val = map.remove(name);
+
+		Ok(val)
+	}
 }
 
 // region:    --- DynamicSupportExt
