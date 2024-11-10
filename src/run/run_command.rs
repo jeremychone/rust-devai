@@ -14,13 +14,19 @@ use value_ext::JsonValueExt;
 
 const DEFAULT_CONCURRENCY: usize = 1;
 
+#[derive(Debug, Serialize, Default)]
+pub struct RunCommandResponse {
+	pub outputs: Option<Vec<Value>>,
+	pub after_all: Option<Value>,
+}
+
 pub async fn run_command_agent(
 	runtime: &Runtime,
 	agent: &Agent,
 	items: Option<Vec<Value>>,
 	run_base_options: &RunBaseOptions,
 	return_output_values: bool,
-) -> Result<Option<Vec<Value>>> {
+) -> Result<RunCommandResponse> {
 	let hub = get_hub();
 	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
@@ -46,16 +52,21 @@ pub async fn run_command_agent(
 		let before_all_res = rhai_eval(runtime.rhai_engine(), before_all_script, Some(scope_item))?;
 
 		match DevaiCustom::from_value(before_all_res)? {
+			// it is an skip action
 			FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
 				let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
 				hub.publish(format!("-! DevAI Skip items at Before All section{reason_msg}"))
 					.await;
-				return Ok(None);
+				return Ok(RunCommandResponse::default());
 			}
+
+			// it is before_all_response
 			FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse {
 				items: items_override,
 				before_all,
 			}) => (items_override.or(items), before_all),
+
+			// just plane value
 			FromValue::OriginalValue(value) => (items, Some(value)),
 		}
 	} else {
@@ -88,6 +99,7 @@ pub async fn run_command_agent(
 
 		// Spawn tasks up to the concurrency limit
 		join_set.spawn(async move {
+			// Execute the command agent (this will perform do Data, Instruction, and Output stages)
 			let output = run_command_agent_item(
 				item_idx,
 				&runtime_clone,
@@ -98,6 +110,28 @@ pub async fn run_command_agent(
 				&base_run_config_clone,
 			)
 			.await?;
+
+			// Process the output
+			let output = match DevaiCustom::from_value(output)? {
+				// if it is a skip, we skip
+				FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
+					let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
+					hub.publish(format!("-! DevAI Skip item at Output stage{reason_msg}")).await;
+					Value::Null
+				}
+
+				// Any other DevaiCustom is not supported at output stage
+				FromValue::DevaiCustom(other) => {
+					return Err(Error::custom(format!(
+						"devai custom '{}' not supported at the Output stage",
+						other.as_ref()
+					)))
+				}
+
+				// Plain value passthrough
+				FromValue::OriginalValue(value) => value,
+			};
+
 			Ok((item_idx, output))
 		});
 
@@ -136,35 +170,34 @@ pub async fn run_command_agent(
 		}
 	}
 
-	let mut to_return: Option<Vec<Value>> = None;
-
 	// -- Post-process outputs
-	let outputs_value = if let Some(mut captured_outputs) = captured_outputs {
+	let outputs = if let Some(mut captured_outputs) = captured_outputs {
 		captured_outputs.sort_by_key(|(idx, _)| *idx);
-
-		let outputs: Vec<Value> = captured_outputs.into_iter().map(|(_, v)| v).collect();
-
-		// TODO: Need to optimize. For now we clone when return_output_values even if after_all_script is empty
-		if return_output_values {
-			to_return = Some(outputs.clone());
-		}
-		Value::Array(outputs)
+		Some(captured_outputs.into_iter().map(|(_, v)| v).collect::<Vec<_>>())
 	} else {
-		Value::Null
+		None
 	};
 
 	// -- Run the after all
-	if let Some(after_all_script) = agent.after_all_script() {
+	let after_all = if let Some(after_all_script) = agent.after_all_script() {
+		let outputs_value = if let Some(outputs) = outputs.as_ref() {
+			Value::Array(outputs.clone())
+		} else {
+			Value::Null
+		};
+
 		let scope_item = json!({
 			"items": items,
 			"outputs": outputs_value, // Will be Value::Null if outputs were not collected
 			"before_all": before_all,
 			"CTX": literals.to_ctx_value()
 		});
-		let _after_all_res = rhai_eval(runtime.rhai_engine(), after_all_script, Some(scope_item))?;
-	}
+		Some(rhai_eval(runtime.rhai_engine(), after_all_script, Some(scope_item))?)
+	} else {
+		None
+	};
 
-	Ok(to_return)
+	Ok(RunCommandResponse { after_all, outputs })
 }
 
 /// Run the command agent item for the run_command_agent_items

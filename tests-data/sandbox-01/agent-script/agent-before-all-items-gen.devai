@@ -1,0 +1,50 @@
+# Before All
+
+```rhai
+
+return devai::before_all_response(#{
+    before_all: items,
+    items: ["one", "two", "three", 4, "five"]
+});
+
+```
+
+# Data 
+
+```rhai
+
+if item == "two" {
+    return devai::action_skip("Skip the 'two' at data stage");
+}
+
+return "Data with item: '" + item + "'"
+
+```
+
+# Output
+
+```rhai
+
+if item == "five" {
+    return devai::action_skip("Don't output process 'five'");
+}
+
+if item == 4 {
+    return;
+} else {
+  return #{
+    before_all_data_was: before_all,
+    data: data
+  }
+}
+
+
+
+```
+
+# After All
+
+```rhai
+
+return "this is after all data: items: " + items + " - " + outputs.len() ;
+```

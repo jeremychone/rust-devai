@@ -70,9 +70,10 @@ pub fn rhai_module() -> Module {
 /// If `content` is empty, it returns a newline character.
 ///
 /// This function is useful for code sanitization.
-fn ensure_single_ending_newline(content: &str) -> String {
-	// Note: This string::ensure... is optimized to
-	crate::support::strings::ensure_single_ending_newline(content.to_string())
+fn ensure_single_ending_newline(content: &str) -> RhaiResult {
+	// Note: Might want to optimize if possible
+	let s = crate::support::strings::ensure_single_ending_newline(content.to_string());
+	Ok(s.into())
 }
 
 ///  ## RHAI Documentation

@@ -62,6 +62,7 @@ async fn test_run_agent_script_before_all_items_reshape() -> Result<()> {
 	let items = vec!["one".into(), "two".into()];
 	let res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true)
 		.await?
+		.outputs
 		.ok_or("Should have output values")?;
 
 	// -- Check
@@ -69,6 +70,40 @@ async fn test_run_agent_script_before_all_items_reshape() -> Result<()> {
 	assert_eq!(res[0], "Data with item: 'one-0'");
 	assert_eq!(res[1], "Data with item: 'two-1'");
 	assert_eq!(res[2], "Data with item: 'C'");
+
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_run_agent_script_before_all_items_gen() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
+	let agent = load_test_agent("./agent-script/agent-before-all-items-gen.devai", &runtime)?;
+
+	// -- Exec
+	let res = run_command_agent(&runtime, &agent, None, &RunBaseOptions::default(), true).await?;
+
+	// -- Check
+	let res_value = serde_json::to_value(res)?;
+
+	// check the null values (because of skip or return)
+	assert!(
+		matches!(res_value.x_get::<Value>("/outputs/1")?, Value::Null),
+		"the 2nd item should be null per agent md"
+	);
+	assert!(
+		matches!(res_value.x_get::<Value>("/outputs/3")?, Value::Null),
+		"the 4th item should be null per agent md"
+	);
+	assert!(
+		matches!(res_value.x_get::<Value>("/outputs/4")?, Value::Null),
+		"the 5th item should be null per agent md"
+	);
+
+	// lazy checks with the json string
+	let res_pretty = res_value.x_pretty()?.to_string();
+	assert_contains(&res_pretty, r#""data": "Data with item: 'one'""#);
+	assert_contains(&res_pretty, r#""before_all_data_was": null,"#);
 
 	Ok(())
 }
@@ -114,14 +149,15 @@ return "output for: " + item
 	let items = fx_items.iter().map(|v| Value::String(v.to_string())).collect();
 	let res = run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true)
 		.await?
+		.outputs
 		.ok_or("Should have output result")?;
 
 	// -- Check
 	let hub_content = hub_capture.into_content().await?;
 	// check the prints/hub:
-	assert!(
-		hub_content.contains("-! DevAI Skip item: item index: 0"),
-		"should have skipped item 0"
+	assert_contains(
+		&hub_content,
+		"-! DevAI Skip item at Data stage: item index: 0 (Reason: Some reason)",
 	);
 	if let Some(reason) = reason.as_ref() {
 		assert!(hub_content.contains(reason), "should have reason in the skip message");

@@ -6,6 +6,7 @@ pub fn dynamics_to_values(dynamics: Vec<Dynamic>) -> Result<Vec<Value>> {
 	dynamics.into_iter().map(dynamic_to_value).collect::<Result<Vec<_>>>()
 }
 
+/// TODO: Need to look if the rhai serde feature provide that better
 pub fn dynamic_to_value(dynamic: Dynamic) -> Result<Value> {
 	// Check the type of Dynamic and convert it to serde_json::Value
 	let val = if dynamic.is::<i64>() {
@@ -50,6 +51,8 @@ pub fn value_to_scope(value: &Value) -> Result<Scope> {
 	}
 }
 
+/// Here is a custom serde json to dynamic
+/// TODO: Need to look if the rhai serde feature provide that better
 pub fn value_to_dynamic(value: &Value) -> Dynamic {
 	match value {
 		Value::Null => Dynamic::UNIT,

@@ -18,7 +18,7 @@ use crate::script::DynamicMap;
 use crate::Error;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
-use serde_json::{json, Value};
+use serde_json::json;
 
 pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	// Create a module for text functions
@@ -59,17 +59,14 @@ fn run_with_items(ctx: &RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) ->
 	let runtime = ctx.get_runtime()?;
 	let res = tokio::task::block_in_place(|| {
 		rt.block_on(async { run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true).await })
-	});
+	})?;
 
-	let res = res?;
+	let res =
+		serde_json::to_value(res).map_err(|err| Error::cc("devai::run, failed to result convert to json", err))?;
 
-	let rhai_val = if let Some(values) = res {
-		value_to_dynamic(&Value::Array(values))
-	} else {
-		Dynamic::UNIT
-	};
+	let rhai_res = value_to_dynamic(&res);
 
-	Ok(rhai_val)
+	Ok(rhai_res)
 }
 
 // endregion: --- run...
@@ -177,6 +174,7 @@ mod tests {
 
 	use crate::_test_support::run_reflective_agent;
 	use serde_json::from_value;
+	use value_ext::JsonValueExt;
 
 	// Note: multi_thread required, because rhai devai::run is a sync calling a async.
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -188,14 +186,14 @@ mod tests {
 		.await;
 
 		// NOTE: apparently when multi thread, need to print error
-		let res = match res {
+		let mut res = match res {
 			Ok(res) => res,
 			Err(err) => {
 				panic!("test_rhai_devai_run_simple ERROR: {err}");
 			}
 		};
 
-		let vals: Vec<String> = from_value(res)?;
+		let vals: Vec<String> = from_value(res.x_take("outputs")?)?;
 
 		assert_eq!(
 			vals,
