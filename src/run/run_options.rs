@@ -7,7 +7,7 @@ use simple_fs::SPath;
 #[derive(Debug)]
 pub struct RunCommandOptions {
 	on_file_globs: Option<Vec<String>>,
-	on_items: Option<Vec<String>>,
+	on_inputs: Option<Vec<String>>,
 
 	base_run_options: RunBaseOptions,
 }
@@ -18,8 +18,8 @@ impl RunCommandOptions {
 		self.on_file_globs.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
 	}
 
-	pub fn on_items(&self) -> Option<Vec<&str>> {
-		self.on_items.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
+	pub fn on_inputs(&self) -> Option<Vec<&str>> {
+		self.on_inputs.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
 	}
 
 	pub fn base_run_config(&self) -> &RunBaseOptions {
@@ -31,8 +31,8 @@ impl RunCommandOptions {
 impl RunCommandOptions {
 	pub fn new(args: RunArgs) -> Result<Self> {
 		// -- Validate the run_args
-		if let (Some(_), Some(_)) = (args.on_items.as_ref(), args.on_files.as_ref()) {
-			return Err("Cannot use both --on-items and --on-files".into());
+		if let (Some(_), Some(_)) = (args.on_inputs.as_ref(), args.on_files.as_ref()) {
+			return Err("Cannot use both --on-inputs and --on-files".into());
 		}
 
 		// -- Refine the globs
@@ -67,7 +67,7 @@ impl RunCommandOptions {
 
 		Ok(Self {
 			on_file_globs,
-			on_items: args.on_items,
+			on_inputs: args.on_inputs,
 			base_run_options,
 		})
 	}

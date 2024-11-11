@@ -221,12 +221,12 @@ The `devai` module provides functions for interacting with the devai system, suc
 
 ### devai::action_skip() -> SkipActionDict
 
-Used in the `# Data` section to return a devai skip action so that the item is not included in the next flow (instruction > AI > data).
+Used in the `# Data` section to return a devai skip action so that the input is not included in the next flow (instruction > AI > data).
 
 **Example:**
 
 ```rhai
-if item.name == "mod.rs" {
+if input.name == "mod.rs" {
     return devai::action_skip();
 }
 // {
@@ -238,12 +238,12 @@ if item.name == "mod.rs" {
 
 ### devai::action_skip(reason: string) -> SkipActionDict
 
-Used in the `# Data` section to return a devai skip action with a reason so that the item is not included in the next flow. The reason will be printed.
+Used in the `# Data` section to return a devai skip action with a reason so that the input is not included in the next flow. The reason will be printed.
 
 **Example:**
 
 ```rhai
-if item.name == "mod.rs" {
+if input.name == "mod.rs" {
     return devai::action_skip("mod.rs does not need to be processed by this agent");
 }
 // {
@@ -256,14 +256,14 @@ if item.name == "mod.rs" {
 // }
 ```
 
-### devai::run(cmd_agent: string, items: Vec<Dynamic>) -> Dynamic
+### devai::run(cmd_agent: string, inputs: Vec<Dynamic>) -> Dynamic
 
-Runs a command agent with the specified items and returns the result.
+Runs a command agent with the specified inputs and returns the result.
 
 **Example:**
 
 ```rhai
-let result = devai::run("./path/to/agent.md", ["item1", "item2"]);
+let result = devai::run("./path/to/agent.md", ["input1", "input2"]);
 // result = ["output1", "output2"]
 ```
 

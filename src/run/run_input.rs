@@ -10,13 +10,13 @@ use genai::chat::ChatRequest;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 
-/// Run and agent item for command agent or solo agent.
-pub async fn run_agent_item(
+/// Run and agent input for command agent or solo agent.
+pub async fn run_agent_input(
 	runtime: &Runtime,
 	agent: &Agent,
 	before_all_result: Value,
 	label: &str,
-	item: Value,
+	input: Value,
 	literals: &Literals,
 	run_base_options: &RunBaseOptions,
 ) -> Result<Value> {
@@ -25,7 +25,7 @@ pub async fn run_agent_item(
 
 	// -- Build the _ctx
 	let data_rhai_scope = json!({
-		"item": item.clone(), // clone because item is reused later
+		"input": input.clone(), // clone because input is reused later
 		"before_all": before_all_result.clone(),
 		"CTX": literals.to_ctx_value()
 	});
@@ -37,7 +37,7 @@ pub async fn run_agent_item(
 		Value::Null
 	};
 
-	// skip item if devai action is sent
+	// skip input if devai action is sent
 	let data = match DevaiCustom::from_value(data)? {
 		// If it is not a DevaiCustom the data is the orginal value
 		FromValue::OriginalValue(data) => data,
@@ -46,7 +46,7 @@ pub async fn run_agent_item(
 		FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
 			let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
 
-			hub.publish(format!("-! DevAI Skip item at Data stage: {label}{reason_txt}"))
+			hub.publish(format!("-! DevAI Skip input at Data stage: {label}{reason_txt}"))
 				.await;
 			return Ok(Value::Null);
 		}
@@ -118,7 +118,7 @@ pub async fn run_agent_item(
 	// -- Exec output
 	let response_value: Value = if let Some(output_script) = agent.output_script() {
 		let scope_output = json!({
-			"item": item,
+			"input": input,
 			"data": data,
 			"before_all": before_all_result,
 			"ai_output": ai_output,

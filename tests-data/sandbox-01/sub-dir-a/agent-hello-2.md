@@ -1,5 +1,5 @@
 # Output
 
 ```rhai
-return "hello '" + item + "' from sub-dir-a/agent-hello-2.md";
+return "hello '" + input + "' from sub-dir-a/agent-hello-2.md";
 ```

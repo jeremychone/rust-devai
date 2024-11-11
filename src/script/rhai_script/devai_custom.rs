@@ -8,7 +8,7 @@ pub enum DevaiCustom {
 	/// Will
 	ActionSkip { reason: Option<String> },
 	BeforeAllResponse {
-		items: Option<Vec<Value>>,
+		inputs: Option<Vec<Value>>,
 		before_all: Option<Value>,
 	},
 }
@@ -44,8 +44,8 @@ impl DevaiCustom {
 	/// {
 	///   _devai_: {
 	///     kind: "BeforeAllResponse", // or BeforeAllData
-	///     data: { // data is objectional, and each item is options.
-	///       "items": ["item 1", "item 2", {some: "item 3"}],
+	///     data: { // data is objectional, and each input is options.
+	///       "inputs": ["input 1", "input 2", {some: "input 3"}],
 	///       "before_all": {somee: "data, can be string, number or anything"}
 	///     }
 	///   }
@@ -62,9 +62,9 @@ impl DevaiCustom {
 			Ok(FromValue::DevaiCustom(Self::ActionSkip { reason }))
 		} else if kind == "BeforeAllResponse" {
 			let custom_data: Option<Value> = value.x_get("/_devai_/data").ok();
-			let (items, before_all) = extract_items_and_before_all(custom_data)?;
+			let (inputs, before_all) = extract_inputs_and_before_all(custom_data)?;
 			Ok(FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse {
-				items,
+				inputs,
 				before_all,
 			}))
 		} else {
@@ -75,26 +75,26 @@ impl DevaiCustom {
 
 // region:    --- Support
 
-fn extract_items_and_before_all(custom_data: Option<Value>) -> Result<(Option<Vec<Value>>, Option<Value>)> {
+fn extract_inputs_and_before_all(custom_data: Option<Value>) -> Result<(Option<Vec<Value>>, Option<Value>)> {
 	let Some(custom_data) = custom_data else {
 		return Ok((None, None));
 	};
 
-	const ERROR_CAUSE: &str = "devai::before_all_response(data), can only have `.item` and `.before_all`)";
+	const ERROR_CAUSE: &str = "devai::before_all_response(data), can only have `.input` and `.before_all`)";
 
-	let (items, before_all) = match custom_data {
+	let (inputs, before_all) = match custom_data {
 		Value::Object(mut obj) => {
 			let before_all_data = obj.remove("before_all");
-			let after_all_items = obj.remove("items");
+			let after_all_inputs = obj.remove("inputs");
 
-			let items = match after_all_items {
-				Some(Value::Array(new_items)) => Some(new_items),
-				// if return items: Null, then will be None, which will have one item of Null below
+			let inputs = match after_all_inputs {
+				Some(Value::Array(new_inputs)) => Some(new_inputs),
+				// if return inputs: Null, then will be None, which will have one input of Null below
 				// > Note to cancel run, we will allow return {_devai_: {action: "skip"}} (not supported for now)
 				Some(Value::Null) => None,
 				Some(_) => {
 					return Err(Error::BeforeAllFailWrongReturn {
-						cause: "devai::before_all_response data .items must be an Null or an Array".to_string(),
+						cause: "devai::before_all_response data .inputs must be an Null or an Array".to_string(),
 					});
 				}
 				None => None,
@@ -106,12 +106,12 @@ fn extract_items_and_before_all(custom_data: Option<Value>) -> Result<(Option<Ve
 					cause: format!("{ERROR_CAUSE}. But also contained: {}", keys.join(", ")),
 				});
 			}
-			(items, before_all_data)
+			(inputs, before_all_data)
 		}
 		_ => (None, None),
 	};
 
-	Ok((items, before_all))
+	Ok((inputs, before_all))
 }
 
 // endregion: --- Support
@@ -127,13 +127,13 @@ mod tests {
 	use serde_json::json;
 
 	#[test]
-	fn test_devai_custom_before_all_items() -> Result<()> {
+	fn test_devai_custom_before_all_inputs() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_custom = json!({
 			"_devai_": {
 				"kind": "BeforeAllResponse",
 				"data": {
-					"items": ["A", "B", 123],
+					"inputs": ["A", "B", 123],
 					"before_all": "Some before all data"
 				}
 			}
@@ -148,7 +148,7 @@ mod tests {
 		};
 		// lazy check
 		let debug_string = format!("{:?}", custom);
-		assert_contains(&debug_string, r#"items: Some([String("A"), String("B"), Number(123)]"#);
+		assert_contains(&debug_string, r#"inputs: Some([String("A"), String("B"), Number(123)]"#);
 		assert_contains(&debug_string, r#"before_all: Some(String("Some before all data"))"#);
 
 		Ok(())

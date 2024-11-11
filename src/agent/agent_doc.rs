@@ -352,7 +352,7 @@ mod tests {
 
 		// -- Check config
 		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.config().items_concurrency(), Some(8), "concurrency");
+		assert_eq!(agent.config().inputs_concurrency(), Some(8), "concurrency");
 
 		// -- Check Other
 		assert_contains(agent.inst(), "Some paragraph for instruction");
@@ -375,7 +375,7 @@ mod tests {
 
 		// -- Check config
 		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.config().items_concurrency(), None);
+		assert_eq!(agent.config().inputs_concurrency(), None);
 
 		// -- Check Sections
 		assert_contains(

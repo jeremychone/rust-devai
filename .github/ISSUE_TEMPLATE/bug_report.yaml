@@ -34,7 +34,7 @@ body:
         
         [runtime]
         # Default to 1 if absent
-        items_concurrency = 1 
+        inputs_concurrency = 1 
       render: toml
   - type: textarea
     attributes:
@@ -43,7 +43,7 @@ body:
       value: |
         # Data
         ```rhai
-        let path = item.path;
+        let path = input.path;
         // ...
         ```
 

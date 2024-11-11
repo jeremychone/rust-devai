@@ -2,12 +2,12 @@
 
 ```rhai
 
-items[0] = items[0] + "-0";
-items[1] = items[1] + "-1";
-items.push("C");
+inputs[0] = inputs[0] + "-0";
+inputs[1] = inputs[1] + "-1";
+inputs.push("C");
 return devai::before_all_response(#{
     before_all: "some before all data",
-    items: items
+    inputs: inputs
 });
 
 ```
@@ -16,7 +16,7 @@ return devai::before_all_response(#{
 
 ```rhai
 
-return "Data with item: '" + item + "'"
+return "Data with input: '" + input + "'"
 
 ```
 

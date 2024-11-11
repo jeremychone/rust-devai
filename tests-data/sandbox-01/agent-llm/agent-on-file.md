@@ -1,7 +1,7 @@
 # Data
 
 ```rhai
-let file = file::load(item.path);
+let file = file::load(input.path);
 
 // return the file (with .name, .path, .content)
 return #{ file: file };
@@ -22,6 +22,6 @@ let rust_code = md::extract_blocks(ai_output, "rust")[0];
 // file::save(data.file.path, rust_code); // do not save, otherwise, cwt run forever
 
 return #{data_path: data.file.path, 
-        item_name: item.name,
+        input_name: input.name,
         ai_content: ai_output}
 ```

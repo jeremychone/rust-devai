@@ -56,13 +56,13 @@ pub struct RunArgs {
 	/// or the filename initial `proof-comments.md` will match to `proof-comments` or `pc`
 	pub cmd_agent_name: String,
 
-	/// Optional item, allowing multiple item
+	/// Optional input, allowing multiple input
 	/// NOTE: CANNOT be combined with -f/--on-files
-	#[arg(short = 'i', long = "item")]
-	pub on_items: Option<Vec<String>>,
+	#[arg(short = 'i', long = "input")]
+	pub on_inputs: Option<Vec<String>>,
 
 	/// Optional file parameter, allowing multiple files
-	/// NOTE: CANNOT be combined with -i/--item
+	/// NOTE: CANNOT be combined with -i/--input
 	#[arg(short = 'f', long = "on-files")]
 	pub on_files: Option<Vec<String>>,
 

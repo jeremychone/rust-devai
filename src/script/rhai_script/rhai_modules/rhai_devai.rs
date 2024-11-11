@@ -39,8 +39,8 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	let ctx = runtime_context.clone();
 	FuncRegistration::new("run")
 		.in_global_namespace()
-		.set_into_module(&mut module, move |cmd_agent: &str, items: Vec<Dynamic>| {
-			run_with_items(&ctx, cmd_agent, items)
+		.set_into_module(&mut module, move |cmd_agent: &str, inputs: Vec<Dynamic>| {
+			run_with_inputs(&ctx, cmd_agent, inputs)
 		});
 
 	module
@@ -48,8 +48,8 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 
 // region:    --- run...
 
-fn run_with_items(ctx: &RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) -> RhaiResult {
-	let items = dynamics_to_values(items)?;
+fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Vec<Dynamic>) -> RhaiResult {
+	let inputs = dynamics_to_values(inputs)?;
 	// TODO: Might want to reuse the current one
 	let agent = find_agent(cmd_agent, ctx.dir_context(), PathResolver::DevaiParentDir)?;
 
@@ -58,7 +58,7 @@ fn run_with_items(ctx: &RuntimeContext, cmd_agent: &str, items: Vec<Dynamic>) ->
 	// Note: Require to have
 	let runtime = ctx.get_runtime()?;
 	let res = tokio::task::block_in_place(|| {
-		rt.block_on(async { run_command_agent(&runtime, &agent, Some(items), &RunBaseOptions::default(), true).await })
+		rt.block_on(async { run_command_agent(&runtime, &agent, Some(inputs), &RunBaseOptions::default(), true).await })
 	})?;
 
 	let res =
@@ -84,7 +84,7 @@ fn before_all_response(data: Dynamic) -> RhaiResult {
 	//	"_devai_": {
 	//		"kind": "BeforeAllResponse",
 	//		"data": {
-	//			"items": ["A", "B", 123],
+	//			"inputs": ["A", "B", 123],
 	//			"before_all": "Some before all data"
 	//		}
 	//	}
@@ -109,13 +109,13 @@ fn before_all_response(data: Dynamic) -> RhaiResult {
 /// action_skip() -> SkipActionDict
 /// ```
 ///
-/// This is to be used in the `# Data` section to return a devai skip action so that the item is not
+/// This is to be used in the `# Data` section to return a devai skip action so that the input is not
 /// included in the next flow (instruction > AI > data)
 ///
 /// for example, in # Data rhai code block:
 ///
 /// ```rhai
-/// if item.name == "mod.rs" {
+/// if input.name == "mod.rs" {
 ///   return devai::action_skip();
 /// }
 /// ```
@@ -137,7 +137,7 @@ fn action_skip() -> RhaiResult {
 /// action_skip(reason: string) -> SkipActionDict
 /// ```
 ///
-/// This is to be used in the `# Data` section to return a devai skip action so that the item is not
+/// This is to be used in the `# Data` section to return a devai skip action so that the input is not
 /// included in the next flow (instruction > AI > data).
 ///
 /// This `action_skip` function takes a reason so that it get printed.
@@ -145,7 +145,7 @@ fn action_skip() -> RhaiResult {
 /// for example, in # Data rhai code block:
 ///
 /// ```rhai
-/// if item.name == "mod.rs" {
+/// if input.name == "mod.rs" {
 ///   return devai::action_skip("mod.rs does not need to be process by this agent");
 /// }
 /// ```

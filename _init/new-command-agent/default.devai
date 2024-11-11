@@ -3,12 +3,12 @@
 ```rhai
 
 // Notes:
-//   - item: This is the FileRef (with .path, .name, .stem, .ext) for each file matching the -f glob.
-//   - file::load(item.path) will return a FileRecord, adding .content for the content of the file.
+//   - input: This is the FileRef (with .path, .name, .stem, .ext) for each file matching the -f glob.
+//   - file::load(input.path) will return a FileRecord, adding .content for the content of the file.
 //   - In Rhai, to return a dictionary/object, the notation is #{ name: value, … }.
 
 return #{
-    file: file::load(item.path)
+    file: file::load(input.path)
 };
 ```
 

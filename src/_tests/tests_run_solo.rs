@@ -17,7 +17,7 @@ async fn test_run_agent_s_simple_ok() -> Result<()> {
 	// let content = read_to_string(solo_config.target_path())?;
 	// assert_eq!(
 	// 	content,
-	// 	"Output - ./tests-data/solo/simple.md - From Data (item.path: ./tests-data/solo/simple.md)"
+	// 	"Output - ./tests-data/solo/simple.md - From Data (input.path: ./tests-data/solo/simple.md)"
 	// );
 
 	Ok(())

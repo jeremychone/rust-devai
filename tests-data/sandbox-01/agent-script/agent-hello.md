@@ -1,5 +1,5 @@
 # Output
 
 ```rhai
-return "hello '" + item + "' from agent-hello.md";
+return "hello '" + input + "' from agent-hello.md";
 ```

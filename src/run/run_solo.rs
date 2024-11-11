@@ -1,7 +1,7 @@
 use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
-use crate::run::run_item::run_agent_item;
+use crate::run::run_input::run_agent_input;
 use crate::run::support::get_genai_info;
 use crate::run::{PathResolver, RunSoloOptions, Runtime};
 use crate::types::FileRef;
@@ -30,15 +30,15 @@ pub async fn run_solo_agent(
 
 	// -- Run the agent
 	let label = agent.file_path();
-	let item = FileRef::from(run_solo_options.target_path());
-	let item = serde_json::to_value(item)?;
+	let input = FileRef::from(run_solo_options.target_path());
+	let input = serde_json::to_value(input)?;
 	let before_all_data = Value::Null;
-	let res_value = run_agent_item(
+	let res_value = run_agent_input(
 		runtime,
 		agent,
 		before_all_data,
 		label,
-		item,
+		input,
 		&literals,
 		run_solo_options.base_run_config(),
 	)

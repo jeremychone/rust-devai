@@ -82,7 +82,7 @@ fn some_normal() {
 
 		// -- Exec
 		let res = run_reflective_agent(
-			r#"return rust::prune_to_declarations(item);"#,
+			r#"return rust::prune_to_declarations(input);"#,
 			Some(Value::String(data_script.to_string())),
 		)
 		.await?;

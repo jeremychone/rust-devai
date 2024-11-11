@@ -1,7 +1,7 @@
 use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
-use crate::run::run_item::run_agent_item;
+use crate::run::run_input::run_agent_input;
 use crate::run::{RunBaseOptions, Runtime};
 use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
@@ -23,12 +23,12 @@ pub struct RunCommandResponse {
 pub async fn run_command_agent(
 	runtime: &Runtime,
 	agent: &Agent,
-	items: Option<Vec<Value>>,
+	inputs: Option<Vec<Value>>,
 	run_base_options: &RunBaseOptions,
 	return_output_values: bool,
 ) -> Result<RunCommandResponse> {
 	let hub = get_hub();
-	let concurrency = agent.config().items_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
+	let concurrency = agent.config().inputs_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);
@@ -43,39 +43,39 @@ pub async fn run_command_agent(
 	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
 
 	// -- Run the before all
-	let (items, before_all_data) = if let Some(before_all_script) = agent.before_all_script() {
-		let scope_item = json!({
-			"items": items.clone(), // clone because item is reused later
+	let (inputs, before_all_response) = if let Some(before_all_script) = agent.before_all_script() {
+		let before_all_scope = json!({
+			"inputs": inputs.clone(), // clone because input is reused later
 			"CTX": literals.to_ctx_value()
 		});
 
-		let before_all_res = rhai_eval(runtime.rhai_engine(), before_all_script, Some(scope_item))?;
+		let before_all_res = rhai_eval(runtime.rhai_engine(), before_all_script, Some(before_all_scope))?;
 
 		match DevaiCustom::from_value(before_all_res)? {
 			// it is an skip action
 			FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
 				let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
-				hub.publish(format!("-! DevAI Skip items at Before All section{reason_msg}"))
+				hub.publish(format!("-! DevAI Skip inputs at Before All section{reason_msg}"))
 					.await;
 				return Ok(RunCommandResponse::default());
 			}
 
 			// it is before_all_response
 			FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse {
-				items: items_override,
+				inputs: inputs_override,
 				before_all,
-			}) => (items_override.or(items), before_all),
+			}) => (inputs_override.or(inputs), before_all),
 
 			// just plane value
-			FromValue::OriginalValue(value) => (items, Some(value)),
+			FromValue::OriginalValue(value) => (inputs, Some(value)),
 		}
 	} else {
-		(items, None)
+		(inputs, None)
 	};
 
-	// Normalize the items, so, if empty, we have one item of value Value::Null
-	let items = items.unwrap_or_else(|| vec![Value::Null]);
-	let before_all = before_all_data.unwrap_or_default();
+	// Normalize the inputs, so, if empty, we have one input of value Value::Null
+	let inputs = inputs.unwrap_or_else(|| vec![Value::Null]);
+	let before_all = before_all_response.unwrap_or_default();
 
 	let mut join_set = JoinSet::new();
 	let mut in_progress = 0;
@@ -88,8 +88,8 @@ pub async fn run_command_agent(
 			None
 		};
 
-	// -- Run the items
-	for (item_idx, item) in items.clone().into_iter().enumerate() {
+	// -- Run the inputs
+	for (input_idx, input) in inputs.clone().into_iter().enumerate() {
 		let runtime_clone = runtime.clone();
 		let agent_clone = agent.clone();
 		let before_all_clone = before_all.clone();
@@ -100,12 +100,12 @@ pub async fn run_command_agent(
 		// Spawn tasks up to the concurrency limit
 		join_set.spawn(async move {
 			// Execute the command agent (this will perform do Data, Instruction, and Output stages)
-			let output = run_command_agent_item(
-				item_idx,
+			let output = run_command_agent_input(
+				input_idx,
 				&runtime_clone,
 				&agent_clone,
 				before_all_clone,
-				item,
+				input,
 				&literals,
 				&base_run_config_clone,
 			)
@@ -116,7 +116,7 @@ pub async fn run_command_agent(
 				// if it is a skip, we skip
 				FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
 					let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
-					hub.publish(format!("-! DevAI Skip item at Output stage{reason_msg}")).await;
+					hub.publish(format!("-! DevAI Skip input at Output stage{reason_msg}")).await;
 					Value::Null
 				}
 
@@ -132,7 +132,7 @@ pub async fn run_command_agent(
 				FromValue::OriginalValue(value) => value,
 			};
 
-			Ok((item_idx, output))
+			Ok((input_idx, output))
 		});
 
 		in_progress += 1;
@@ -142,13 +142,13 @@ pub async fn run_command_agent(
 			if let Some(res) = join_set.join_next().await {
 				in_progress -= 1;
 				match res {
-					Ok(Ok((item_idx, output))) => {
+					Ok(Ok((input_idx, output))) => {
 						if let Some(outputs_vec) = &mut captured_outputs {
-							outputs_vec.push((item_idx, output));
+							outputs_vec.push((input_idx, output));
 						}
 					}
 					Ok(Err(e)) => return Err(e),
-					Err(e) => return Err(Error::custom(format!("Error while running item. Cause {e}"))),
+					Err(e) => return Err(Error::custom(format!("Error while running input. Cause {e}"))),
 				}
 			}
 		}
@@ -159,13 +159,13 @@ pub async fn run_command_agent(
 		if let Some(res) = join_set.join_next().await {
 			in_progress -= 1;
 			match res {
-				Ok(Ok((item_idx, output))) => {
+				Ok(Ok((input_idx, output))) => {
 					if let Some(outputs_vec) = &mut captured_outputs {
-						outputs_vec.push((item_idx, output));
+						outputs_vec.push((input_idx, output));
 					}
 				}
 				Ok(Err(e)) => return Err(e),
-				Err(e) => return Err(Error::custom(format!("Error while remaining item. Cause {e}"))),
+				Err(e) => return Err(Error::custom(format!("Error while remaining input. Cause {e}"))),
 			}
 		}
 	}
@@ -186,13 +186,17 @@ pub async fn run_command_agent(
 			Value::Null
 		};
 
-		let scope_item = json!({
-			"items": items,
+		let after_all_scope = json!({
+			"inputs": inputs,
 			"outputs": outputs_value, // Will be Value::Null if outputs were not collected
 			"before_all": before_all,
 			"CTX": literals.to_ctx_value()
 		});
-		Some(rhai_eval(runtime.rhai_engine(), after_all_script, Some(scope_item))?)
+		Some(rhai_eval(
+			runtime.rhai_engine(),
+			after_all_script,
+			Some(after_all_scope),
+		)?)
 	} else {
 		None
 	};
@@ -200,27 +204,27 @@ pub async fn run_command_agent(
 	Ok(RunCommandResponse { after_all, outputs })
 }
 
-/// Run the command agent item for the run_command_agent_items
-/// Not public by design, should be only used in the context of run_command_agent_items
-async fn run_command_agent_item(
-	item_idx: usize,
+/// Run the command agent input for the run_command_agent_inputs
+/// Not public by design, should be only used in the context of run_command_agent_inputs
+async fn run_command_agent_input(
+	input_idx: usize,
 	runtime: &Runtime,
 	agent: &Agent,
 	before_all: Value,
-	item: impl Serialize,
+	input: impl Serialize,
 	literals: &Literals,
 	run_base_options: &RunBaseOptions,
 ) -> Result<Value> {
 	let hub = get_hub();
 
-	// -- prepare the scope_item
-	let item = serde_json::to_value(item)?;
-	// get the eventual "._label" property of the item
+	// -- prepare the scope_input
+	let input = serde_json::to_value(input)?;
+	// get the eventual "._label" property of the input
 	// try to get the path, name
-	let label = get_item_label(&item).unwrap_or_else(|| format!("item index: {item_idx}"));
-	hub.publish(format!("\n==== Running item: {}", label)).await;
+	let label = get_input_label(&input).unwrap_or_else(|| format!("input index: {input_idx}"));
+	hub.publish(format!("\n==== Running input: {}", label)).await;
 
-	let res_value = run_agent_item(runtime, agent, before_all, &label, item, literals, run_base_options).await?;
+	let res_value = run_agent_input(runtime, agent, before_all, &label, input, literals, run_base_options).await?;
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = res_value.as_str() {
@@ -228,31 +232,40 @@ async fn run_command_agent_item(
 		hub.publish(format!("-> Agent Output: {short_text}")).await;
 	}
 
-	hub.publish(format!("-- DONE (item: {})", label)).await;
+	hub.publish(format!("-- DONE (input: {})", label)).await;
 
 	Ok(res_value)
 }
 
-/// Workaround to expose the run_command_agent_item only for test.
+/// Workaround to expose the run_command_agent_input only for test.
 #[cfg(test)]
-pub async fn run_command_agent_item_for_test(
-	item_idx: usize,
+pub async fn run_command_agent_input_for_test(
+	input_idx: usize,
 	runtime: &Runtime,
 	agent: &Agent,
 	before_all: Value,
-	item: impl Serialize,
+	input: impl Serialize,
 	run_base_options: &RunBaseOptions,
 ) -> Result<Value> {
 	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
-	run_command_agent_item(item_idx, runtime, agent, before_all, item, &literals, run_base_options).await
+	run_command_agent_input(
+		input_idx,
+		runtime,
+		agent,
+		before_all,
+		input,
+		&literals,
+		run_base_options,
+	)
+	.await
 }
 
 // region:    --- Support
 
-fn get_item_label(item: &Value) -> Option<String> {
+fn get_input_label(input: &Value) -> Option<String> {
 	const LABEL_KEYS: &[&str] = &["path", "name", "label", "_label"];
 	for &key in LABEL_KEYS {
-		if let Ok(value) = item.x_get::<String>(key) {
+		if let Ok(value) = input.x_get::<String>(key) {
 			return Some(value);
 		}
 	}

@@ -24,6 +24,6 @@ return some_data;
 
 ```rhai
 
-return before_all + " - "  + data + " - " + item.path;
+return before_all + " - "  + data + " - " + input.path;
 ```
 

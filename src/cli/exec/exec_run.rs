@@ -74,8 +74,8 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 
 /// Do one run
 async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agent: &Agent) -> Result<()> {
-	let items = if let Some(on_items) = run_command_options.on_items() {
-		Some(into_values(on_items)?)
+	let inputs = if let Some(on_inputs) = run_command_options.on_inputs() {
+		Some(into_values(on_inputs)?)
 	} else if let Some(on_file_globs) = run_command_options.on_file_globs() {
 		let files = list_files("./", Some(&on_file_globs), None)?;
 		let file_refs = files.into_iter().map(FileRef::from).collect::<Vec<_>>();
@@ -84,7 +84,7 @@ async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agen
 		None
 	};
 
-	run_command_agent(runtime, agent, items, run_command_options.base_run_config(), false).await?;
+	run_command_agent(runtime, agent, inputs, run_command_options.base_run_config(), false).await?;
 
 	Ok(())
 }

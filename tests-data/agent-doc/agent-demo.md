@@ -5,7 +5,7 @@
 model = "test_model_for_demo"
 
 [runtime]
-items_concurrency = 8
+inputs_concurrency = 8
 ```
 
 # Data

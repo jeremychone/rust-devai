@@ -3,8 +3,8 @@
 ```rhai
 
 return devai::before_all_response(#{
-    before_all: items,
-    items: ["one", "two", "three", 4, "five"]
+    before_all: inputs,
+    inputs: ["one", "two", "three", 4, "five"]
 });
 
 ```
@@ -13,11 +13,11 @@ return devai::before_all_response(#{
 
 ```rhai
 
-if item == "two" {
+if input == "two" {
     return devai::action_skip("Skip the 'two' at data stage");
 }
 
-return "Data with item: '" + item + "'"
+return "Data with input: '" + input + "'"
 
 ```
 
@@ -25,11 +25,11 @@ return "Data with item: '" + item + "'"
 
 ```rhai
 
-if item == "five" {
+if input == "five" {
     return devai::action_skip("Don't output process 'five'");
 }
 
-if item == 4 {
+if input == 4 {
     return;
 } else {
   return #{
@@ -46,5 +46,5 @@ if item == 4 {
 
 ```rhai
 
-return "this is after all data: items: " + items + " - " + outputs.len() ;
+return "this is after all data: inputs: " + inputs + " - " + outputs.len() ;
 ```
