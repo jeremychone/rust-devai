@@ -14,7 +14,15 @@ _*
 *.log
 
 # -- Devai
-# Ignore the source devai (just personal recipes)
+# Only allow .devai/custom and .devai/Config.toml
+# Note: Here the starting `/` will just include the top .devai. 
+#       Remove the starting `/` to include all .devai/custom even if their in a sub dir
+!/.devai/
+.devai/*
+!.devai/custom/
+!.devai/custom/**
+!.devai/Config.toml
+# Ignore the .devai (typically temporary solos)
 src/**/*.devai
 
 # -- Rust

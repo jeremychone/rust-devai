@@ -5,7 +5,6 @@ use crate::run::run_input::{run_agent_input, RunAgentInputResponse};
 use crate::run::{RunBaseOptions, Runtime};
 use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
-use crate::support::strings::truncate_with_ellipsis;
 use crate::{Error, Result};
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -229,8 +228,8 @@ async fn run_command_agent_input(
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = run_response.as_ref().and_then(|r| r.as_str()) {
-		let short_text = truncate_with_ellipsis(response_txt, 72);
-		hub.publish(format!("-> Agent Output: {short_text}")).await;
+		// let short_text = truncate_with_ellipsis(response_txt, 72);
+		hub.publish(format!("-> Agent Output:\n{response_txt}")).await;
 	}
 
 	hub.publish(format!("-- DONE (input: {})", label)).await;
