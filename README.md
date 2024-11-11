@@ -39,9 +39,9 @@ devai run ./my-first-agent.devai -f "**/*.md"
 # Data 
 
 ```rhai
-// Here will be some script to run before each instruction
+// Here, there will be some script to run before each instruction
 // Get access to `input` and can fetch more data and return it for the next stage
-// Input is what was given by the command line (when -f, this will be the file meta data)
+// Input is what was given by the command line (when -f, this will be the file metadata)
 
 return #{
     file: file::load(input.path)
@@ -65,15 +65,15 @@ Here is the content of the file to proofread
 
 ```rhai
 
-// Here we can take the ai_response.content, and do some final processing. 
+// Here, we can take the ai_response.content, and do some final processing. 
 // For example: 
-// Here we remove the eventual top markdown block. In certain cases, this might be useful. 
+// Here, we remove the eventual top markdown block. In certain cases, this might be useful. 
 let content = md::outer_block_content_or_raw(ai_response.content);
 // For code, it is nice to make sure it ends with one and only one new line. 
 let content = text::ensure_single_ending_newline(content)
-// more processing....
+// More processing....
 
-// input.path is the same as data.file.path, so, can use either
+// input.path is the same as data.file.path, so we can use either
 file::save(input.path, content )
 
 ```
@@ -119,7 +119,7 @@ In fact, there are 2 more stages to fully control the agent flow, and that is th
 
 Here is a full description of the complete flow
 
-- First, an agent received zero or more inputs. 
+- First, an agent receives zero or more inputs. 
     - Inputs can be given through the command line via: 
         - `-i` or `--input` to specify one input (can add multiple `-i/--input`)
         - `-f some_glob` will create one input per file matched with input as `{path, name, step, ext}`
@@ -133,7 +133,7 @@ Here is a full description of the complete flow
             - e.g., `return #{"some": "data"}`
         - Override or generate inputs via 
             `return devai::before_all_response(#{inputs: [1, 2, 3]})`
-        - or both by passing `#{inputs: ..., before_all: ...}` to the  `devai::before_all_response` argument. 
+        - or both by passing `#{inputs: ..., before_all: ...}` to the `devai::before_all_response` argument. 
 - **Stage 2**: `# Data` (rhai block) (optional)
     - The `rhai` block gets the following variable in scope: 
         - `input` from the command line and/or Before All section (or null if no input)

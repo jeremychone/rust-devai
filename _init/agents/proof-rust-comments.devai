@@ -2,8 +2,7 @@
 
 This is an agent for proofreading comments in Rust source code files.
 
-It is slightly more optimized for the Rust version compared to the `proof-comments.devai` version. For instance, at the end, we have a `text::ensure_single_ending_newline(content);` to ensure each Rust file ends with a single newline, as per Rust convention (something LLMs often overlook).
-
+It is slightly more optimized for the Rust version compared to the `proof-comments.devai` version.
 # Data
 
 ```rhai
@@ -32,16 +31,15 @@ For the following Rust file:
 - Correct the English of all content if it is a Markdown file.
 - Only correct comments if necessary.
 - Preserve the whitespace (do not change tabs into spaces and vice versa).
+- If English spelling and grammar are correct, do not change.
 - Return the corrected content without any explanation.
 
 # Output
 
 ```rhai
-// Note: LLMs often, but not always, return a code block for the result. 
-//       The md::outer_block_content_or_raw function will get the content between the first 
-//       and last triple backticks or return ai_output if there are no triple backticks.
+// Note: See `proof-comments.devai` for an explanation.
 let content = md::outer_block_content_or_raw(ai_output);
-// Ensure the content ends with exactly one newline
+// Note: See `proof-comments.devai` for an explanation.
 let content = text::ensure_single_ending_newline(content);
 
 // Example of how to save to the same file
