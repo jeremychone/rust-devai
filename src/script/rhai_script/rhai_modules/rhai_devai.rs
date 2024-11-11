@@ -118,7 +118,7 @@ fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Option<Vec<Dyn
 ///
 fn before_all_response(data: Dynamic) -> RhaiResult {
 	// validate it is a map
-	let map = DynamicMap::new(data)
+	let map = DynamicMap::from_dynamic(data)
 		.map_err(|err| crate::Error::cc("devai::before_all_response take a object map only", err))?;
 
 	// Now building the following structure.

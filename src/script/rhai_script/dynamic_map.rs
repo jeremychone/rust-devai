@@ -2,11 +2,12 @@ use derive_more::derive::From;
 use rhai::Dynamic;
 use std::any::Any;
 
+#[derive(Default)]
 pub struct DynamicMap(rhai::Map);
 
 /// Constructors & Transformers
 impl DynamicMap {
-	pub fn new(dynamic: Dynamic) -> Result<DynamicMap, DynamicSupportError> {
+	pub fn from_dynamic(dynamic: Dynamic) -> Result<DynamicMap, DynamicSupportError> {
 		let map = dynamic.try_cast::<rhai::Map>().ok_or(DynamicSupportError::CastFailNotAMap)?;
 
 		Ok(DynamicMap(map))
@@ -19,6 +20,13 @@ impl DynamicMap {
 }
 
 impl DynamicMap {
+	pub fn insert(mut self, name: &'static str, value: impl Into<Dynamic>) -> Self {
+		self.0.insert(name.into(), value.into());
+		self
+	}
+
+	/// Convenient function to get a property as a type
+	/// NOTE: Today, will clone the value
 	pub fn get<T: Any + Clone>(&self, name: &str) -> Result<T, DynamicSupportError> {
 		let map = &self.0;
 
@@ -40,6 +48,12 @@ impl DynamicMap {
 		let val = map.remove(name);
 
 		Ok(val)
+	}
+}
+
+impl From<DynamicMap> for Dynamic {
+	fn from(val: DynamicMap) -> Self {
+		val.into_dynamic()
 	}
 }
 

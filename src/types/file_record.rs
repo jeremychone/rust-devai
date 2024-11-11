@@ -56,7 +56,7 @@ impl TryFrom<Dynamic> for FileRecord {
 	type Error = crate::Error;
 
 	fn try_from(value: Dynamic) -> Result<Self> {
-		let map = DynamicMap::new(value)?;
+		let map = DynamicMap::from_dynamic(value)?;
 		Ok(FileRecord {
 			name: map.get("name")?,
 			path: map.get("path")?,
