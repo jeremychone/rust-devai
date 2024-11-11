@@ -10,16 +10,18 @@
 //! * `git::restore(file_path: string) -> string`
 
 use crate::hub::get_hub;
+use crate::run::RuntimeContext;
 use rhai::plugin::RhaiResult;
 use rhai::{FuncRegistration, Module};
 
-pub fn rhai_module() -> Module {
+pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	// Create a module for text functions
 	let mut module = Module::new();
 
+	let ctx = runtime_context.clone();
 	FuncRegistration::new("restore")
 		.in_global_namespace()
-		.set_into_module(&mut module, git_restore);
+		.set_into_module(&mut module, move |path: &str| git_restore(&ctx, path));
 
 	module
 }
@@ -33,8 +35,10 @@ pub fn rhai_module() -> Module {
 ///
 /// Calls `git restore {file_path}` and returns the output (stdout) of that
 /// call.
-fn git_restore(path: &str) -> RhaiResult {
+/// The current_dir will be set at the devai_parent_dir as all relative rhai script context
+fn git_restore(ctx: &RuntimeContext, path: &str) -> RhaiResult {
 	let output = std::process::Command::new("git")
+		.current_dir(ctx.dir_context().devai_parent_dir())
 		.arg("restore")
 		.arg(path)
 		.output()

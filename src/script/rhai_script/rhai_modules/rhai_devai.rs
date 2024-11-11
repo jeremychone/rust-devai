@@ -7,8 +7,13 @@
 //! devai parser and script runner.
 //!
 //! ### Functions
-//! * `devai::skip() -> SkipActionDict`
-//! * `devai::skip(reason: string) -> SkipActionDict`
+//! * `devai::skip() -> SkipDict`
+//! * `devai::skip(reason: string) -> SkipDict`
+//! * `devai::before_all_response(data: {inputs?: [], before_all?: any}) -> BeforeAllResponseDict`
+//! * `devai::run(cmd_agent: &str) -> {outputs: null | any[], after_all: null | any}`
+//! * `devai::run(cmd_agent: &str, inputs: Vec<Dynamic>) ->  {outputs: null | any[], after_all: null | any}`
+//!
+//! Note: the SkipDict and BeforeAllResponseDict are not really important, as it is for the internals to treat those return values appropriately.
 
 use crate::agent::find_agent;
 use crate::run::{run_command_agent, RuntimeContext};
@@ -39,8 +44,15 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	let ctx = runtime_context.clone();
 	FuncRegistration::new("run")
 		.in_global_namespace()
+		.set_into_module(&mut module, move |cmd_agent: &str| {
+			run_with_inputs(&ctx, cmd_agent, None)
+		});
+
+	let ctx = runtime_context.clone();
+	FuncRegistration::new("run")
+		.in_global_namespace()
 		.set_into_module(&mut module, move |cmd_agent: &str, inputs: Vec<Dynamic>| {
-			run_with_inputs(&ctx, cmd_agent, inputs)
+			run_with_inputs(&ctx, cmd_agent, Some(inputs))
 		});
 
 	module
@@ -48,8 +60,22 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 
 // region:    --- run...
 
-fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Vec<Dynamic>) -> RhaiResult {
-	let inputs = dynamics_to_values(inputs)?;
+/// ## RHAI Documentation
+/// ```rhai
+/// run(cmd_agent: &str) -> {outputs: null | any[], after_all: null | any}
+/// run(cmd_agent: &str, inputs: Vec<Dynamic>) -> {outputs: null | any[], after_all: null | any}
+/// ```
+///
+/// This function is used to execute a command agent with optional inputs.
+/// It returns the result of the command execution.
+///
+/// for example, in # Data rhai code block:
+///
+/// ```rhai
+/// let result = devai::run("./agent-script/agent-hello.md", ["one", "two"]);
+/// ```
+fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Option<Vec<Dynamic>>) -> RhaiResult {
+	let inputs = inputs.map(dynamics_to_values).transpose()?;
 	// TODO: Might want to reuse the current one
 	let agent = find_agent(cmd_agent, ctx.dir_context(), PathResolver::DevaiParentDir)?;
 
@@ -58,7 +84,7 @@ fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Vec<Dynamic>) 
 	// Note: Require to have
 	let runtime = ctx.get_runtime()?;
 	let res = tokio::task::block_in_place(|| {
-		rt.block_on(async { run_command_agent(&runtime, &agent, Some(inputs), &RunBaseOptions::default(), true).await })
+		rt.block_on(async { run_command_agent(&runtime, &agent, inputs, &RunBaseOptions::default(), true).await })
 	})?;
 
 	let res =
@@ -73,6 +99,23 @@ fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Vec<Dynamic>) 
 
 // region:    --- before_all_response
 
+/// ## RHAI Documentation
+/// ```rhai
+/// before_all_response(data: {inputs?: [], before_all?: any}) -> BeforeAllResponseDict
+/// ```
+///
+/// This function is used to prepare a response before all other operations.
+/// It takes an object with optional fields:
+///
+/// for example, this will override the inputs send to this agent
+///
+/// ```rhai
+/// let response = devai::before_all_response(#{
+///     inputs: ["input1", "input2"]
+/// });
+/// ```
+///
+///
 fn before_all_response(data: Dynamic) -> RhaiResult {
 	// validate it is a map
 	let map = DynamicMap::new(data)
@@ -106,10 +149,10 @@ fn before_all_response(data: Dynamic) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// skip() -> SkipActionDict
+/// skip() -> SkipDict
 /// ```
 ///
-/// This is to be used in the `# Data` section to return a devai skip action so that the input is not
+/// This is to be used in the `# Data` and  section to return a devai skip action so that the input is not
 /// included in the next flow (instruction > AI > data)
 ///
 /// for example, in # Data rhai code block:
@@ -134,7 +177,7 @@ fn skip() -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// skip(reason: string) -> SkipActionDict
+/// skip(reason: string) -> SkipDict
 /// ```
 ///
 /// This is to be used in the `# Data` section to return a devai skip action so that the input is not

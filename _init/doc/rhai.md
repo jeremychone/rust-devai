@@ -87,7 +87,7 @@ let files = file::list("src/**/*.rs");
 
 The `md` module exposes functions that process markdown content. Useful for processing LLM responses.
 
-### md::extract_blocks(md_content: string) -> Vec<MdBlock>
+### md::extract_blocks(md_content: string) -> Vec<{content: string, lang?: string}>
 
 Parses the markdown provided by `md_content` and extracts each code block, returning a list of blocks.
 
@@ -256,7 +256,7 @@ if input.name == "mod.rs" {
 // }
 ```
 
-### devai::run(cmd_agent: string, inputs: Vec<Dynamic>) -> Dynamic
+### devai::run(cmd_agent: string, inputs: Vec<Dynamic>) -> {outputs: any[], after_all?: any}
 
 Runs a command agent with the specified inputs and returns the result.
 
@@ -271,7 +271,7 @@ let result = devai::run("./path/to/agent.md", ["input1", "input2"]);
 
 The `web` module exposes functions used to perform web requests.
 
-### web::get(url: string) -> string
+### web::get(url: string) -> {content: String}
 
 Fetches the content of the specified URL and returns it as a string.
 
