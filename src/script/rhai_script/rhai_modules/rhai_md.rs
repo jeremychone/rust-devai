@@ -5,8 +5,8 @@
 //! processing LLM responses.
 //!
 //! ### Functions
-//! * `md::extract_blocks(md_content: string) -> Vec<MdBlock>`
-//! * `md::extract_blocks(md_content: string, lang_name: string) -> Vec<MdBlock>`
+//! * `md::extract_blocks_with_lang(md_content: string, lang_name: string) -> Vec<MdBlock>`
+//! * `md::outer_block_content_or_raw(md_content: string) -> Vec<MdBlock>`
 
 use crate::support::md;
 use crate::types::MdBlock;
@@ -39,9 +39,7 @@ pub fn rhai_module() -> Module {
 /// md::extract_blocks(md_content: &str) -> Vec<MdBlock>
 /// ```
 ///
-/// Parses the markdown provided by `md_content` and extracts each code block,
-/// returning all blocks regardless of language identifier.
-/// The format of the MdBlock is {content: string, lang?: string}
+/// Return the list of markdown blocks with or without lang information
 fn extract_blocks(md_content: &str) -> RhaiResult {
 	let blocks: Vec<MdBlock> = md::MdBlocks::new(md_content, None).collect();
 	let blocks: Vec<Dynamic> = blocks.into_iter().map(MdBlock::into_dynamic).collect();
@@ -50,13 +48,10 @@ fn extract_blocks(md_content: &str) -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// md::extract_blocks(md_content: &str, lang_name: &str) -> Vec<MdBlock>
+/// md::extract_blocks(md_content: &str, lang_name) -> Vec<MdBlock>
 /// ```
 ///
-/// Parses the markdown provided by `md_content` and extracts each code block,
-/// returning only the blocks with a
-/// [language identifier](https://docs.github.com/en/get-started/writing-on-github/working-with-advanced-formatting/creating-and-highlighting-code-blocks#syntax-highlighting)
-/// that matches `lang_name`.
+/// Return the list of markdown blocks that match a given lang_name.
 fn extract_blocks_with_lang(md_content: &str, lang_name: &str) -> RhaiResult {
 	let blocks: Vec<MdBlock> = md::MdBlocks::new(md_content, Some(lang_name)).collect();
 	let blocks: Vec<Dynamic> = blocks.into_iter().map(MdBlock::into_dynamic).collect();
@@ -68,13 +63,14 @@ fn extract_blocks_with_lang(md_content: &str, lang_name: &str) -> RhaiResult {
 /// md::outer_block_content_or_raw(md_content: &str) -> Vec<MdBlock>
 /// ```
 ///
-/// Without fully parsing the markdown, this function attempts to extract the content from the first triple backticks
-/// until the last triple backticks.
-/// If no start/end triple backticks are found, it will return the raw content.
+/// Without fully parsing the markdown, this function attempts to extract the content from the first set of triple backticks
+/// to the last set of triple backticks.
+/// If no starting or ending triple backticks are found, it will return the raw content.
 ///
-/// > Note: This is useful in the genai context because often LLMs return a top block (e.g., markdown, Rust)
+/// > Note: This is useful in the GenAI context because often LLMs return a top block (e.g., markdown, Rust)
 /// >       which might have other ` ``` ` in the middle but should be interpreted as nested.
-/// >       (GenAI does not seem to know about the 6 ticks for top level)
+/// >       (GenAI does not seem to recognize the use of 6 backticks for top-level blocks)
+
 fn outer_block_content_or_raw(md_content: &str) -> String {
 	md::outer_block_content_or_raw(md_content)
 }

@@ -1,7 +1,7 @@
 /// Extracts the content between the first and last triple backticks (```)
 /// in the given input string. If both opening and closing backticks are found,
 /// it returns the enclosed content as a `String`. Otherwise, it returns the
-/// raw input content.
+/// original input content.
 ///
 /// # Arguments
 ///
@@ -120,8 +120,8 @@ End of the text."
 	#[test]
 	fn test_md_outer_block_content_no_backticks() {
 		// -- Fixtures
-		let input = "This is a regular text without any code blocks.";
-		let expected = "This is a regular text without any code blocks.";
+		let input = "This is regular text without any code blocks.";
+		let expected = "This is regular text without any code blocks.";
 
 		// -- Exec
 		let result = outer_block_content_or_raw(input);

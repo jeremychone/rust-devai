@@ -12,12 +12,16 @@
 //! * `text::remove_first_lines(content: string, n: int) -> string`
 //! * `text::remove_last_line(content: string) -> string`
 //! * `text::remove_last_lines(content: string, n: int) -> string`
+//! * `text::replace_markers(content: string, new_sections: array) -> string`
 
+use crate::script::rhai_script::rhai_modules::DEFAULT_MARKERS;
 use crate::support::html::decode_html_entities;
-use crate::support::strings::truncate_with_ellipsis;
+use crate::support::strings::{self, truncate_with_ellipsis};
+use crate::Error;
 use rhai::plugin::RhaiResult;
-use rhai::{Dynamic, FuncRegistration, Module};
+use rhai::{Dynamic, FuncRegistration, ImmutableString, Module};
 use std::borrow::Cow;
+use std::ops::Deref;
 
 pub fn rhai_module() -> Module {
 	// Create a module for text functions
@@ -69,6 +73,10 @@ pub fn rhai_module() -> Module {
 			truncate(content, max_len, ellipsis)
 		});
 
+	FuncRegistration::new("replace_markers")
+		.in_global_namespace()
+		.set_into_module(&mut module, replace_markers_with_default_parkers);
+
 	// ensure_single_ending_newline
 	FuncRegistration::new("ensure_single_ending_newline")
 		.in_global_namespace()
@@ -78,6 +86,41 @@ pub fn rhai_module() -> Module {
 }
 
 // region:    --- Strings
+
+fn replace_markers_with_default_parkers(content: &str, new_sections: Vec<Dynamic>) -> RhaiResult {
+	// TODO: Should try to optimize this to use the static string and get the &str (Vec<&str> does not work)
+	const NEW_SECTION_ERROR: &str =
+		"A new section item is not of type string or does not contain a .content of type string";
+	let new_sections = new_sections
+		.iter()
+		.map(|x| {
+			let im_string = if let Ok(map) = x.as_map_ref() {
+				let map = map.deref();
+				if let Some(content) = map.get("content") {
+					// to stuff with content
+					content
+						.as_immutable_string_ref()
+						.ok()
+						.map(|v| v.as_str().to_string())
+						.ok_or_else(|| Error::custom(NEW_SECTION_ERROR))
+				} else {
+					Err(Error::custom(NEW_SECTION_ERROR))
+				}
+			} else {
+				x.as_immutable_string_ref()
+					.ok()
+					.map(|v| v.as_str().to_string())
+					.ok_or_else(|| Error::custom(NEW_SECTION_ERROR))
+			};
+			im_string
+		})
+		.collect::<crate::Result<Vec<String>>>()?;
+
+	let new_sections: Vec<&str> = new_sections.iter().map(|x| x.as_str()).collect();
+
+	let new_content = strings::replace_markers(content, &new_sections, DEFAULT_MARKERS)?;
+	Ok(new_content.into())
+}
 
 /// ## RHAI Documentation
 /// ```rhai

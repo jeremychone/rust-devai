@@ -15,6 +15,19 @@ where
 	);
 }
 
+pub fn assert_not_contains<'a, T>(data: T, val: &str)
+where
+	T: Into<DataContainer<'a>>,
+{
+	let container: DataContainer = data.into();
+	assert!(
+		!container.contains(val),
+		"Should not contain: {}\nBut was: {:?}",
+		val,
+		container
+	);
+}
+
 // region:    --- Support Types
 
 pub enum DataContainer<'a> {

@@ -11,3 +11,6 @@ pub mod rhai_text;
 pub mod rhai_web;
 
 // endregion: --- Modules
+
+// Here we put it here because of the devai makers, otherwise, we cannot use devai on rhai_text
+const DEFAULT_MARKERS: &(&str, &str) = &("<<START>>", "<<END>>");
