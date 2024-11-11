@@ -43,7 +43,7 @@ pub async fn run_agent_input(
 		FromValue::OriginalValue(data) => data,
 
 		// If we have a skip, we can skip
-		FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
+		FromValue::DevaiCustom(DevaiCustom::Skip { reason }) => {
 			let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
 
 			hub.publish(format!("-! DevAI Skip input at Data stage: {label}{reason_txt}"))

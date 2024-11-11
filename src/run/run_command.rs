@@ -53,7 +53,7 @@ pub async fn run_command_agent(
 
 		match DevaiCustom::from_value(before_all_res)? {
 			// it is an skip action
-			FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
+			FromValue::DevaiCustom(DevaiCustom::Skip { reason }) => {
 				let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
 				hub.publish(format!("-! DevAI Skip inputs at Before All section{reason_msg}"))
 					.await;
@@ -114,7 +114,7 @@ pub async fn run_command_agent(
 			// Process the output
 			let output = match DevaiCustom::from_value(output)? {
 				// if it is a skip, we skip
-				FromValue::DevaiCustom(DevaiCustom::ActionSkip { reason }) => {
+				FromValue::DevaiCustom(DevaiCustom::Skip { reason }) => {
 					let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
 					hub.publish(format!("-! DevAI Skip input at Output stage{reason_msg}")).await;
 					Value::Null

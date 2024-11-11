@@ -6,7 +6,7 @@ use value_ext::JsonValueExt;
 #[derive(Debug, strum::AsRefStr)]
 pub enum DevaiCustom {
 	/// Will
-	ActionSkip { reason: Option<String> },
+	Skip { reason: Option<String> },
 	BeforeAllResponse {
 		inputs: Option<Vec<Value>>,
 		before_all: Option<Value>,
@@ -27,11 +27,11 @@ impl DevaiCustom {
 	/// - Otherwise, will return the original value
 	/// - The formating of the `_devai_` action is as follow (example for skip action)
 	///
-	/// - The ActionSkip is as follow
+	/// - The Skip is as follow
 	/// ```
 	/// {
 	///   _devai_: {
-	///     kind: "ActionSkip", // or BeforeAllData
+	///     kind: "Skip", // or BeforeAllData
 	///     data: { // optional
 	///       "reason": "Some optional reason"
 	///     }
@@ -57,9 +57,9 @@ impl DevaiCustom {
 			return Ok(FromValue::OriginalValue(value));
 		};
 
-		if kind == "ActionSkip" {
+		if kind == "Skip" {
 			let reason: Option<String> = value.x_get("/_devai_/data/reason").ok();
-			Ok(FromValue::DevaiCustom(Self::ActionSkip { reason }))
+			Ok(FromValue::DevaiCustom(Self::Skip { reason }))
 		} else if kind == "BeforeAllResponse" {
 			let custom_data: Option<Value> = value.x_get("/_devai_/data").ok();
 			let (inputs, before_all) = extract_inputs_and_before_all(custom_data)?;

@@ -219,7 +219,7 @@ let output = git::restore("./path/to/file.js");
 
 The `devai` module provides functions for interacting with the devai system, such as skipping actions.
 
-### devai::action_skip() -> SkipActionDict
+### devai::skip() -> SkipActionDict
 
 Used in the `# Data` section to return a devai skip action so that the input is not included in the next flow (instruction > AI > data).
 
@@ -227,16 +227,16 @@ Used in the `# Data` section to return a devai skip action so that the input is 
 
 ```rhai
 if input.name == "mod.rs" {
-    return devai::action_skip();
+    return devai::skip();
 }
 // {
 //   "_devai_": {
-//     "kind": "ActionSkip"
+//     "kind": "Skip"
 //   }
 // }
 ```
 
-### devai::action_skip(reason: string) -> SkipActionDict
+### devai::skip(reason: string) -> SkipActionDict
 
 Used in the `# Data` section to return a devai skip action with a reason so that the input is not included in the next flow. The reason will be printed.
 
@@ -244,11 +244,11 @@ Used in the `# Data` section to return a devai skip action with a reason so that
 
 ```rhai
 if input.name == "mod.rs" {
-    return devai::action_skip("mod.rs does not need to be processed by this agent");
+    return devai::skip("mod.rs does not need to be processed by this agent");
 }
 // {
 //   "_devai_": {
-//     "kind": "ActionSkip",
+//     "kind": "Skip",
 //     "data": {
 //       "reason": "mod.rs does not need to be processed by this agent"
 //     }

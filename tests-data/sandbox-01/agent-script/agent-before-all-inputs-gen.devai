@@ -14,7 +14,7 @@ return devai::before_all_response(#{
 ```rhai
 
 if input == "two" {
-    return devai::action_skip("Skip the 'two' at data stage");
+    return devai::skip("Skip the 'two' at data stage");
 }
 
 return "Data with input: '" + input + "'"
@@ -26,7 +26,7 @@ return "Data with input: '" + input + "'"
 ```rhai
 
 if input == "five" {
-    return devai::action_skip("Don't output process 'five'");
+    return devai::skip("Don't output process 'five'");
 }
 
 if input == 4 {

@@ -7,8 +7,8 @@
 //! devai parser and script runner.
 //!
 //! ### Functions
-//! * `devai::action_skip() -> SkipActionDict`
-//! * `devai::action_skip(reason: string) -> SkipActionDict`
+//! * `devai::skip() -> SkipActionDict`
+//! * `devai::skip(reason: string) -> SkipActionDict`
 
 use crate::agent::find_agent;
 use crate::run::{run_command_agent, RuntimeContext};
@@ -24,13 +24,13 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	// Create a module for text functions
 	let mut module = Module::new();
 
-	FuncRegistration::new("action_skip")
+	FuncRegistration::new("skip")
 		.in_global_namespace()
-		.set_into_module(&mut module, action_skip);
+		.set_into_module(&mut module, skip);
 
-	FuncRegistration::new("action_skip")
+	FuncRegistration::new("skip")
 		.in_global_namespace()
-		.set_into_module(&mut module, action_skip_with_reason);
+		.set_into_module(&mut module, skip_with_reason);
 
 	FuncRegistration::new("before_all_response")
 		.in_global_namespace()
@@ -102,11 +102,11 @@ fn before_all_response(data: Dynamic) -> RhaiResult {
 
 // endregion: --- before_all_response
 
-// region:    --- action_skip..
+// region:    --- skip
 
 /// ## RHAI Documentation
 /// ```rhai
-/// action_skip() -> SkipActionDict
+/// skip() -> SkipActionDict
 /// ```
 ///
 /// This is to be used in the `# Data` section to return a devai skip action so that the input is not
@@ -116,15 +116,15 @@ fn before_all_response(data: Dynamic) -> RhaiResult {
 ///
 /// ```rhai
 /// if input.name == "mod.rs" {
-///   return devai::action_skip();
+///   return devai::skip();
 /// }
 /// ```
-fn action_skip() -> RhaiResult {
+fn skip() -> RhaiResult {
 	// TODO: need to create the Dynamic directly,
 	//       no need to passthrough json -> Dynamic -> json later
 	let res = json!({
 		"_devai_": {
-			"kind": "ActionSkip"
+			"kind": "Skip"
 		}
 	});
 	let res = value_to_dynamic(&res);
@@ -134,25 +134,25 @@ fn action_skip() -> RhaiResult {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// action_skip(reason: string) -> SkipActionDict
+/// skip(reason: string) -> SkipActionDict
 /// ```
 ///
 /// This is to be used in the `# Data` section to return a devai skip action so that the input is not
 /// included in the next flow (instruction > AI > data).
 ///
-/// This `action_skip` function takes a reason so that it get printed.
+/// This `skip` function takes a reason so that it get printed.
 ///
 /// for example, in # Data rhai code block:
 ///
 /// ```rhai
 /// if input.name == "mod.rs" {
-///   return devai::action_skip("mod.rs does not need to be process by this agent");
+///   return devai::skip("mod.rs does not need to be process by this agent");
 /// }
 /// ```
-fn action_skip_with_reason(reason: &str) -> RhaiResult {
+fn skip_with_reason(reason: &str) -> RhaiResult {
 	let res = json!({
 		"_devai_": {
-			"kind": "ActionSkip",
+			"kind": "Skip",
 			"data": {
 				"reason": reason
 			}
@@ -163,7 +163,7 @@ fn action_skip_with_reason(reason: &str) -> RhaiResult {
 	Ok(res)
 }
 
-// endregion: --- action_skip..
+// endregion: --- skip
 
 // region:    --- Tests
 

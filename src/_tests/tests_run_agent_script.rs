@@ -131,7 +131,7 @@ async fn common_test_run_agent_script_skip(reason: Option<&str>) -> Result<()> {
 # Data
 ```rhai
 if input == "one" {{
-  return devai::action_skip({reason_str});
+  return devai::skip({reason_str});
 }}
 ```
 
