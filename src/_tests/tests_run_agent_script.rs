@@ -45,10 +45,7 @@ async fn test_run_agent_script_before_all_simple() -> Result<()> {
 
 	// -- Check
 	let hub_content = hub_capture.into_content().await?;
-	assert_contains(
-		&hub_content,
-		"Agent Output: Some Before All - Some Data - ./some-random/file.txt",
-	);
+	assert_contains(&hub_content, "Some Before All - Some Data - ./some-random/file.txt");
 
 	Ok(())
 }

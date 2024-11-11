@@ -16,7 +16,7 @@ use crate::types::{FileRecord, FileRef};
 use crate::{Error, Result};
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, EvalAltResult, FuncRegistration, Module};
-use simple_fs::{ensure_file_dir, list_files, ListOptions, SPath};
+use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
 use std::fs::write;
 
 pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
@@ -40,6 +40,13 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 			list_with_glob(&ctx, include_glob)
 		});
 
+	let ctx = runtime_context.clone();
+	FuncRegistration::new("first")
+		.in_global_namespace()
+		.set_into_module(&mut module, move |include_glob: &str| {
+			first_with_glob(&ctx, include_glob)
+		});
+
 	module
 }
 
@@ -53,7 +60,8 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 /// Expands `glob`, returning a list of all matching file paths along with
 /// helpful metadata.
 ///
-/// Note: The `FileRef` has .path, .name, .stem, .ext, but does NOT have .content
+/// Note: The `FileRef`do not load the content,
+///       so it has .path, .name, .stem, .ext, but does NOT have .content
 ///
 /// To get the list of files with their content, do as follow:
 ///
@@ -88,6 +96,57 @@ fn list_with_glob(ctx: &RuntimeContext, include_glob: &str) -> RhaiResult {
 	let res_dynamic = Dynamic::from_array(file_dynamics);
 
 	Ok(res_dynamic)
+}
+
+/// ## RHAI Documentation
+/// ```rhai
+/// file::first(glob: string) -> FileRef | null
+/// ```
+///
+/// Expands `glob`, returning the first matching file path along with
+///
+/// Note: The `FileRef` has .path, .name, .stem, .ext, but does NOT have .content
+///
+/// To get the list of files with their content, do as follow:
+///
+/// ```rhai
+/// let my_file = file::first("src/**/my_file.rs");
+/// if my_file {
+///   return #{
+///      my_file: file::load(my_file.path)
+///   }
+/// }
+/// } else {
+///   return devai::skip("no file found");
+/// }
+///
+/// ```
+///
+fn first_with_glob(ctx: &RuntimeContext, include_glob: &str) -> RhaiResult {
+	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
+	let mut sfiles = iter_files(
+		&base_path,
+		Some(&[include_glob]),
+		Some(ListOptions::from_relative_glob(true)),
+	)
+	.map_err(|err| {
+		EvalAltResult::ErrorRuntime(
+			format!("Failed to list files with glob: {include_glob}. Cause: {}", err).into(),
+			rhai::Position::NONE,
+		)
+	})?;
+
+	let Some(sfile) = sfiles.next() else {
+		return Ok(Dynamic::UNIT);
+	};
+
+	let sfile = sfile
+		.diff(&base_path)
+		.map_err(|err| Error::cc("Cannot diff with base_path", err))?;
+
+	let file_ref_dynamic = FileRef::from(sfile).into_dynamic();
+
+	Ok(file_ref_dynamic)
 }
 
 /// ## RHAI Documentation
@@ -225,7 +284,39 @@ mod tests {
 		Ok(())
 	}
 
-	// region:    --- Support
+	#[tokio::test]
+	async fn test_rhai_file_first_glob_deep() -> Result<()> {
+		// -- Fixtures
+		// This is the rust Path logic
+		let glob = "sub-dir-a/**/*-2.*";
+
+		// -- Exec
+		let res = run_reflective_agent(&format!(r#"return file::first("{glob}");"#), None).await?;
+
+		// -- Check
+		// let res_paths = to_res_paths(&res);
+		assert_eq!(res.x_get_str("name")?, "agent-hello-2.md");
+		assert_eq!(res.x_get_str("path")?, "sub-dir-a/agent-hello-2.md");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_rhai_file_first_not_found() -> Result<()> {
+		// -- Fixtures
+		// This is the rust Path logic
+		let glob = "sub-dir-a/**/*-not-a-thing.*";
+
+		// -- Exec
+		let res = run_reflective_agent(&format!(r#"return file::first("{glob}");"#), None).await?;
+
+		// -- Check
+		assert_eq!(res, Value::Null, "Should have returned null");
+
+		Ok(())
+	}
+
+	// region:    --- Support for Tests
 
 	fn to_res_paths(res: &Value) -> Vec<&str> {
 		res.as_array()
@@ -236,7 +327,7 @@ mod tests {
 			.collect::<Vec<&str>>()
 	}
 
-	// endregion: --- Support
+	// endregion: --- Support for Tests
 }
 
 // endregion: --- Tests

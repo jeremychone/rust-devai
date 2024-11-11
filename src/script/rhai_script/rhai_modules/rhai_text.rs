@@ -14,8 +14,10 @@
 //! * `text::remove_last_lines(content: string, n: int) -> string`
 
 use crate::support::html::decode_html_entities;
+use crate::support::strings::truncate_with_ellipsis;
 use rhai::plugin::RhaiResult;
-use rhai::{FuncRegistration, Module};
+use rhai::{Dynamic, FuncRegistration, Module};
+use std::borrow::Cow;
 
 pub fn rhai_module() -> Module {
 	// Create a module for text functions
@@ -51,6 +53,22 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, remove_last_line);
 
+	FuncRegistration::new("remove_last_line")
+		.in_global_namespace()
+		.set_into_module(&mut module, remove_last_line);
+
+	FuncRegistration::new("truncate")
+		.in_global_namespace()
+		.set_into_module(&mut module, |content: &str, max_len: usize| {
+			truncate(content, max_len, "")
+		});
+
+	FuncRegistration::new("truncate")
+		.in_global_namespace()
+		.set_into_module(&mut module, |content: &str, max_len: usize, ellipsis: &str| {
+			truncate(content, max_len, ellipsis)
+		});
+
 	// ensure_single_ending_newline
 	FuncRegistration::new("ensure_single_ending_newline")
 		.in_global_namespace()
@@ -63,13 +81,32 @@ pub fn rhai_module() -> Module {
 
 /// ## RHAI Documentation
 /// ```rhai
+/// text::truncate(content: string, max_len: int) -> string
+/// // can include a ellipsis which will be added if the text is bigger than max_len
+/// text::truncate(content: string, max_len: int, ellipsis: string) -> string
+/// ```
+///
+/// Returns `content` truncated to a maximum length of `max_len`.
+/// If the content exceeds `max_len`, it appends the optional `ellipsis` string to indicate truncation.
+/// If `ellipsis` is not provided, no additional characters are added after truncation.
+///
+/// This function is useful for limiting the length of text output while preserving meaningful context.
+fn truncate(content: &str, max_len: usize, ellipsis: &str) -> Dynamic {
+	match truncate_with_ellipsis(content, max_len, ellipsis) {
+		Cow::Borrowed(txt) => txt.into(),
+		Cow::Owned(txt) => txt.into(),
+	}
+}
+
+/// ## RHAI Documentation
+/// ```rhai
 /// text::ensure_single_ending_newline(content: string) -> string
 /// ```
 ///
 /// Ensures that `content` ends with a single newline character.
 /// If `content` is empty, it returns a newline character.
 ///
-/// This function is useful for code sanitization.
+/// This function is useful for code normalization.
 fn ensure_single_ending_newline(content: &str) -> RhaiResult {
 	// Note: Might want to optimize if possible
 	let s = crate::support::strings::ensure_single_ending_newline(content.to_string());

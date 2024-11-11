@@ -27,7 +27,7 @@ impl std::fmt::Debug for DataContainer<'_> {
 		match self {
 			DataContainer::Slice(slice) => write!(f, "{:?}", slice),
 			DataContainer::Str(string) => {
-				let s = truncate_with_ellipsis(string, 64);
+				let s = truncate_with_ellipsis(string, 64, "...");
 				write!(f, "{:?}", s)
 			}
 		}

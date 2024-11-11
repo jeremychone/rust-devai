@@ -36,11 +36,12 @@ pub fn rhai_module() -> Module {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// md::extract_blocks(md_content: string) -> Vec<MdBlock>
+/// md::extract_blocks(md_content: &str) -> Vec<MdBlock>
 /// ```
 ///
 /// Parses the markdown provided by `md_content` and extracts each code block,
-/// returning a list of blocks.
+/// returning all blocks regardless of language identifier.
+/// The format of the MdBlock is {content: string, lang?: string}
 fn extract_blocks(md_content: &str) -> RhaiResult {
 	let blocks: Vec<MdBlock> = md::MdBlocks::new(md_content, None).collect();
 	let blocks: Vec<Dynamic> = blocks.into_iter().map(MdBlock::into_dynamic).collect();

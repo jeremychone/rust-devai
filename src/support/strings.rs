@@ -4,10 +4,15 @@ use crate::{Error, Result};
 use aho_corasick::AhoCorasick;
 use std::borrow::Cow;
 
-pub fn truncate_with_ellipsis(s: &str, max_len: usize) -> Cow<str> {
+pub fn truncate_with_ellipsis<'a>(s: &'a str, max_len: usize, ellipsis: &str) -> Cow<'a, str> {
 	if s.len() > max_len {
 		let truncated = &s[..max_len];
-		Cow::from(format!("{}...", truncated))
+		if ellipsis.is_empty() {
+			// no allocation needed
+			Cow::from(truncated)
+		} else {
+			Cow::from(format!("{truncated}{ellipsis}"))
+		}
 	} else {
 		Cow::from(s)
 	}
