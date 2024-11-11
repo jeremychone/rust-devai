@@ -170,7 +170,7 @@ Usage: `devai run proof-rust-comments -f "./src/main.rs"`
         - With `rhai`, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
     - `# Instruction`, which is a Handlebars template section, has access to `input` as well as the output of the `# Data` section, accessible as the `data` variable. 
         - This will be sent to the AI.
-    - `# Output`, which now executes another ```rhai``` block, using the `input`, `data`, and `ai_output`, which is the string returned by the AI. 
+    - `# Output`, which now executes another ```rhai``` block, using the `input`, `data`, and `ai_response` (with `ai_response.content`), which is the string returned by the AI. 
         - It can save files in place or create new files. 
         - Later, it will even be able to queue new devai work.
 - By default, this will run with `gpt-4o-mini` and look for the `OPENAI_API_KEY` environment variable.

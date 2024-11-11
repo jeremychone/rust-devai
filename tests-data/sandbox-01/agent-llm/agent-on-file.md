@@ -18,10 +18,10 @@ Correct english in the comments of the rust content below, while preserving ever
 # Output
 
 ```rhai
-let rust_code = md::extract_blocks(ai_output, "rust")[0];
+let rust_code = md::extract_blocks(ai_response.content, "rust")[0];
 // file::save(data.file.path, rust_code); // do not save, otherwise, cwt run forever
 
 return #{data_path: data.file.path, 
         input_name: input.name,
-        ai_content: ai_output}
+        ai_content: ai_response.content}
 ```

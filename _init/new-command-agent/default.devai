@@ -32,8 +32,8 @@ For the following mardown file file:
 ```rhai
 // Note: LLMs often but not always return a code block for the result. 
 //       The md::outer_block_content_or_raw function will get the content between the first 
-//       and last triple backticks or return ai_output if there are no triple backticks.
-let content = md::outer_block_content_or_raw(ai_output);
+//       and last triple backticks or return ai_response (with .content) if there are no triple backticks.
+let content = md::outer_block_content_or_raw(ai_response.content);
 
 // Example how to save to the same file
 file::save(data.file.path, content);

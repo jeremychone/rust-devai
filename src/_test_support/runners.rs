@@ -15,13 +15,22 @@ pub async fn run_reflective_agent(data_rhai_code: &str, input: Option<Value>) ->
 	let agent = load_reflective_agent(data_rhai_code)?;
 	let input = if let Some(input) = input { input } else { Value::Null };
 
-	run_command_agent_input_for_test(0, &runtime, &agent, Value::Null, input, &RunBaseOptions::default()).await
+	let res =
+		run_command_agent_input_for_test(0, &runtime, &agent, Value::Null, input, &RunBaseOptions::default()).await?;
+	let res = res.map(|v| v.into_value()).unwrap_or_default();
+	Ok(res)
 }
 
 pub async fn run_test_agent(runtime: &Runtime, agent: &Agent) -> Result<Value> {
-	run_command_agent_input_for_test(0, runtime, agent, Value::Null, Value::Null, &RunBaseOptions::default()).await
+	let res = run_command_agent_input_for_test(0, runtime, agent, Value::Null, Value::Null, &RunBaseOptions::default())
+		.await?;
+	let res = res.map(|v| v.into_value()).unwrap_or_default();
+	Ok(res)
 }
 
 pub async fn run_test_agent_with_input(runtime: &Runtime, agent: &Agent, input: impl Serialize) -> Result<Value> {
-	run_command_agent_input_for_test(0, runtime, agent, Value::Null, input, &RunBaseOptions::default()).await
+	let res =
+		run_command_agent_input_for_test(0, runtime, agent, Value::Null, input, &RunBaseOptions::default()).await?;
+	let res = res.map(|v| v.into_value()).unwrap_or_default();
+	Ok(res)
 }

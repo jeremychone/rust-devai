@@ -1,7 +1,7 @@
 use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
-use crate::run::run_input::run_agent_input;
+use crate::run::run_input::{run_agent_input, RunAgentInputResponse};
 use crate::run::{RunBaseOptions, Runtime};
 use crate::script::devai_custom::{DevaiCustom, FromValue};
 use crate::script::rhai_eval;
@@ -100,7 +100,7 @@ pub async fn run_command_agent(
 		// Spawn tasks up to the concurrency limit
 		join_set.spawn(async move {
 			// Execute the command agent (this will perform do Data, Instruction, and Output stages)
-			let output = run_command_agent_input(
+			let run_input_response = run_command_agent_input(
 				input_idx,
 				&runtime_clone,
 				&agent_clone,
@@ -112,7 +112,8 @@ pub async fn run_command_agent(
 			.await?;
 
 			// Process the output
-			let output = match DevaiCustom::from_value(output)? {
+			let run_input_value = run_input_response.map(|v| v.into_value()).unwrap_or_default();
+			let output = match DevaiCustom::from_value(run_input_value)? {
 				// if it is a skip, we skip
 				FromValue::DevaiCustom(DevaiCustom::Skip { reason }) => {
 					let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
@@ -214,7 +215,7 @@ async fn run_command_agent_input(
 	input: impl Serialize,
 	literals: &Literals,
 	run_base_options: &RunBaseOptions,
-) -> Result<Value> {
+) -> Result<Option<RunAgentInputResponse>> {
 	let hub = get_hub();
 
 	// -- prepare the scope_input
@@ -224,17 +225,17 @@ async fn run_command_agent_input(
 	let label = get_input_label(&input).unwrap_or_else(|| format!("input index: {input_idx}"));
 	hub.publish(format!("\n==== Running input: {}", label)).await;
 
-	let res_value = run_agent_input(runtime, agent, before_all, &label, input, literals, run_base_options).await?;
+	let run_response = run_agent_input(runtime, agent, before_all, &label, input, literals, run_base_options).await?;
 
 	// if the response value is a String, then, print it
-	if let Some(response_txt) = res_value.as_str() {
+	if let Some(response_txt) = run_response.as_ref().and_then(|r| r.as_str()) {
 		let short_text = truncate_with_ellipsis(response_txt, 72);
 		hub.publish(format!("-> Agent Output: {short_text}")).await;
 	}
 
 	hub.publish(format!("-- DONE (input: {})", label)).await;
 
-	Ok(res_value)
+	Ok(run_response)
 }
 
 /// Workaround to expose the run_command_agent_input only for test.
@@ -246,7 +247,7 @@ pub async fn run_command_agent_input_for_test(
 	before_all: Value,
 	input: impl Serialize,
 	run_base_options: &RunBaseOptions,
-) -> Result<Value> {
+) -> Result<Option<RunAgentInputResponse>> {
 	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
 	run_command_agent_input(
 		input_idx,

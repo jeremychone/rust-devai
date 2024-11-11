@@ -33,7 +33,7 @@ pub async fn run_solo_agent(
 	let input = FileRef::from(run_solo_options.target_path());
 	let input = serde_json::to_value(input)?;
 	let before_all_data = Value::Null;
-	let res_value = run_agent_input(
+	let run_input_response = run_agent_input(
 		runtime,
 		agent,
 		before_all_data,
@@ -44,7 +44,9 @@ pub async fn run_solo_agent(
 	)
 	.await?;
 
-	if let Value::String(text) = res_value {
+	let run_input_value = run_input_response.map(|v| v.into_value()).unwrap_or_default();
+
+	if let Value::String(text) = run_input_value {
 		let target_path = run_solo_options.target_path();
 		let target_full_path = runtime.dir_context().resolve_path(target_path, mode)?;
 		write(target_full_path, text)?;

@@ -38,7 +38,7 @@ For the following Rust file:
 
 ```rhai
 // Note: See `proof-comments.devai` for an explanation.
-let content = md::outer_block_content_or_raw(ai_output);
+let content = md::outer_block_content_or_raw(ai_response.content);
 // Note: See `proof-comments.devai` for an explanation.
 let content = text::ensure_single_ending_newline(content);
 

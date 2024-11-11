@@ -16,7 +16,7 @@ Why is the sky blue? Make it super concise.
 
 ```rhai
 
-// ai_output is the variable in the context of the eventual response of the AI.
+// ai_response (with ai_response.content) is the variable in the context of the eventual response of the AI.
 
 return "Output - " + input.path + " - " + data.from_data;
 ```

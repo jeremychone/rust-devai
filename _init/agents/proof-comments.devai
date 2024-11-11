@@ -33,11 +33,11 @@ For the following markdown file:
 ```rhai
 // Note 1: LLMs often, but not always, return a code block for the result. 
 //         The md::outer_block_content_or_raw function will extract the content between the first 
-//         and last triple backticks or return ai_output if there are no triple backticks.
+//         and last triple backticks or return ai_response if there are no triple backticks.
 //         This might be removed.
 // Note 2: This could create problems sometimes if the content is markdown, and LLMs do not tend to return the 6 backticks. 
 //         In those cases, instructing the LLMs to not put the result in a markdown text can be an option. 
-let content = md::outer_block_content_or_raw(ai_output);
+let content = md::outer_block_content_or_raw(ai_response.content);
 
 // Note: Also nice to normalize files with a single ending empty line
 let content = text::ensure_single_ending_newline(content);
