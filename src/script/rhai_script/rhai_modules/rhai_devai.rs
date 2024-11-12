@@ -19,7 +19,7 @@ use crate::agent::find_agent;
 use crate::run::{run_command_agent, RuntimeContext};
 use crate::run::{PathResolver, RunBaseOptions};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
-use crate::script::DynamicMap;
+use crate::script::{DynamicMap, IntoDynamic};
 use crate::Error;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
@@ -118,7 +118,7 @@ fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Option<Vec<Dyn
 ///
 fn before_all_response(data: Dynamic) -> RhaiResult {
 	// validate it is a map
-	let map = DynamicMap::from_dynamic(data)
+	let data = DynamicMap::from_dynamic(data)
 		.map_err(|err| crate::Error::cc("devai::before_all_response take a object map only", err))?;
 
 	// Now building the following structure.
@@ -133,10 +133,7 @@ fn before_all_response(data: Dynamic) -> RhaiResult {
 	//	}
 
 	// now build the new
-	let data = map.into_dynamic();
-	let mut custom = rhai::Map::new();
-	custom.insert("kind".into(), "BeforeAllResponse".into());
-	custom.insert("data".into(), data);
+	let custom = DynamicMap::default().insert("kind", "BeforeAllResponse").insert("data", data);
 	let mut res = rhai::Map::new();
 	res.insert("_devai_".into(), custom.into());
 

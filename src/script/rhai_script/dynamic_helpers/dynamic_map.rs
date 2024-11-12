@@ -1,8 +1,9 @@
+use crate::script::IntoDynamic;
 use derive_more::derive::From;
 use rhai::Dynamic;
 use std::any::Any;
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct DynamicMap(rhai::Map);
 
 /// Constructors & Transformers
@@ -12,16 +13,17 @@ impl DynamicMap {
 
 		Ok(DynamicMap(map))
 	}
+}
 
-	#[allow(unused)]
-	pub fn into_dynamic(self) -> Dynamic {
+impl IntoDynamic for DynamicMap {
+	fn into_dynamic(self) -> Dynamic {
 		Dynamic::from(self.0)
 	}
 }
 
 impl DynamicMap {
-	pub fn insert(mut self, name: &'static str, value: impl Into<Dynamic>) -> Self {
-		self.0.insert(name.into(), value.into());
+	pub fn insert(mut self, name: &'static str, value: impl IntoDynamic) -> Self {
+		self.0.insert(name.into(), value.into_dynamic());
 		self
 	}
 

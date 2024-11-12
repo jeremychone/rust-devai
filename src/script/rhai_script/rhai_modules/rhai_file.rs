@@ -12,6 +12,7 @@
 
 use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
+use crate::script::IntoDynamic;
 use crate::types::{FileRecord, FileRef};
 use crate::{Error, Result};
 use rhai::plugin::RhaiResult;
@@ -92,8 +93,7 @@ fn list_with_glob(ctx: &RuntimeContext, include_glob: &str) -> RhaiResult {
 		.map_err(|err| crate::Error::cc("Cannot list fiels to base", err))?;
 
 	let file_refs: Vec<FileRef> = sfiles.into_iter().map(FileRef::from).collect();
-	let file_dynamics: Vec<Dynamic> = file_refs.into_iter().map(FileRef::into_dynamic).collect();
-	let res_dynamic = Dynamic::from_array(file_dynamics);
+	let res_dynamic = file_refs.into_dynamic();
 
 	Ok(res_dynamic)
 }
@@ -144,7 +144,7 @@ fn first_with_glob(ctx: &RuntimeContext, include_glob: &str) -> RhaiResult {
 		.diff(&base_path)
 		.map_err(|err| Error::cc("Cannot diff with base_path", err))?;
 
-	let file_ref_dynamic = FileRef::from(sfile).into_dynamic();
+	let file_ref_dynamic = FileRef::from(sfile).into();
 
 	Ok(file_ref_dynamic)
 }

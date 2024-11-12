@@ -8,6 +8,7 @@
 //! * `md::extract_blocks_with_lang(md_content: string, lang_name: string) -> Vec<MdBlock>`
 //! * `md::outer_block_content_or_raw(md_content: string) -> Vec<MdBlock>`
 
+use crate::script::IntoDynamic;
 use crate::support::md;
 use crate::types::MdBlock;
 use rhai::plugin::RhaiResult;
@@ -42,8 +43,7 @@ pub fn rhai_module() -> Module {
 /// Return the list of markdown blocks with or without lang information
 fn extract_blocks(md_content: &str) -> RhaiResult {
 	let blocks: Vec<MdBlock> = md::MdBlocks::new(md_content, None).collect();
-	let blocks: Vec<Dynamic> = blocks.into_iter().map(MdBlock::into_dynamic).collect();
-	Ok(blocks.into())
+	Ok(blocks.into_dynamic())
 }
 
 /// ## RHAI Documentation
@@ -54,8 +54,7 @@ fn extract_blocks(md_content: &str) -> RhaiResult {
 /// Return the list of markdown blocks that match a given lang_name.
 fn extract_blocks_with_lang(md_content: &str, lang_name: &str) -> RhaiResult {
 	let blocks: Vec<MdBlock> = md::MdBlocks::new(md_content, Some(lang_name)).collect();
-	let blocks: Vec<Dynamic> = blocks.into_iter().map(MdBlock::into_dynamic).collect();
-	Ok(blocks.into())
+	Ok(blocks.into_dynamic())
 }
 
 /// ## RHAI Documentation

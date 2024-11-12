@@ -30,7 +30,7 @@ markup5ever_rcdom = "=0.5.0-unofficial"
 html5ever = "0.29"
 logos = "0.14"
 # -- Template & Scripting
-rhai = {version = "1.20", features = ["sync"]}
+rhai = {version = "1.20", features = ["sync", "serde"]}
 handlebars = "6"
 # -- Cli
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
@@ -39,7 +39,7 @@ simple-fs = { version = "0.2.4" }
 # -- Web
 reqwest = {version = "0.12", features = ["json"]}
 # -- Others
-derive_more = {version = "1.0.0", features = ["from"] }
+derive_more = {version = "1.0.0", features = ["from","display","debug"] }
 strum = { version = "0.26", features = ["derive"] }
 keyring = {version = "3", features = ["apple-native"]}
 html-escape = "0.2"

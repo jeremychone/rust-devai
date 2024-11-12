@@ -4,10 +4,9 @@ mod dynamic_helpers;
 mod engine;
 mod rhai_modules;
 
-mod dynamic_map;
 mod rhai_eval;
 
-pub use dynamic_map::*;
+pub use dynamic_helpers::*;
 pub use engine::*;
 pub use rhai_eval::*;
 

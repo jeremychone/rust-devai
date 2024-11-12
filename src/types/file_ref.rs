@@ -1,3 +1,4 @@
+use crate::script::IntoDynamic;
 use rhai::Dynamic;
 use serde::Serialize;
 use simple_fs::{SFile, SPath};
@@ -45,11 +46,16 @@ impl From<SFile> for FileRef {
 
 // region:    --- Dynamic Froms
 
-impl FileRef {
-	/// Use this instead of the `From` trait, because Rhai's `Dynamic`
-	/// `From` implementation requires cloning.
-	/// Implementing `From` for `Dynamic` was confusing.
-	pub fn into_dynamic(self) -> Dynamic {
+impl From<FileRef> for Dynamic {
+	fn from(file_ref: FileRef) -> Self {
+		file_ref.into_dynamic()
+	}
+}
+
+/// Need to implement this since  Rhai have its own 'from' function on Dynamic,
+/// making it a little tricky to use in some scenarios.
+impl IntoDynamic for FileRef {
+	fn into_dynamic(self) -> Dynamic {
 		let mut map = rhai::Map::new();
 		map.insert("path".into(), self.path.into());
 		map.insert("name".into(), self.name.into());
@@ -58,5 +64,4 @@ impl FileRef {
 		Dynamic::from_map(map)
 	}
 }
-
 // endregion: --- Dynamic Froms

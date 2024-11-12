@@ -63,12 +63,12 @@ fn get(url: &str) -> RhaiResult {
 						.into()
 				}
 				Err(err) => {
-					let status = err.status().map(|s| Dynamic::from(s.as_u16() as i64)).unwrap_or_default();
+					let status = err.status().map(|s| s.as_u16());
 					let map = DynamicMap::default()
 						.insert("success", false)
 						.insert("status", status)
 						.insert("url", url)
-						.insert("content", Dynamic::UNIT)
+						.insert("content", ())
 						.insert("error", err.to_string());
 					map.into()
 				}
