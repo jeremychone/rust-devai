@@ -17,7 +17,7 @@ pub fn read_file_md_sections(path: impl AsRef<Path>, ref_sections: &[&str]) -> R
 	let reader = BufReader::new(file);
 
 	// Call read_md_section with the reader to perform the actual reading
-	read_md_section(reader, ref_sections)
+	read_md_sections(reader, ref_sections)
 }
 
 #[derive(Debug)]
@@ -39,7 +39,7 @@ enum ActionState {
 /// This function takes a generic reader and reads its content to allow read String readers for example.
 /// Note: This separation of concern is mostly for testing as if we have the full content,
 ///       we will probably do a `.lines()` to get the `&str` and avoid string allocation.
-fn read_md_section<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdSection>> {
+fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdSection>> {
 	// Create a buffered reader to read the content line by line
 	let reader = BufReader::new(reader);
 
@@ -74,6 +74,25 @@ fn read_md_section<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdSe
 	let mut passed_first_heading = false;
 
 	let mut action_state = ActionState::NoCapture;
+
+	// InFunction function to make sure we have the same logic to close section
+	fn close_section(
+		current_captured_content: &mut Option<Vec<String>>,
+		current_matching_ref: &mut Option<&(usize, String)>,
+		current_captured_heading: &mut Option<MdHeading>,
+		sections: &mut Vec<MdSection>,
+	) {
+		if let Some(content) = current_captured_content.take() {
+			*current_matching_ref = None;
+			// TODO: needs to stream the content array to be faster and avoid double allocation
+			//       Also we ensure last single new line
+			let content = content.join("\n").trim().to_string();
+			sections.push(MdSection {
+				content,
+				heading: current_captured_heading.take(),
+			})
+		}
+	};
 
 	// let mut line_it = reader.lines();
 	// Iterate through each line in the reader and push it into the capture vector
@@ -158,25 +177,6 @@ fn read_md_section<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdSe
 		};
 
 		// -- Capture data
-		// InFunction function to make sure we have the same logic to close section
-		fn close_section(
-			current_captured_content: &mut Option<Vec<String>>,
-			current_matching_ref: &mut Option<&(usize, String)>,
-			current_captured_heading: &mut Option<MdHeading>,
-			sections: &mut Vec<MdSection>,
-		) {
-			if let Some(content) = current_captured_content.take() {
-				*current_matching_ref = None;
-				// TODO: needs to stream the content array to be faster and avoid double allocation
-				//       Also we ensure last single new line
-				let content = content.join("\n").trim().to_string();
-				sections.push(MdSection {
-					content,
-					heading: current_captured_heading.take(),
-				})
-			}
-		};
-
 		match action_state {
 			ActionState::NoCapture | ActionState::SkipLineInCapture => (),
 			ActionState::CaptureLine => match line_data {
@@ -225,6 +225,13 @@ fn read_md_section<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdSe
 		}
 	}
 
+	close_section(
+		&mut current_captured_content,
+		&mut current_matching_ref,
+		&mut current_captured_heading,
+		&mut sections,
+	);
+
 	Ok(sections)
 }
 
@@ -233,12 +240,12 @@ fn read_md_section<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdSe
 /// This is for test only as for full string, we will probably not have a BufferReader
 /// (to avoid new alocation per line.)
 #[cfg(test)]
-fn read_string_md_section(content: impl Into<String>, sections: &[&str]) -> Result<Vec<MdSection>> {
+fn read_string_md_sections(content: impl Into<String>, sections: &[&str]) -> Result<Vec<MdSection>> {
 	// Use Cursor to wrap the String and provide it as a reader
 	let reader = Cursor::new(content.into());
 
 	// Call read_md_section with the reader to perform the actual reading
-	read_md_section(reader, sections)
+	read_md_sections(reader, sections)
 }
 
 #[cfg(test)]
@@ -283,13 +290,13 @@ Some other content-2
 	// endregion: --- consts
 
 	#[test]
-	fn test_md_section_reader_heading_1_root() -> Result<()> {
+	fn test_md_sections_reader_heading_1_root() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_md = MD_01;
 		let fx_headings = &["# Heading 1"];
 
 		// -- Exec
-		let MdSection { heading, content } = read_string_md_section(fx_md, fx_headings)?
+		let MdSection { heading, content } = read_string_md_sections(fx_md, fx_headings)?
 			.into_iter()
 			.next()
 			.ok_or("Should have return result")?;
@@ -313,13 +320,13 @@ Some other content-2
 	}
 
 	#[test]
-	fn test_md_section_reader_heading_1_a() -> Result<()> {
+	fn test_md_sections_reader_heading_1_a() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_md = MD_01;
 		let fx_headings = &["## sub heading 1-a"];
 
 		// -- Exec
-		let MdSection { heading, content } = read_string_md_section(fx_md, fx_headings)?
+		let MdSection { heading, content } = read_string_md_sections(fx_md, fx_headings)?
 			.into_iter()
 			.next()
 			.ok_or("Should have return result")?;
@@ -341,13 +348,13 @@ Some other content-2
 	}
 
 	#[test]
-	fn test_md_section_reader_level_0() -> Result<()> {
+	fn test_md_sections_reader_level_0() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_md = MD_01;
 		let fx_heading = &[""];
 
 		// -- Exec
-		let MdSection { heading, content } = read_string_md_section(fx_md, fx_heading)?
+		let MdSection { heading, content } = read_string_md_sections(fx_md, fx_heading)?
 			.into_iter()
 			.next()
 			.ok_or("Should have return result")?;
