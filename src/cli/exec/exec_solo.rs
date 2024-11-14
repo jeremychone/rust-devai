@@ -29,8 +29,7 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 	}
 	// -- If in watch mode
 	else {
-		// Do the first run
-		let agent = load_solo_agent(agent.file_path(), runtime.dir_context())?;
+		// Do the intial run
 		match run_solo_agent(&runtime, &agent, &solo_options, PathResolver::CurrentDir).await {
 			Ok(_) => (),
 			Err(err) => hub.publish(format!("ERROR: {}", err)).await,
@@ -41,6 +40,8 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 		loop {
 			match watcher.rx.recv() {
 				Ok(events) => {
+					// Reload the agent
+					let agent = load_solo_agent(agent.file_path(), runtime.dir_context())?;
 					// If there is a modification, then run again
 					let has_modify = events.iter().any(|evt| matches!(evt.skind, SEventKind::Modify));
 					if has_modify {

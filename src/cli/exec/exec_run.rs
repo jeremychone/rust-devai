@@ -26,7 +26,10 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 		open_vscode(agent.file_path()).await;
 	}
 
-	do_run(&run_options, &runtime, &agent).await?;
+	match do_run(&run_options, &runtime, &agent).await {
+		Ok(_) => (),
+		Err(err) => hub.publish(format!("ERROR: {}", err)).await,
+	};
 
 	if run_options.base_run_config().watch() {
 		let watcher = watch(agent.file_path())?;
