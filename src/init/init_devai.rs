@@ -58,7 +58,9 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 
 	let dir_context = DirContext::new(devai_dir)?;
 
-	hub.publish("-- DONE").await;
+	if show_info_always {
+		hub.publish("-- DONE").await;
+	}
 
 	Ok(dir_context)
 }

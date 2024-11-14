@@ -9,7 +9,7 @@ model = "gpt-4o"
 
 ```rhai
 return #{
-    rhai_doc_inst: file::load_md_sections("./_devai/content/jc-instructions.md", "# Rhai Doc Instruction")[0].content,
+    rhai_doc_inst: file::load_md_sections(`${CTX.AGENT_FILE_DIR}/content/jc-instructions.md`, "# Rhai Doc Instruction")[0].content,
     file: file::load(input.path),
 }
 ```

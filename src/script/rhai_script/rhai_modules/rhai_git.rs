@@ -30,12 +30,20 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// restore(file_path: string) -> string
+/// git::restore(file_path: string) -> string
 /// ```
 ///
 /// Calls `git restore {file_path}` and returns the output (stdout) of that
 /// call.
 /// The current_dir will be set at the devai_parent_dir as all relative rhai script context
+///
+/// # Arguments
+///
+/// * `file_path` - (required) A `String` containing the path to the file to be restored.
+///
+/// # Returns
+///
+/// A `String` containing the output of the `git restore` command.
 fn git_restore(ctx: &RuntimeContext, path: &str) -> RhaiResult {
 	let output = std::process::Command::new("git")
 		.current_dir(ctx.dir_context().devai_parent_dir())
