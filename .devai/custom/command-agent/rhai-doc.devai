@@ -1,0 +1,37 @@
+# Config
+
+```toml
+[genai]
+model = "gpt-4o"
+```
+
+# Data 
+
+```rhai
+return #{
+    rhai_doc_inst: file::load_md_sections("./_devai/content/jc-instructions.md", "# Rhai Doc Instruction")[0].content,
+    file: file::load(input.path),
+}
+```
+
+# Instruction
+
+Here are some important instructions to follow: 
+
+{{data.rhai_doc_inst}}
+
+Here is the rust file content to apply those instruction to. 
+
+```rust
+{{data.file.content}}
+```
+
+# Output
+
+```rhai
+let content = md::outer_block_content_or_raw(ai_response.content);
+
+file::save(input.path, content);
+
+return "rhai-doc completed - Rust file '" + input.path + "' saved." ;
+```

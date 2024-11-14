@@ -6,9 +6,7 @@
 //! The `file` module exposes functions used to read, write, or modify files.
 //!
 //! ### Functions
-//! * `file::load(file_path: string) -> FileRecord`
-//! * `file::save(file_path: string, content: string)`
-//! * `file::list(glob: string) -> Vec<FileRef>`
+//! * `file::load_md_sections(path: string, headings: array) -> array`
 
 use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
@@ -38,11 +36,25 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 
 // region:    --- Rhai Functions
 
+/// ## RHAI Documentation
+/// ```rhai
+/// file::load_md_sections(path: string, headings: array) -> array
+/// ```
+///
+/// Loads specific sections from a markdown file based on the provided headings.
+///
+/// This function reads a markdown file and extracts sections that match the specified headings.
+///
+/// # Arguments
+///
+/// * `path` - (required) A `String` representing the path to the markdown file.
+/// * `headings` - (required) An `Array` of `String` headings to search for in the markdown file.
+///
+/// # Returns
+///
+/// An `Array` of sections, each containing the heading and its content.
 fn load_md_sections(ctx: &RuntimeContext, path: &str, mut headings: Dynamic) -> RhaiResult {
-	// headings.is_string()
 	// Convert `headings` to a `Vec<String>`
-
-	// -- Compute the headings
 	let headings: Vec<String> = dynamic_into_strings(headings, "file::load_md_sections headings argument")?;
 
 	let headings = headings.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
