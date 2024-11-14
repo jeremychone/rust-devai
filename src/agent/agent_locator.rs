@@ -15,13 +15,14 @@ pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver
 
 	let devai_dir = dir_context.devai_dir();
 
-	// -- First see if it is a direct path (starts with `./` or `/`)
-	if agent_name.starts_with("./") || agent_name.starts_with("/") {
-		let agent_file = dir_context.resolve_path(agent_name, mode)?;
+	// -- For now, if .devai, we try to find direct
+	let agent_sname = SPath::new(agent_name)?;
+	if agent_sname.ext() == "devai" {
+		let agent_file = dir_context.resolve_path(&agent_sname, mode)?;
 		let agent_file =
-			SFile::try_from(agent_file).map_err(|_| Error::CommandAgentNotFound(agent_name.to_string()))?;
+			SFile::try_from(agent_file).map_err(|_| Error::CommandAgentNotFound(agent_sname.to_string()))?;
 		let doc = AgentDoc::from_file(agent_file)?;
-		return doc.into_agent(agent_name, base_config);
+		return doc.into_agent(agent_sname, base_config);
 	}
 
 	// -- Otherwise, look in the command-agent dirs
