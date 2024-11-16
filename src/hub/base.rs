@@ -1,25 +1,27 @@
 // src/hub/hub_base.rs
 
-use crate::hub::event::Event;
+use crate::hub::event::HubEvent;
 use std::sync::{Arc, LazyLock};
 use tokio::sync::broadcast;
 
-pub struct Hub {
-	tx: Arc<broadcast::Sender<Event>>,
-	_rx: broadcast::Receiver<Event>,
+/// Hub for receiving and broadcasting all OutEvent to the systems.
+/// Those events are Log Message, Error, and Stage(StagEvent) to capture each progress steps
+pub struct OutHub {
+	tx: Arc<broadcast::Sender<HubEvent>>,
+	_rx: broadcast::Receiver<HubEvent>,
 }
 
-impl Hub {
+impl OutHub {
 	pub fn new() -> Self {
 		let (tx, _rx) = broadcast::channel(100);
 		Self { tx: Arc::new(tx), _rx }
 	}
 
-	pub async fn publish(&self, event: impl Into<Event>) {
+	pub async fn publish(&self, event: impl Into<HubEvent>) {
 		let _ = self.tx.send(event.into());
 	}
 
-	pub fn publish_sync(&self, event: impl Into<Event>) {
+	pub fn publish_sync(&self, event: impl Into<HubEvent>) {
 		tokio::task::block_in_place(|| {
 			let event = event.into();
 			let rt = tokio::runtime::Handle::try_current();
@@ -32,15 +34,15 @@ impl Hub {
 		});
 	}
 
-	pub fn subscriber(&self) -> broadcast::Receiver<Event> {
+	pub fn subscriber(&self) -> broadcast::Receiver<HubEvent> {
 		self.tx.subscribe()
 	}
 }
 
-static HUB: LazyLock<Hub> = LazyLock::new(Hub::new);
+static OUT_HUB: LazyLock<OutHub> = LazyLock::new(OutHub::new);
 
-pub fn get_hub() -> &'static Hub {
-	&HUB
+pub fn get_hub() -> &'static OutHub {
+	&OUT_HUB
 }
 
 // Example usage in an async context
@@ -57,7 +59,7 @@ mod tests {
 			while let Ok(event) = rx.recv().await {
 				#[allow(clippy::single_match)]
 				match event {
-					Event::Message(msg) => {
+					HubEvent::Message(msg) => {
 						println!("Received Message: {}", msg);
 					}
 					_ => (),
@@ -66,7 +68,7 @@ mod tests {
 		});
 
 		// Testing async publish
-		hub.publish(Event::Message("Hello, world!".to_string())).await;
+		hub.publish(HubEvent::Message("Hello, world!".into())).await;
 
 		// NOTE: Call below will fail in test because require multi-thread
 		// hub.publish_sync(Event::Message("Hello from sync!".to_string()));

@@ -1,7 +1,7 @@
 // region:    --- Modules
 
-mod tui_base;
+mod base;
 
-pub use tui_base::*;
+pub use base::*;
 
 // endregion: --- Modules

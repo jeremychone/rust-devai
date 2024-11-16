@@ -1,5 +1,5 @@
 use crate::_test_support::Result;
-use crate::hub::{get_hub, Event};
+use crate::hub::{get_hub, HubEvent};
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 
@@ -24,17 +24,19 @@ impl HubCapture {
 				_ = async {
 					while let Ok(event) = rx.recv().await {
 						match event {
-							Event::Message(msg) => {
+							HubEvent::Message(msg) => {
 								let mut content = content_clone.lock().await;
 								content.push_str(&msg);
 								content.push('\n');
 
 							}
-							Event::Error { error } => {
+							HubEvent::Error { error } => {
 								let mut content = content_clone.lock().await;
-								content.push_str("Error: ");
-								content.push_str(&format!("{error}"));
-								content.push('\n');
+								content.push_str(&format!("Error: {error}\n"));
+							},
+							HubEvent::Executor(exec_event)=> {
+								let mut content = content_clone.lock().await;
+								content.push_str(&format!("Exec: {exec_event} \n"));
 							}
 						}
 					}

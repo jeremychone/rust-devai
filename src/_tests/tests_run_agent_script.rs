@@ -11,7 +11,7 @@ use simple_fs::SPath;
 async fn test_run_agent_script_hello_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-script/agent-hello.md", &runtime)?;
+	let agent = load_test_agent("./agent-script/agent-hello.devai", &runtime)?;
 
 	// -- Execute
 	let res = run_test_agent_with_input(&runtime, &agent, "input-01").await?;
@@ -20,7 +20,7 @@ async fn test_run_agent_script_hello_ok() -> Result<()> {
 	// Note here '' because input is null
 	assert_eq!(
 		res.as_str().ok_or("Should have output result")?,
-		"hello 'input-01' from agent-hello.md"
+		"hello 'input-01' from agent-hello.devai"
 	);
 
 	Ok(())
@@ -33,7 +33,7 @@ async fn test_run_agent_script_hello_ok() -> Result<()> {
 async fn test_run_agent_script_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-script/agent-before-all.md", &runtime)?;
+	let agent = load_test_agent("./agent-script/agent-before-all.devai", &runtime)?;
 	let hub_capture = HubCapture::new_and_start();
 
 	// -- Execute

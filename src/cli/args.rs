@@ -1,16 +1,17 @@
+use crate::exec::ExecCommand;
 use clap::{command, Parser, Subcommand};
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-pub struct AppArgs {
+pub struct CliArgs {
 	/// Subcommands
 	#[command(subcommand)]
-	pub cmd: Commands,
+	pub cmd: CliCommand,
 }
 
 #[derive(Subcommand, Debug)]
-pub enum Commands {
+pub enum CliCommand {
 	/// Initialize the `.devai/` folder with the base setting files. Any file that already exists will not be touched.
 	Init(InitArgs),
 
@@ -23,9 +24,6 @@ pub enum Commands {
 	/// and if not found will look in `.devai/default/command-agent/proof-comments.devai`
 	Run(RunArgs),
 
-	/// Create a New Command Agent under `.devai/custom/command-agent/`
-	New(NewArgs),
-
 	#[command(
 		about = "Run a solo agent for a <path> relative to where the devai is run.",
 		long_about = "Run a solo agent for a <path> relative to where the devai is run.\n
@@ -37,6 +35,9 @@ IMPORTANT: The path should be at the parent folder of the `.devai/` directory."
 	)]
 	Solo(SoloArgs),
 
+	/// Create a New Command Agent under `.devai/custom/command-agent/`
+	New(NewArgs),
+
 	#[command(
 		name = "new-solo",
 		alias = "ns",
@@ -47,6 +48,8 @@ IMPORTANT: The path should be at the parent folder of the `.devai/` directory."
 	/// List the available command agents
 	List,
 }
+
+// region:    --- Sub Command Args
 
 /// Arguments for the `run` subcommand
 #[derive(Parser, Debug)]
@@ -148,3 +151,22 @@ pub struct InitArgs {
 	/// If not given, devai will find the closest .devai/ or create one at current directory
 	pub path: Option<String>,
 }
+
+// endregion: --- Sub Command Args
+
+// region:    --- From CliCommand to ExecCommand
+
+impl From<CliCommand> for ExecCommand {
+	fn from(cli_cmd: CliCommand) -> Self {
+		match cli_cmd {
+			CliCommand::Init(init_args) => ExecCommand::Init(init_args),
+			CliCommand::Run(run_args) => ExecCommand::RunCommandAgent(run_args),
+			CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
+			CliCommand::Solo(solo_args) => ExecCommand::RunSoloAgent(solo_args),
+			CliCommand::NewSolo(new_solo_args) => ExecCommand::NewSoloAgent(new_solo_args),
+			CliCommand::List => ExecCommand::List,
+		}
+	}
+}
+
+// endregion: --- From CliCommand to ExecCommand

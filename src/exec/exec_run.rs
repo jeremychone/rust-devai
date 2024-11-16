@@ -52,13 +52,9 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 									Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 								}
 								// NOTE: No need to notify for now
-								// Handle the modify event here
-								// hub.publish(format!("File modified: {:?}", event.spath)).await; // Uncomment if needed
 							}
 							_ => {
 								// NOTE: No need to notify for now
-								// Handle other event kinds if needed
-								// hub.publish(format!("Other event: {:?}", event)).await; // Uncomment if needed
 							}
 						}
 					}

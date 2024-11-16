@@ -72,7 +72,7 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 /// for example, in # Data rhai code block:
 ///
 /// ```rhai
-/// let result = devai::run("./agent-script/agent-hello.md", ["one", "two"]);
+/// let result = devai::run("./agent-script/agent-hello.devai", ["one", "two"]);
 /// ```
 fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Option<Vec<Dynamic>>) -> RhaiResult {
 	let inputs = inputs.map(dynamics_to_values).transpose()?;
@@ -220,7 +220,7 @@ mod tests {
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_rhai_devai_run_simple() -> Result<()> {
 		let res = run_reflective_agent(
-			r#"return devai::run("./agent-script/agent-hello.md", ["one", "two"])"#,
+			r#"return devai::run("./agent-script/agent-hello.devai", ["one", "two"])"#,
 			None,
 		)
 		.await;
@@ -237,7 +237,7 @@ mod tests {
 
 		assert_eq!(
 			vals,
-			["hello 'one' from agent-hello.md", "hello 'two' from agent-hello.md"]
+			["hello 'one' from agent-hello.devai", "hello 'two' from agent-hello.devai"]
 		);
 		Ok(())
 	}

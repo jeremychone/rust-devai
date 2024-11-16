@@ -115,10 +115,10 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./agent-script/agent-hello.md",
-			"agent-script/agent-hello.md",
-			"./sub-dir-a/agent-hello-2.md",
-			"sub-dir-a/agent-hello-2.md",
+			"./agent-script/agent-hello.devai",
+			"agent-script/agent-hello.devai",
+			"./sub-dir-a/agent-hello-2.devai",
+			"sub-dir-a/agent-hello-2.devai",
 			"sub-dir-a/",
 			"sub-dir-a",
 			"./sub-dir-a/",
@@ -166,11 +166,11 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./agent-script/agent-hello.md",
-			"agent-script/agent-hello.md",
-			"./sub-dir-a/agent-hello-2.md",
-			"sub-dir-a/agent-hello-2.md",
-			"sub-dir-a/../agent-script/agent-hello.md",
+			"./agent-script/agent-hello.devai",
+			"agent-script/agent-hello.devai",
+			"./sub-dir-a/agent-hello-2.devai",
+			"sub-dir-a/agent-hello-2.devai",
+			"sub-dir-a/../agent-script/agent-hello.devai",
 		];
 
 		// -- Exec & Check
@@ -236,9 +236,9 @@ mod tests {
 		// -- Fixtures
 		let paths = &[
 			//
-			"./agent-hello.md",
-			"agent-hello.md",
-			"./sub-dir-a/agent-hello-2.md",
+			"./agent-hello.devai",
+			"agent-hello.devai",
+			"./sub-dir-a/agent-hello-2.devai",
 			"./sub-dir-a/other-path",
 			"nofile.txt",
 			"./s rc/",
@@ -262,7 +262,7 @@ mod tests {
 		// This is the rust Path logic
 		let paths = &[
 			//
-			("./agent-hello.md", "."),
+			("./agent-hello.devai", "."),
 			("./", ""),
 			(".", ""),
 			("./sub-dir/file.txt", "./sub-dir"),

@@ -10,7 +10,7 @@ use value_ext::JsonValueExt;
 async fn test_run_agent_llm_c_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-llm/agent-simple.md", &runtime)?;
+	let agent = load_test_agent("./agent-llm/agent-simple.devai", &runtime)?;
 
 	// -- Execute
 	let res = run_test_agent(&runtime, &agent).await?;
@@ -26,7 +26,7 @@ async fn test_run_agent_llm_c_simple_ok() -> Result<()> {
 async fn test_run_agent_llm_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-llm/agent-on-file.md", &runtime)?;
+	let agent = load_test_agent("./agent-llm/agent-on-file.devai", &runtime)?;
 
 	// -- Execute
 	let on_file = SPath::new("./other/hello.txt")?;

@@ -3,6 +3,7 @@
 mod agent;
 mod cli;
 mod error;
+mod exec;
 mod hub;
 mod init;
 mod run;
@@ -14,71 +15,41 @@ mod types;
 #[cfg(test)]
 mod _test_support;
 
-use crate::cli::AppArgs;
+use crate::cli::CliArgs;
+use crate::exec::Executor;
 use crate::hub::get_hub;
 use crate::init::init_devai_files;
 use crate::tui::Tui;
 use clap::Parser;
 use error::{Error, Result};
+use std::time::Duration;
 
 // endregion: --- Modules
 
 #[tokio::main]
 async fn main() -> Result<()> {
 	// -- Command arguments
-	let args = AppArgs::parse(); // will fail early, but that’s okay.
-	let tui = Tui;
-	tui.start_printer()?;
+	let args = CliArgs::parse(); // will fail early, but that’s okay.
 
-	// Note: No need to print the error; the TUI will handle that.
-	match main_inner(args).await {
-		Ok(_) => (),
-		Err(err) => get_hub().publish(err).await,
-	};
+	// -- Start executor
+	let mut executor = Executor::new();
+	let executor_tx = executor.tx();
+	// TODO: todo probably want to move the spwn inside executor.start
+	tokio::spawn(async move {
+		executor.start().await;
+	});
 
-	// A temporary measure to ensure that the eventual error(s) get printed.
-	// TODO: Need to make this code more sound. Perhaps a .close.
-	tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+	// -- Start UI
+	let tui = Tui::new(executor_tx);
+	// This will wait all done
+	tui.start_with_args(args).await?;
 
-	Ok(())
-}
-
-async fn main_inner(args: AppArgs) -> Result<()> {
-	// -- Match the run
-	match args.cmd {
-		// Initialize the device for this folder
-		cli::Commands::Init(init_args) => {
-			init_devai_files(init_args.path.as_deref(), true).await?;
-		}
-
-		// Create a new agent
-		cli::Commands::New(new_args) => {
-			cli::exec_new(new_args, init_devai_files(None, false).await?).await?;
-		}
-
-		// Run an agent command
-		cli::Commands::Run(run_args) => {
-			// Note: Every run will initialize the files
-			// Execute the command
-			cli::exec_run(run_args, init_devai_files(None, false).await?).await?;
-		}
-
-		// Create a new agent
-		cli::Commands::NewSolo(new_args) => {
-			cli::exec_new_solo(new_args, init_devai_files(None, false).await?).await?;
-		}
-
-		// Run a solo agent
-		cli::Commands::Solo(solo_args) => {
-			// Execute the command
-			cli::exec_solo(solo_args, init_devai_files(None, false).await?).await?;
-		}
-
-		// List the available agents
-		cli::Commands::List => {
-			cli::exec_list(init_devai_files(None, false).await?).await?;
-		}
-	}
+	// -- End
+	// tokio wait for 100ms
+	// Note: This will allow the hub message to drain
+	//       This is a shorterm trick before we get the whole TUI app
+	tokio::time::sleep(Duration::from_millis(100)).await;
+	println!("\n     ---- Until next one, happy coding! ----");
 
 	Ok(())
 }

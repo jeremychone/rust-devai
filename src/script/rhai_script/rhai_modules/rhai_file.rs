@@ -212,15 +212,15 @@ mod tests {
 	#[tokio::test]
 	async fn test_file_load_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let fx_path = "./agent-script/agent-hello.md";
+		let fx_path = "./agent-script/agent-hello.devai";
 
 		// -- Exec
 		let res = run_reflective_agent(&format!(r#"return file::load("{fx_path}");"#), None).await?;
 
 		// -- Check
-		assert_contains(res.x_get_str("content")?, "from agent-hello.md");
+		assert_contains(res.x_get_str("content")?, "from agent-hello.devai");
 		assert_eq!(res.x_get_str("path")?, fx_path);
-		assert_eq!(res.x_get_str("name")?, "agent-hello.md");
+		assert_eq!(res.x_get_str("name")?, "agent-hello.devai");
 
 		Ok(())
 	}
@@ -230,7 +230,7 @@ mod tests {
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_file_save_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let fx_dest_path = "./.test_file_save_simple_ok/agent-hello.md";
+		let fx_dest_path = "./.test_file_save_simple_ok/agent-hello.devai";
 		let fx_content = "hello from test_file_save_simple_ok";
 
 		// -- Exec
@@ -278,8 +278,8 @@ mod tests {
 		// -- Check
 		let res_paths = to_res_paths(&res);
 		assert_eq!(res_paths.len(), 2, "result length");
-		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.md");
-		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.md");
+		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.devai");
+		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.devai");
 
 		Ok(())
 	}
@@ -295,8 +295,8 @@ mod tests {
 
 		// -- Check
 		// let res_paths = to_res_paths(&res);
-		assert_eq!(res.x_get_str("name")?, "agent-hello-2.md");
-		assert_eq!(res.x_get_str("path")?, "sub-dir-a/agent-hello-2.md");
+		assert_eq!(res.x_get_str("name")?, "agent-hello-2.devai");
+		assert_eq!(res.x_get_str("path")?, "sub-dir-a/agent-hello-2.devai");
 
 		Ok(())
 	}
