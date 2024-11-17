@@ -1,18 +1,35 @@
 use super::support::open_vscode;
 use crate::agent::{find_agent, Agent};
 use crate::cli::RunArgs;
+use crate::exec::ExecEvent;
 use crate::hub::get_hub; // Importing get_hub
 use crate::run::{run_command_agent, PathResolver, Runtime};
 use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
 use crate::types::FileRef;
-use crate::Result;
+use crate::{Error, Result};
 use simple_fs::{list_files, watch, SEventKind};
+use std::sync::Arc;
 
+/// A Context that hold the information to redo this run
 pub struct RunRedoCtx {
 	runtime: Runtime,
 	agent: Agent,
 	run_options: RunCommandOptions,
+}
+
+/// Exec for the Run command
+/// Might do a single run or a watch
+pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<Arc<RunRedoCtx>> {
+	// -- First exec
+	let redo_ctx: Arc<RunRedoCtx> = exec_run_first(run_args, dir_context).await?.into();
+
+	// -- If watch, we start the watch (will be spawned and return immediately)
+	if redo_ctx.run_options.base_run_config().watch() {
+		exec_run_watch(redo_ctx.clone());
+	}
+
+	Ok(redo_ctx)
 }
 
 pub async fn exec_run_first(run_args: RunArgs, dir_context: DirContext) -> Result<RunRedoCtx> {
@@ -41,7 +58,9 @@ pub async fn exec_run_first(run_args: RunArgs, dir_context: DirContext) -> Resul
 	})
 }
 
-pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) -> Result<()> {
+/// Redo the exec_run, with its context
+/// NOTE: The redo pattern just take one ctx arg, and handle its own error
+pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) {
 	let hub = get_hub();
 
 	let RunRedoCtx {
@@ -51,24 +70,32 @@ pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) -> Result<()> {
 	} = run_redo_ctx;
 
 	// make sure to reload the agent
-	let agent = find_agent(agent.name(), runtime.dir_context(), PathResolver::CurrentDir)?;
+	let agent = match find_agent(agent.name(), runtime.dir_context(), PathResolver::CurrentDir) {
+		Ok(agent) => agent,
+		Err(err) => {
+			hub.publish(err).await;
+			return;
+		}
+	};
 
 	match do_run(run_options, runtime, &agent).await {
 		Ok(_) => (),
-		Err(err) => hub.publish(format!("ERROR: {}", err)).await,
+		Err(err) => hub.publish(Error::cc("Error while redo", err)).await,
 	};
-
-	Ok(())
 }
 
-/// Exec for the Run command
-/// Might do a single run or a watch
-pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> {
-	let redo_ctx = exec_run_first(run_args, dir_context).await?;
-
-	if redo_ctx.run_options.base_run_config().watch() {
-		let watcher = watch(redo_ctx.agent.file_path())?;
-
+/// Exec the run watch.
+/// NOTE: This is not async, because we want to have it run in parallel
+///       so it will spawn it's own tokio task
+pub fn exec_run_watch(redo_ctx: Arc<RunRedoCtx>) -> Result<()> {
+	tokio::spawn(async move {
+		let watcher = match watch(redo_ctx.agent.file_path()) {
+			Ok(watcher) => watcher,
+			Err(err) => {
+				get_hub().publish(Error::from(err)).await;
+				return;
+			}
+		};
 		loop {
 			// Block until a message is received
 			match watcher.rx.recv_async().await {
@@ -78,10 +105,12 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 					for event in events {
 						match event.skind {
 							SEventKind::Modify => {
-								get_hub().publish("\n==== Agent file modified, running agent again\n").await;
+								let hub = get_hub();
+								hub.publish("\n==== Agent file modified, running command agent again\n").await;
 								// Make sure to change reload the agent
-								exec_run_redo(&redo_ctx).await?;
-								// NOTE: No need to notify for now
+								exec_run_redo(&redo_ctx).await;
+								// NOTE: here we trick the EndWatchRedo
+								hub.publish(ExecEvent::EndWatchRedo).await;
 							}
 							_ => {
 								// NOTE: No need to notify for now
@@ -96,8 +125,7 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 				}
 			}
 		}
-	}
-
+	});
 	Ok(())
 }
 

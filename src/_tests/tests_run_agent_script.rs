@@ -6,6 +6,7 @@ use crate::_test_support::{
 };
 use crate::types::FileRef;
 use simple_fs::SPath;
+use std::time::Duration;
 
 #[tokio::test]
 async fn test_run_agent_script_hello_ok() -> Result<()> {
@@ -26,9 +27,17 @@ async fn test_run_agent_script_hello_ok() -> Result<()> {
 	Ok(())
 }
 
-/// TODO: This test needs to be fixed. It sometimes fails, which is not an issue (yet) for production.
+/// NOTE: This test needs to be fixed. It sometimes fails, which is not an issue (yet) for production.
 ///       However, when multiple runtimes are used (as is the case for testing), the hub is shared, and the capture might be off.
-///       The hub will need to be per runtime, or there should be a way to ensure that all events are sent or something similar.
+///
+/// Future fix: The hub will need to be per runtime, or there should be a way to ensure that all events are sent or something similar.
+///
+/// Workaround for now:
+/// 1) use `cargo test -- --test-threads=1`
+/// 2) Or test this function individually
+///
+/// NOTE: This is not very critical, as for now, the devai ... commands run with a single Runtime at a time.
+///       
 #[tokio::test]
 async fn test_run_agent_script_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures

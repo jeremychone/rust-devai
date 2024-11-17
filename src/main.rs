@@ -19,7 +19,7 @@ use crate::cli::CliArgs;
 use crate::exec::Executor;
 use crate::hub::get_hub;
 use crate::init::init_devai_files;
-use crate::tui::Tui;
+use crate::tui::TuiApp;
 use clap::Parser;
 use error::{Error, Result};
 use std::time::Duration;
@@ -33,14 +33,14 @@ async fn main() -> Result<()> {
 
 	// -- Start executor
 	let mut executor = Executor::new();
-	let executor_tx = executor.tx();
+	let executor_tx = executor.command_tx();
 	// TODO: todo probably want to move the spwn inside executor.start
 	tokio::spawn(async move {
 		executor.start().await;
 	});
 
 	// -- Start UI
-	let tui = Tui::new(executor_tx);
+	let tui = TuiApp::new(executor_tx);
 	// This will wait all done
 	tui.start_with_args(args).await?;
 

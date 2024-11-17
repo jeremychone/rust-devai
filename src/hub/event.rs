@@ -22,6 +22,7 @@ pub enum HubEvent {
 	},
 	#[from]
 	Executor(ExecEvent),
+	Quit,
 }
 
 // region:    --- Froms

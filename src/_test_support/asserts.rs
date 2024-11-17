@@ -39,9 +39,9 @@ impl std::fmt::Debug for DataContainer<'_> {
 	fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 		match self {
 			DataContainer::Slice(slice) => write!(f, "{:?}", slice),
-			DataContainer::Str(string) => {
-				let s = truncate_with_ellipsis(string, 64, "...");
-				write!(f, "{:?}", s)
+			DataContainer::Str(s) => {
+				let s = truncate_with_ellipsis(s, 64, "...");
+				write!(f, "{s}")
 			}
 		}
 	}

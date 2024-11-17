@@ -28,7 +28,6 @@ impl HubCapture {
 								let mut content = content_clone.lock().await;
 								content.push_str(&msg);
 								content.push('\n');
-
 							}
 							HubEvent::Error { error } => {
 								let mut content = content_clone.lock().await;
@@ -37,6 +36,10 @@ impl HubCapture {
 							HubEvent::Executor(exec_event)=> {
 								let mut content = content_clone.lock().await;
 								content.push_str(&format!("Exec: {exec_event} \n"));
+							},
+							HubEvent::Quit => {
+								let mut content = content_clone.lock().await;
+								content.push_str("Quit\n");
 							}
 						}
 					}

@@ -49,6 +49,23 @@ IMPORTANT: The path should be at the parent folder of the `.devai/` directory."
 	List,
 }
 
+/// Custom function
+impl CliCommand {
+	/// Returns true if this CliCommand should be in interative mode.
+	///
+	/// For now, for all Run and Solo, the interactive is on by default, regardless if it watch.
+	pub fn is_interactive(&self) -> bool {
+		match self {
+			CliCommand::Run(run_args) => true,
+			CliCommand::Solo(solo_args) => true,
+			CliCommand::Init(init_args) => false,
+			CliCommand::New(new_args) => false,
+			CliCommand::NewSolo(new_solo_args) => false,
+			CliCommand::List => false,
+		}
+	}
+}
+
 // region:    --- Sub Command Args
 
 /// Arguments for the `run` subcommand

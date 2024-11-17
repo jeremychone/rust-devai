@@ -6,12 +6,12 @@ use tokio::sync::broadcast;
 
 /// Hub for receiving and broadcasting all OutEvent to the systems.
 /// Those events are Log Message, Error, and Stage(StagEvent) to capture each progress steps
-pub struct OutHub {
+pub struct Hub {
 	tx: Arc<broadcast::Sender<HubEvent>>,
 	_rx: broadcast::Receiver<HubEvent>,
 }
 
-impl OutHub {
+impl Hub {
 	pub fn new() -> Self {
 		let (tx, _rx) = broadcast::channel(10);
 		Self { tx: Arc::new(tx), _rx }
@@ -44,10 +44,10 @@ impl OutHub {
 	}
 }
 
-static OUT_HUB: LazyLock<OutHub> = LazyLock::new(OutHub::new);
+static HUB: LazyLock<Hub> = LazyLock::new(Hub::new);
 
-pub fn get_hub() -> &'static OutHub {
-	&OUT_HUB
+pub fn get_hub() -> &'static Hub {
+	&HUB
 }
 
 // Example usage in an async context
