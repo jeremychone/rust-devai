@@ -9,6 +9,8 @@ pub struct MdSection {
 }
 
 /// Constructors
+/// For now, constructe by
+#[allow(unused)]
 impl MdSection {
 	pub fn from_content(content: impl Into<String>) -> Self {
 		Self {
@@ -26,6 +28,7 @@ impl MdSection {
 
 /// Getters
 impl MdSection {
+	#[allow(unused)]
 	pub fn content(&self) -> &str {
 		&self.content
 	}
@@ -36,14 +39,14 @@ impl MdSection {
 }
 
 /// Transformers
-impl MdSection {
-	pub fn into_content(self) -> String {
-		self.content
-	}
-	pub fn into_content_and_heading(self) -> (String, Option<MdHeading>) {
-		(self.content, self.heading)
-	}
-}
+// impl MdSection {
+// 	pub fn into_content(self) -> String {
+// 		self.content
+// 	}
+// 	pub fn into_content_and_heading(self) -> (String, Option<MdHeading>) {
+// 		(self.content, self.heading)
+// 	}
+// }
 
 // region:    --- IntoDynamic
 

@@ -87,7 +87,7 @@ pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) {
 /// Exec the run watch.
 /// NOTE: This is not async, because we want to have it run in parallel
 ///       so it will spawn it's own tokio task
-pub fn exec_run_watch(redo_ctx: Arc<RunRedoCtx>) -> Result<()> {
+pub fn exec_run_watch(redo_ctx: Arc<RunRedoCtx>) {
 	tokio::spawn(async move {
 		let watcher = match watch(redo_ctx.agent.file_path()) {
 			Ok(watcher) => watcher,
@@ -126,7 +126,6 @@ pub fn exec_run_watch(redo_ctx: Arc<RunRedoCtx>) -> Result<()> {
 			}
 		}
 	});
-	Ok(())
 }
 
 /// Do one run

@@ -14,6 +14,7 @@ pub struct MdHeading {
 /// Getters
 impl MdHeading {
 	/// Return the full line with the `#`
+	#[allow(unused)]
 	pub fn line(&self) -> &str {
 		&self.content
 	}
@@ -65,7 +66,8 @@ impl MdHeading {
 		})
 	}
 
-	pub fn new(line: impl Into<String>) -> Option<Self> {
+	#[cfg(test)]
+	fn new(line: impl Into<String>) -> Option<Self> {
 		let line: String = line.into();
 		let mut chars = line.char_indices();
 
@@ -88,16 +90,6 @@ impl MdHeading {
 	}
 }
 
-/// Type Functions
-impl MdHeading {
-	/// Return the heading level if a line.
-	/// Returns None if not a heading format (i.e. does not start with `#` or the first series of `#` is not followed by a whitespace)
-	pub fn parse_level(line: &str) -> Option<usize> {
-		// Use helper function to determine heading level
-		MdHeading::parse_level_inner(&mut line.char_indices())
-	}
-}
-
 /// Helper type functions
 impl MdHeading {
 	/// Helper function to extract heading level and validate format.
@@ -105,7 +97,7 @@ impl MdHeading {
 	fn parse_level_inner(chars: &mut CharIndices<'_>) -> Option<usize> {
 		let mut level = 0;
 		// Count the number of leading `#` characters
-		for (i, c) in chars.by_ref() {
+		for (_, c) in chars.by_ref() {
 			// if leading whitespace, it's invalid
 			if level == 0 && c.is_whitespace() {
 				return None;

@@ -1,7 +1,6 @@
-use crate::cli::{self, CliArgs};
+use crate::cli::CliArgs;
 use crate::exec::{ExecCommand, ExecEvent};
 use crate::hub::{get_hub, HubEvent};
-use crate::init::init_devai_files;
 use crate::tui::in_reader::InReader;
 use crate::{Error, Result};
 use crossterm::cursor::MoveUp;
@@ -9,11 +8,8 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use crossterm::terminal::{Clear, ClearType};
 use crossterm::{cursor, execute, terminal};
 use std::io::Write as _;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::io::AsyncWriteExt;
 use tokio::sync::broadcast::Receiver;
-use tokio::sync::{mpsc, oneshot, watch};
+use tokio::sync::{mpsc, oneshot};
 
 /// Note: Right now the quick channel is a watch, but might be better to be a mpsc.
 #[derive(Debug)]
@@ -37,9 +33,9 @@ impl TuiApp {
 
 /// Starter
 impl TuiApp {
+	/// Start the app with arg
 	pub async fn start_with_args(self, cli_args: CliArgs) -> Result<()> {
-		// Make sure to subscribe early to have all events for the wait_and_exit
-		let mut hub_rx_for_exit = get_hub().subscriber();
+		let hub_rx_for_exit = get_hub().subscriber();
 
 		let interactive = cli_args.cmd.is_interactive();
 
@@ -162,8 +158,9 @@ impl TuiApp {
 
 		let (done_tx, done_rx) = oneshot::channel();
 		tokio::spawn(async move {
-			executor_tx.send(exec_cmd).await;
-			done_tx.send(());
+			// TODO: handle exceptions in both those cases
+			let _ = executor_tx.send(exec_cmd).await;
+			let _ = done_tx.send(());
 		});
 
 		Ok(done_rx)
@@ -191,7 +188,7 @@ impl TuiApp {
 
 fn safer_println(msg: &str, interactive: bool) {
 	if interactive {
-		let mut stdout = std::io::stdout();
+		let stdout = std::io::stdout();
 		let mut stdout_lock = stdout.lock(); // Locking stdout to avoid multiple open handles
 
 		for line in msg.split("\n") {
@@ -215,6 +212,8 @@ fn safer_println(msg: &str, interactive: bool) {
 }
 
 /// IMPORTANT: Assumes term is in raw mode
+/// For now, we keep this code in case. It works, but can be confusing to users.
+#[allow(unused)]
 fn clear_last_n_lines(n: u16) {
 	let mut stdout = std::io::stdout();
 	// Move cursor up two lines.

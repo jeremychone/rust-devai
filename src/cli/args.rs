@@ -56,11 +56,11 @@ impl CliCommand {
 	/// For now, for all Run and Solo, the interactive is on by default, regardless if it watch.
 	pub fn is_interactive(&self) -> bool {
 		match self {
-			CliCommand::Run(run_args) => true,
-			CliCommand::Solo(solo_args) => true,
-			CliCommand::Init(init_args) => false,
-			CliCommand::New(new_args) => false,
-			CliCommand::NewSolo(new_solo_args) => false,
+			CliCommand::Run(_) => true,
+			CliCommand::Solo(_) => true,
+			CliCommand::Init(_) => false,
+			CliCommand::New(_) => false,
+			CliCommand::NewSolo(_) => false,
 			CliCommand::List => false,
 		}
 	}

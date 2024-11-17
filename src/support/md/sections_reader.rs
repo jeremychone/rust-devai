@@ -2,7 +2,7 @@ use crate::types::{MdHeading, MdSection, ParseResponse};
 use crate::{Error, Result};
 use simple_fs::SFile;
 use std::fs::File;
-use std::io::{BufRead, BufReader, Cursor, Read};
+use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 
 /// This function opens the file and creates the reader, then passes it to `read_md_section`
@@ -23,8 +23,9 @@ pub fn read_file_md_sections(path: impl AsRef<Path>, ref_sections: &[&str]) -> R
 #[derive(Debug)]
 enum LineData {
 	Content(String),
-	Heading(MdHeading), // with level
-	Blockquote(String), // with the level
+	Heading(MdHeading),
+	#[allow(unused)] // does not hurt to keep it for now.
+	Blockquote(String),
 }
 
 #[derive(Debug)]
@@ -87,12 +88,9 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 			// TODO: needs to stream the content array to be faster and avoid double allocation
 			//       Also we ensure last single new line
 			let content = content.join("\n").trim().to_string();
-			sections.push(MdSection {
-				content,
-				heading: current_captured_heading.take(),
-			})
+			sections.push(MdSection::new(content, current_captured_heading.take()))
 		}
-	};
+	}
 
 	// let mut line_it = reader.lines();
 	// Iterate through each line in the reader and push it into the capture vector
@@ -148,7 +146,7 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 				}
 			}
 			// Otherwise we change the previous state
-			LineData::Content(line) => match action_state {
+			LineData::Content(_) => match action_state {
 				ActionState::NoCapture => {
 					if !passed_first_heading {
 						if let Some(ref_idx) = ref_headings_level_0_fn() {
@@ -242,7 +240,7 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 #[cfg(test)]
 fn read_string_md_sections(content: impl Into<String>, sections: &[&str]) -> Result<Vec<MdSection>> {
 	// Use Cursor to wrap the String and provide it as a reader
-	let reader = Cursor::new(content.into());
+	let reader = std::io::Cursor::new(content.into());
 
 	// Call read_md_section with the reader to perform the actual reading
 	read_md_sections(reader, sections)

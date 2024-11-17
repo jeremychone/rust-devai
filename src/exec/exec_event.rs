@@ -1,6 +1,5 @@
 //! The executor event
 
-use crate::hub::HubEvent;
 use derive_more::derive::Display;
 
 /// This is the status event sent by the executor to the Hub.

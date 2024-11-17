@@ -17,8 +17,6 @@ mod _test_support;
 
 use crate::cli::CliArgs;
 use crate::exec::Executor;
-use crate::hub::get_hub;
-use crate::init::init_devai_files;
 use crate::tui::TuiApp;
 use clap::Parser;
 use error::{Error, Result};
@@ -36,7 +34,9 @@ async fn main() -> Result<()> {
 	let executor_tx = executor.command_tx();
 	// TODO: todo probably want to move the spwn inside executor.start
 	tokio::spawn(async move {
-		executor.start().await;
+		if let Err(err) = executor.start().await {
+			println!("Error starting the executor - {err}");
+		}
 	});
 
 	// -- Start UI

@@ -6,7 +6,6 @@ use crate::_test_support::{
 };
 use crate::types::FileRef;
 use simple_fs::SPath;
-use std::time::Duration;
 
 #[tokio::test]
 async fn test_run_agent_script_hello_ok() -> Result<()> {

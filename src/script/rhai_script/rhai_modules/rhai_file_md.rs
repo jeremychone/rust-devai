@@ -8,17 +8,12 @@
 //! ### Functions
 //! * `file::load_md_sections(path: string, headings: array) -> array`
 
-use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
 use crate::script::rhai_script::dynamic_helpers::dynamic_into_strings;
 use crate::script::IntoDynamic;
 use crate::support::md::read_file_md_sections;
-use crate::types::{FileRecord, FileRef};
-use crate::{Error, Result};
 use rhai::plugin::RhaiResult;
-use rhai::{Array, Dynamic, EvalAltResult, FuncRegistration, Module};
-use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
-use std::fs::write;
+use rhai::{Dynamic, FuncRegistration, Module};
 
 pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 	// Create a module for text functions
@@ -53,7 +48,7 @@ pub fn rhai_module(runtime_context: &RuntimeContext) -> Module {
 /// # Returns
 ///
 /// An `Array` of sections, each containing the heading and its content.
-fn load_md_sections(ctx: &RuntimeContext, path: &str, mut headings: Dynamic) -> RhaiResult {
+fn load_md_sections(ctx: &RuntimeContext, path: &str, headings: Dynamic) -> RhaiResult {
 	// Convert `headings` to a `Vec<String>`
 	let headings: Vec<String> = dynamic_into_strings(headings, "file::load_md_sections headings argument")?;
 
@@ -74,9 +69,7 @@ fn load_md_sections(ctx: &RuntimeContext, path: &str, mut headings: Dynamic) -> 
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{assert_contains, assert_not_contains, run_reflective_agent, SANDBOX_01_DIR};
-	use serde_json::Value;
-	use std::path::Path;
+	use crate::_test_support::{assert_contains, assert_not_contains, run_reflective_agent};
 	use value_ext::JsonValueExt;
 
 	#[tokio::test]
@@ -111,19 +104,6 @@ mod tests {
 
 		Ok(())
 	}
-
-	// region:    --- Support for Tests
-
-	fn to_res_paths(res: &Value) -> Vec<&str> {
-		res.as_array()
-			.ok_or("should have array of path")
-			.unwrap()
-			.iter()
-			.map(|v| v.x_get_as::<&str>("path").unwrap_or_default())
-			.collect::<Vec<&str>>()
-	}
-
-	// endregion: --- Support for Tests
 }
 
 // endregion: --- Tests

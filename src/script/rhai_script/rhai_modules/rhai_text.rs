@@ -19,7 +19,7 @@ use crate::support::html::decode_html_entities;
 use crate::support::strings::{self, truncate_with_ellipsis};
 use crate::Error;
 use rhai::plugin::RhaiResult;
-use rhai::{Dynamic, FuncRegistration, ImmutableString, Module};
+use rhai::{Dynamic, FuncRegistration, Module};
 use std::borrow::Cow;
 use std::ops::Deref;
 

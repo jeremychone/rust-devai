@@ -3,7 +3,8 @@
 
 use crate::exec::exec_command::ExecCommand;
 use crate::exec::{
-	exec_list, exec_new, exec_new_solo, exec_run, exec_run_redo, exec_solo, ExecEvent, RunRedoCtx, SoloRedoCtx,
+	exec_list, exec_new, exec_new_solo, exec_run, exec_run_redo, exec_solo, exec_solo_redo, ExecEvent, RunRedoCtx,
+	SoloRedoCtx,
 };
 use crate::hub::get_hub;
 use crate::init::init_devai_files;
@@ -87,7 +88,7 @@ impl Executor {
 					};
 					match redo_ctx {
 						RedoCtx::RunRedoCtx(redo_ctx) => exec_run_redo(redo_ctx).await,
-						RedoCtx::SoloRedoCtx(arc) => todo!(),
+						RedoCtx::SoloRedoCtx(redo_ctx) => exec_solo_redo(redo_ctx).await,
 					}
 				}
 			}

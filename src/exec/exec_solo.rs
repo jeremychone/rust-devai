@@ -1,7 +1,7 @@
 use super::support::open_vscode;
 use crate::agent::{get_solo_and_target_path, load_solo_agent, Agent};
 use crate::cli::SoloArgs;
-use crate::exec::{ExecEvent, RunRedoCtx};
+use crate::exec::ExecEvent;
 use crate::hub::get_hub;
 use crate::run::{run_solo_agent, PathResolver, Runtime};
 use crate::run::{DirContext, RunSoloOptions};
@@ -82,7 +82,7 @@ async fn exec_solo_first(solo_args: SoloArgs, dir_context: DirContext) -> Result
 	})
 }
 
-fn exec_solo_watch(solo_ctx: Arc<SoloRedoCtx>) -> Result<()> {
+fn exec_solo_watch(solo_ctx: Arc<SoloRedoCtx>) {
 	tokio::spawn(async move {
 		let watcher = match watch(solo_ctx.agent.file_path()) {
 			Ok(watcher) => watcher,
@@ -122,7 +122,6 @@ fn exec_solo_watch(solo_ctx: Arc<SoloRedoCtx>) -> Result<()> {
 			}
 		}
 	});
-	Ok(())
 }
 
 // endregion: --- Privates

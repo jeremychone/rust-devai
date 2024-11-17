@@ -19,7 +19,7 @@ use crate::agent::find_agent;
 use crate::run::{run_command_agent, RuntimeContext};
 use crate::run::{PathResolver, RunBaseOptions};
 use crate::script::rhai_script::dynamic_helpers::{dynamics_to_values, value_to_dynamic};
-use crate::script::{DynamicMap, IntoDynamic};
+use crate::script::DynamicMap;
 use crate::Error;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};

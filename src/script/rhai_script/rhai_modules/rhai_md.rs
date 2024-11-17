@@ -12,7 +12,7 @@ use crate::script::IntoDynamic;
 use crate::support::md;
 use crate::types::MdBlock;
 use rhai::plugin::RhaiResult;
-use rhai::{Dynamic, FuncRegistration, Module};
+use rhai::{FuncRegistration, Module};
 
 pub fn rhai_module() -> Module {
 	// Create a module for text functions

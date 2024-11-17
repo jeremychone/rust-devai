@@ -1,5 +1,5 @@
 use crossterm::cursor::{Hide, Show};
-use crossterm::event::{self, Event, KeyCode, KeyEvent};
+use crossterm::event::{self, Event, KeyEvent};
 use crossterm::{execute, terminal};
 use flume::{Receiver, Sender};
 use std::time::Duration;
@@ -29,7 +29,7 @@ impl InReader {
 
 		tokio::spawn(async move {
 			loop {
-				/// FIXME: remove unwrap
+				// FIXME: remove unwrap
 				if event::poll(Duration::from_millis(10)).expect("Could not read/poll stdin") {
 					if let Ok(Event::Key(key_event)) = event::read() {
 						//

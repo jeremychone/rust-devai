@@ -50,7 +50,7 @@ pub fn ensure_single_ending_newline(mut text: String) -> String {
 }
 
 pub fn replace_markers(content: &str, sections: &[&str], marker_pair: &(&str, &str)) -> Result<String> {
-	let mut lines = content.lines();
+	let lines = content.lines();
 	let mut section_iter = sections.iter();
 	let mut new_content: Vec<&str> = Vec::new();
 
