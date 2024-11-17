@@ -1,6 +1,7 @@
 // region:    --- Modules
 
 mod in_reader;
+mod tui_elem;
 
 mod tui_app;
 

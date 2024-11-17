@@ -2,6 +2,7 @@ use crate::cli::CliArgs;
 use crate::exec::{ExecCommand, ExecEvent};
 use crate::hub::{get_hub, HubEvent};
 use crate::tui::in_reader::InReader;
+use crate::tui::tui_elem;
 use crate::{Error, Result};
 use crossterm::cursor::MoveUp;
 use crossterm::event::{KeyCode, KeyModifiers};
@@ -88,7 +89,7 @@ impl TuiApp {
 				while let Ok(key_event) = in_rx.recv_async().await {
 					match key_event.code {
 						// -- Redo
-						KeyCode::Char('r') => {
+						KeyCode::Char('R') | KeyCode::Char('r') => {
 							// clear_last_n_lines(1);
 							safer_println("\n-- R pressed - Redo\n", interactive);
 							if let Err(err) = exec_tx.send(ExecCommand::Redo).await {
@@ -97,14 +98,14 @@ impl TuiApp {
 						}
 
 						// -- Quit
-						KeyCode::Char('q') => hub.publish(HubEvent::Quit).await,
+						KeyCode::Char('Q') | KeyCode::Char('q') => hub.publish(HubEvent::Quit).await,
 
 						// -- Ctrl c
 						KeyCode::Char('c') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
 							hub.publish(HubEvent::Quit).await;
 						}
 
-						_ => continue,
+						_ => (),
 					}
 				}
 			});
@@ -130,7 +131,8 @@ impl TuiApp {
 					}
 					HubEvent::Executor(exec_event) => {
 						if let (ExecEvent::EndExec | ExecEvent::EndWatchRedo, true) = (exec_event, interactive) {
-							safer_println("\nR: Redo   |   Q: Quit", interactive);
+							// safer_println("\n[ r ]: Redo   |   [ q ]: Quit", interactive);
+							tui_elem::print_bottom_bar();
 						}
 					}
 					HubEvent::Quit => {
