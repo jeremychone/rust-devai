@@ -9,14 +9,17 @@ use crate::types::FileRef;
 use crate::Result;
 use simple_fs::{list_files, watch, SEventKind};
 
-/// Exec for the Run command
-/// Might do a single run or a watch
-pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> {
+pub struct RunRedoCtx {
+	runtime: Runtime,
+	agent: Agent,
+	run_options: RunCommandOptions,
+}
+
+pub async fn exec_run_first(run_args: RunArgs, dir_context: DirContext) -> Result<RunRedoCtx> {
 	let hub = get_hub();
 
 	let cmd_agent_name = &run_args.cmd_agent_name;
 
-	// -- Get the AI client and agent
 	let runtime = Runtime::new(dir_context)?;
 	let agent = find_agent(cmd_agent_name, runtime.dir_context(), PathResolver::CurrentDir)?;
 
@@ -31,26 +34,53 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 		Err(err) => hub.publish(format!("ERROR: {}", err)).await,
 	};
 
-	if run_options.base_run_config().watch() {
-		let watcher = watch(agent.file_path())?;
-		// Continuously listen for events
+	Ok(RunRedoCtx {
+		runtime,
+		agent,
+		run_options,
+	})
+}
+
+pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) -> Result<()> {
+	let hub = get_hub();
+
+	let RunRedoCtx {
+		runtime,
+		agent,
+		run_options,
+	} = run_redo_ctx;
+
+	// make sure to reload the agent
+	let agent = find_agent(agent.name(), runtime.dir_context(), PathResolver::CurrentDir)?;
+
+	match do_run(run_options, runtime, &agent).await {
+		Ok(_) => (),
+		Err(err) => hub.publish(format!("ERROR: {}", err)).await,
+	};
+
+	Ok(())
+}
+
+/// Exec for the Run command
+/// Might do a single run or a watch
+pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> {
+	let redo_ctx = exec_run_first(run_args, dir_context).await?;
+
+	if redo_ctx.run_options.base_run_config().watch() {
+		let watcher = watch(redo_ctx.agent.file_path())?;
+
 		loop {
 			// Block until a message is received
-			match watcher.rx.recv() {
+			match watcher.rx.recv_async().await {
 				Ok(events) => {
 					// Process each event in the vector
 					// TODO: Here we probably do not need to loop through the event, just check that there is at least one Modify
 					for event in events {
 						match event.skind {
 							SEventKind::Modify => {
-								hub.publish("\n==== Agent file modified, running agent again\n").await;
+								get_hub().publish("\n==== Agent file modified, running agent again\n").await;
 								// Make sure to change reload the agent
-								let agent = find_agent(agent.name(), runtime.dir_context(), PathResolver::CurrentDir)?;
-
-								match do_run(&run_options, &runtime, &agent).await {
-									Ok(_) => (),
-									Err(err) => hub.publish(format!("ERROR: {}", err)).await,
-								}
+								exec_run_redo(&redo_ctx).await?;
 								// NOTE: No need to notify for now
 							}
 							_ => {
@@ -61,7 +91,7 @@ pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<()> 
 				}
 				Err(e) => {
 					// Handle any errors related to receiving the message
-					hub.publish(format!("Error receiving event: {:?}", e)).await;
+					get_hub().publish(format!("Error receiving event: {:?}", e)).await;
 					break;
 				}
 			}

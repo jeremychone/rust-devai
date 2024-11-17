@@ -38,7 +38,7 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<(
 		// And watch for modifications
 		let watcher = watch(agent.file_path())?;
 		loop {
-			match watcher.rx.recv() {
+			match watcher.rx.recv_async().await {
 				Ok(events) => {
 					// Reload the agent
 					let agent = load_solo_agent(agent.file_path(), runtime.dir_context())?;

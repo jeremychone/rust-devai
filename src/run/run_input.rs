@@ -126,7 +126,9 @@ pub async fn run_agent_input(
 		let chat_res = client
 			.exec_chat(agent.genai_model(), chat_req, Some(agent.genai_chat_options()))
 			.await?;
+
 		hub.publish("<- ai_response content received").await;
+
 		let chat_res_mode_iden = chat_res.model_iden.clone();
 		let ai_response_content = chat_res.content_text_into_string().unwrap_or_default();
 

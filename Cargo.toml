@@ -17,6 +17,7 @@ unused = { level = "allow", priority = -1 } # For exploratory dev.
 [dependencies]
 # -- Async
 tokio = { version = "1", features = ["full"] }
+flume = "0.11.1"
 # -- AI
 genai = "0.1.11"
 # -- Json & Data Files
@@ -29,6 +30,7 @@ toml = "0.8"
 markup5ever_rcdom = "=0.5.0-unofficial"
 html5ever = "0.29"
 logos = "0.14"
+aho-corasick = "1.1.3"
 # -- Template & Scripting
 rhai = {version = "1.20", features = ["sync", "serde"]}
 handlebars = "6"
@@ -36,7 +38,8 @@ handlebars = "6"
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 # -- Files
-simple-fs = { version = "0.2.4" }
+# simple-fs = { version = "0.2.4" }
+simple-fs = { path = "/Users/jeremychone/_jeremy/_rust/utils/rust-simple-fs" }
 # -- Web
 reqwest = {version = "0.12", features = ["json"]}
 # -- Others
@@ -45,7 +48,7 @@ strum = { version = "0.26", features = ["derive"] }
 keyring = {version = "3", features = ["apple-native"]}
 html-escape = "0.2"
 strsim = "0.11"
-aho-corasick = "1.1.3"
-flume = "0.11.1"
+
+
 
 

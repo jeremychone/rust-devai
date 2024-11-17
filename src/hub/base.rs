@@ -13,12 +13,17 @@ pub struct OutHub {
 
 impl OutHub {
 	pub fn new() -> Self {
-		let (tx, _rx) = broadcast::channel(100);
+		let (tx, _rx) = broadcast::channel(10);
 		Self { tx: Arc::new(tx), _rx }
 	}
 
 	pub async fn publish(&self, event: impl Into<HubEvent>) {
-		let _ = self.tx.send(event.into());
+		let event = event.into();
+
+		match self.tx.send(event) {
+			Ok(_) => (),
+			Err(err) => println!("DEVAI INTERNAL ERROR - failed to send event to hub - {err}"),
+		}
 	}
 
 	pub fn publish_sync(&self, event: impl Into<HubEvent>) {

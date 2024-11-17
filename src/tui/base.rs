@@ -3,8 +3,10 @@ use crate::exec::{ExecCommand, ExecEvent};
 use crate::hub::{get_hub, HubEvent};
 use crate::init::init_devai_files;
 use crate::Result;
+use std::io::Write as _;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::io::AsyncWriteExt;
 use tokio::sync::broadcast::Receiver;
 use tokio::sync::{mpsc, oneshot, watch};
 
@@ -17,9 +19,6 @@ pub struct Tui {
 /// Constructor
 impl Tui {
 	pub fn new(executor_tx: mpsc::Sender<ExecCommand>) -> Self {
-		let (quit_tx, quit_rx) = watch::channel(());
-		let quit_tx = Arc::new(quit_tx);
-
 		Self { executor_tx }
 	}
 }
@@ -59,12 +58,14 @@ impl Tui {
 
 		tokio::spawn(async move {
 			while let Ok(event) = rx.recv().await {
+				let mut stdout = tokio::io::stdout();
+
 				match event {
 					HubEvent::Message(msg) => {
-						println!("{msg}");
+						stdout.write_all(format!("{msg}\n").as_bytes()).await;
 					}
 					HubEvent::Error { error } => {
-						println!("Error: {error}");
+						stdout.write_all(format!("Error: {error}\n").as_bytes()).await;
 					}
 					HubEvent::Executor(exec_event) => {
 						// For now, we do not print those events.
@@ -72,8 +73,7 @@ impl Tui {
 					}
 				}
 
-				// Avoid starvation
-				tokio::task::yield_now().await;
+				stdout.flush().await;
 			}
 		});
 
