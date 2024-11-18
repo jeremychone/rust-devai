@@ -1,4 +1,4 @@
-use crate::script::DynamicMap;
+use crate::script::DynaMap;
 use crate::Result;
 use rhai::Dynamic;
 use serde::Serialize;
@@ -56,7 +56,7 @@ impl TryFrom<Dynamic> for FileRecord {
 	type Error = crate::Error;
 
 	fn try_from(value: Dynamic) -> Result<Self> {
-		let map = DynamicMap::from_dynamic(value)?;
+		let map = DynaMap::from_dynamic(value)?;
 		Ok(FileRecord {
 			name: map.get("name")?,
 			path: map.get("path")?,

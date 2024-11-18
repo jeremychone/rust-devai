@@ -1,4 +1,4 @@
-use crate::script::{DynamicMap, IntoDynamic};
+use crate::script::{DynaMap, IntoDynamic};
 use crate::types::MdHeading;
 use rhai::Dynamic;
 
@@ -52,7 +52,7 @@ impl MdSection {
 
 impl IntoDynamic for MdSection {
 	fn into_dynamic(self) -> Dynamic {
-		let map = DynamicMap::default()
+		let map = DynaMap::default()
 			.insert("heading_level", self.heading().map(|h| h.level()))
 			.insert("heading_name", self.heading().map(|h| h.name()))
 			.insert("heading_content", self.heading.map(|h| h.into_content()))

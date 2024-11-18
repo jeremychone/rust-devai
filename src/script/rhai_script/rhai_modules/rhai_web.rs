@@ -9,7 +9,7 @@
 // * `web::get(url: string) -> {content: null | string, status: number, url: string, success: bool, error: null | string}`
 
 use crate::hub::get_hub;
-use crate::script::DynamicMap;
+use crate::script::DynaMap;
 use crate::Error;
 use reqwest::redirect::Policy;
 use reqwest::Client;
@@ -90,7 +90,7 @@ fn get(url: &str) -> RhaiResult {
 					if success {
 						// TODO: needs to reformat this error to match the rhai function
 						let content = response.text().await.map_err(Error::Reqwest)?;
-						let res: Dynamic = DynamicMap::default()
+						let res: Dynamic = DynaMap::default()
 							.insert("success", true)
 							.insert("status", status_code)
 							.insert("url", url)
@@ -98,7 +98,7 @@ fn get(url: &str) -> RhaiResult {
 							.into();
 						Ok(res)
 					} else {
-						let res: Dynamic = DynamicMap::default()
+						let res: Dynamic = DynaMap::default()
 							.insert("success", false)
 							.insert("status", status_code)
 							.insert("url", url)
@@ -109,7 +109,7 @@ fn get(url: &str) -> RhaiResult {
 				}
 				Err(err) => {
 					let status = err.status().map(|s| s.as_u16());
-					let map = DynamicMap::default()
+					let map = DynaMap::default()
 						.insert("success", false)
 						.insert("status", status)
 						.insert("url", url)

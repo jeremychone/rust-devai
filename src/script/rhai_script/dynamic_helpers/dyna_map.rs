@@ -3,25 +3,26 @@ use derive_more::derive::From;
 use rhai::Dynamic;
 use std::any::Any;
 
+/// Note: Cute name to differentiate from Rhai official types.
 #[derive(Default, Debug)]
-pub struct DynamicMap(rhai::Map);
+pub struct DynaMap(rhai::Map);
 
 /// Constructors & Transformers
-impl DynamicMap {
-	pub fn from_dynamic(dynamic: Dynamic) -> Result<DynamicMap, DynamicSupportError> {
+impl DynaMap {
+	pub fn from_dynamic(dynamic: Dynamic) -> Result<DynaMap, DynamicSupportError> {
 		let map = dynamic.try_cast::<rhai::Map>().ok_or(DynamicSupportError::CastFailNotAMap)?;
 
-		Ok(DynamicMap(map))
+		Ok(DynaMap(map))
 	}
 }
 
-impl IntoDynamic for DynamicMap {
+impl IntoDynamic for DynaMap {
 	fn into_dynamic(self) -> Dynamic {
 		Dynamic::from(self.0)
 	}
 }
 
-impl DynamicMap {
+impl DynaMap {
 	pub fn insert(mut self, name: &'static str, value: impl IntoDynamic) -> Self {
 		self.0.insert(name.into(), value.into_dynamic());
 		self
@@ -53,8 +54,8 @@ impl DynamicMap {
 	}
 }
 
-impl From<DynamicMap> for Dynamic {
-	fn from(val: DynamicMap) -> Self {
+impl From<DynaMap> for Dynamic {
+	fn from(val: DynaMap) -> Self {
 		val.into_dynamic()
 	}
 }

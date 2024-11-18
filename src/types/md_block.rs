@@ -1,4 +1,4 @@
-use crate::script::{DynamicMap, IntoDynamic};
+use crate::script::{DynaMap, IntoDynamic};
 use rhai::Dynamic;
 use serde::Serialize;
 
@@ -26,7 +26,7 @@ impl IntoDynamic for MdBlock {
 	/// Converts the `MdBlock` instance into a Rhai `Dynamic` type.
 	/// Note: Kind of needed, because Dynamic has a `from(..)` which make the into a little inconvenient.
 	fn into_dynamic(self) -> Dynamic {
-		let map = DynamicMap::default().insert("lang", self.lang).insert("content", self.content);
+		let map = DynaMap::default().insert("lang", self.lang).insert("content", self.content);
 		map.into_dynamic()
 	}
 }
