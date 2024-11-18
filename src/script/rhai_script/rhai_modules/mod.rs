@@ -1,5 +1,6 @@
 // region:    --- Modules
 
+pub mod rhai_cmd;
 pub mod rhai_devai;
 pub mod rhai_file;
 pub mod rhai_file_md;
