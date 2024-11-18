@@ -110,9 +110,11 @@ impl Executor {
 					self.current_redo_ctx = Some(redo.into());
 					hub.publish(ExecEvent::RunEnd).await;
 				}
+
 				ExecCommand::RunSoloAgent(solo_args) => {
 					hub.publish(ExecEvent::RunStart).await;
-					exec_solo(solo_args, init_devai_files(None, false).await?).await?;
+					let redo = exec_solo(solo_args, init_devai_files(None, false).await?).await?;
+					self.current_redo_ctx = Some(redo.into());
 					hub.publish(ExecEvent::RunEnd).await;
 				}
 
