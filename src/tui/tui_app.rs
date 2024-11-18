@@ -136,7 +136,7 @@ impl TuiApp {
 						safer_println(&format!("Error: {error}"), interactive);
 					}
 					HubEvent::Executor(exec_event) => {
-						if let (ExecEvent::RunStart | ExecEvent::RunEnd, true) = (exec_event, interactive) {
+						if let (ExecEvent::RunEnd, true) = (exec_event, interactive) {
 							// safer_println("\n[ r ]: Redo   |   [ q ]: Quit", interactive);
 							tui_elem::print_bottom_bar();
 						}
