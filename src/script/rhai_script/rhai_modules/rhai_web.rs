@@ -11,6 +11,8 @@
 use crate::hub::get_hub;
 use crate::script::DynamicMap;
 use crate::Error;
+use reqwest::redirect::Policy;
+use reqwest::Client;
 use rhai::plugin::RhaiResult;
 use rhai::{Dynamic, FuncRegistration, Module};
 
@@ -29,11 +31,41 @@ pub fn rhai_module() -> Module {
 
 /// ## RHAI Documentation
 /// ```rhai
-/// web::get(url: string) -> {content: null | string, status: number, url: string, success: bool, error: null | string}
+/// web::get(url: string) -> WebGetResponse (throws: WebGetException)
 /// ```
 ///
 /// This function is used to perform a GET request to the specified URL.
-/// It returns a map containing the content of the response, the status code, the URL, a success flag, and an error message if applicable.
+///
+/// By default, it will follows up to 5 redirects.
+///
+/// > Note: For now, only support text based content type.
+///
+/// ### Returns (WebGetResponse)
+///
+/// Returns when the http response status code is 2xx range (will follow up to 5 redirects).
+///
+/// ```
+/// {
+///   success: true,    // true when the "final" http request is successful (2xx range)
+///   status:  number,  // The status code returned by the http request
+///   url:     string,  // The full URL requested
+///   content: string,  // The text content
+/// }
+/// ```
+///
+/// ### Exception (WebGetException)
+///
+/// ```
+/// {
+///   success: false,   // false when the http request is not sucessful
+///   status?: number,  // (optional) The status code returned by the http request
+///   url:     string,  // The full URL requested
+///   error:   string,  // The text content
+/// }
+/// ```
+///
+///
+/// ### Example
 ///
 /// For example, in a Rhai code block:
 ///
@@ -42,25 +74,41 @@ pub fn rhai_module() -> Module {
 /// let result = web::get("https://example.com");
 /// // result = { content: "HTML content here", status: 200, url: "https://example.com", success: true, error: null }
 ///
-/// // When the request fails
-/// let result = web::get("https://invalid-url.com");
-/// // result = { content: null, status: null, url: "https://invalid-url.com", success: false, error: "Error message here" }
 /// ```
 fn get(url: &str) -> RhaiResult {
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
 	let res: Result<Dynamic, Error> = tokio::task::block_in_place(|| {
 		rt.block_on(async {
-			let res: Dynamic = match reqwest::get(url).await {
+			let client = Client::builder()
+				.redirect(Policy::limited(5)) // Set to follow up to 5 redirects
+				.build()?;
+
+			let res: Result<Dynamic, Error> = match client.get(url).send().await {
 				Ok(response) => {
 					//
-					let status = response.status().as_u16() as i64;
-					let content = response.text().await.map_err(Error::Reqwest)?;
-					DynamicMap::default()
-						.insert("success", true)
-						.insert("status", status)
-						.insert("url", url)
-						.insert("content", content)
-						.into()
+					let status = response.status();
+					let success = status.is_success();
+					let status_code = response.status().as_u16() as i64;
+
+					if success {
+						// TODO: needs to reformat this error to match the rhai function
+						let content = response.text().await.map_err(Error::Reqwest)?;
+						let res: Dynamic = DynamicMap::default()
+							.insert("success", true)
+							.insert("status", status_code)
+							.insert("url", url)
+							.insert("content", content)
+							.into();
+						Ok(res)
+					} else {
+						let res: Dynamic = DynamicMap::default()
+							.insert("success", false)
+							.insert("status", status_code)
+							.insert("url", url)
+							.insert("error", format!("Not a 2xx status code ({status_code})"))
+							.into();
+						Err(Error::RhaiDynamic(res))
+					}
 				}
 				Err(err) => {
 					let status = err.status().map(|s| s.as_u16());
@@ -68,12 +116,14 @@ fn get(url: &str) -> RhaiResult {
 						.insert("success", false)
 						.insert("status", status)
 						.insert("url", url)
-						.insert("content", ())
 						.insert("error", err.to_string());
-					map.into()
+					let res: Dynamic = map.into();
+					Err(Error::RhaiDynamic(res))
 				}
 			};
-			Ok(res)
+
+			// return the Result<Dynamic, Error>
+			res
 		})
 	});
 
@@ -125,17 +175,19 @@ return web::get(url);
 		// -- Setup & Fixtures
 		let fx_script = r#"
 let url = "https://this-cannot-go/anywhere-or-can-it.devai";		
-return web::get(url);
+try{
+ web::get(url);
+ return "nothing"; // should not happen
+} catch (ex) {
+ return ex
+}
 		"#;
 
 		// -- Exec
 		let res = run_reflective_agent(fx_script, None).await?;
 
 		// -- Check
-		assert!(
-			matches!(res.get("content"), Some(Value::Null)),
-			"content should be null"
-		);
+		assert!(res.get("content").is_none(), "content should not be a property");
 		assert!(matches!(res.get("status"), Some(Value::Null)), "status should be null");
 		assert_eq!(res.x_get_str("url")?, "https://this-cannot-go/anywhere-or-can-it.devai");
 		assert!(!res.x_get_bool("success")?, "success should be false");

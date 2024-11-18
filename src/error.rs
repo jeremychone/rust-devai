@@ -1,5 +1,6 @@
 use derive_more::derive::Display;
 use derive_more::From;
+use rhai::Dynamic;
 use tokio::runtime::TryCurrentError;
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -20,6 +21,11 @@ pub enum Error {
 		cause: String,
 	},
 
+	// -- Rhai Custom
+	// This is when we already formatted the error in Rhai for Rhai
+	#[from]
+	RhaiDynamic(Dynamic),
+
 	// -- TokioSync
 	TokioTryCurrent(TryCurrentError),
 
@@ -36,7 +42,7 @@ pub enum Error {
 	Serde(serde_json::Error),
 	#[from]
 	#[display("Rhai Execution error:\n{_0}")]
-	Rhai(rhai::EvalAltResult),
+	RhaiAltResult(rhai::EvalAltResult),
 	#[from]
 	Handlebars(handlebars::RenderError),
 	#[from]
@@ -64,16 +70,20 @@ pub enum Error {
 
 impl From<Box<rhai::EvalAltResult>> for Error {
 	fn from(val: Box<rhai::EvalAltResult>) -> Self {
-		Self::Rhai(*val)
+		Self::RhaiAltResult(*val)
 	}
 }
 
 impl From<Error> for Box<rhai::EvalAltResult> {
 	fn from(devai_error: Error) -> Self {
-		Box::new(rhai::EvalAltResult::ErrorRuntime(
-			format!("Rhai Call error. Cause: {devai_error}").into(),
-			rhai::Position::NONE,
-		))
+		match devai_error {
+			Error::RhaiDynamic(dynamic) => Box::new(rhai::EvalAltResult::ErrorRuntime(dynamic, rhai::Position::NONE)),
+			Error::RhaiAltResult(val) => val.into(),
+			_ => Box::new(rhai::EvalAltResult::ErrorRuntime(
+				format!("Rhai Call error. Cause: {devai_error}").into(),
+				rhai::Position::NONE,
+			)),
+		}
 	}
 }
 
