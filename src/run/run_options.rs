@@ -1,31 +1,46 @@
 use crate::cli::{RunArgs, SoloArgs};
 use crate::Result;
+use derive_more::derive::From;
 use simple_fs::SPath;
+use std::sync::Arc;
 
 // region:    --- RunCommandOptions
 
-/// TODO: Put inner Arc for perf
 /// Note: Need to be cloned to able to be part of the RedoCtx
 #[derive(Debug, Clone)]
 pub struct RunCommandOptions {
+	inner: Arc<RunCommandOptionsInner>,
+}
+
+#[derive(Debug)]
+pub struct RunCommandOptionsInner {
 	on_file_globs: Option<Vec<String>>,
 	on_inputs: Option<Vec<String>>,
 
 	base_run_options: RunBaseOptions,
 }
 
+impl From<RunCommandOptionsInner> for RunCommandOptions {
+	fn from(inner: RunCommandOptionsInner) -> Self {
+		Self { inner: Arc::new(inner) }
+	}
+}
+
 /// Getters
 impl RunCommandOptions {
 	pub fn on_file_globs(&self) -> Option<Vec<&str>> {
-		self.on_file_globs.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
+		self.inner
+			.on_file_globs
+			.as_ref()
+			.map(|v| v.iter().map(|s| s.as_str()).collect())
 	}
 
 	pub fn on_inputs(&self) -> Option<Vec<&str>> {
-		self.on_inputs.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
+		self.inner.on_inputs.as_ref().map(|v| v.iter().map(|s| s.as_str()).collect())
 	}
 
 	pub fn base_run_config(&self) -> &RunBaseOptions {
-		&self.base_run_options
+		&self.inner.base_run_options
 	}
 }
 
@@ -67,11 +82,12 @@ impl RunCommandOptions {
 			open: args.open,
 		};
 
-		Ok(Self {
+		Ok(RunCommandOptionsInner {
 			on_file_globs,
 			on_inputs: args.on_inputs,
 			base_run_options,
-		})
+		}
+		.into())
 	}
 }
 
@@ -79,20 +95,33 @@ impl RunCommandOptions {
 
 // region:    --- RunSoloOptions
 
-#[derive(Debug, Clone)]
+/// Note: need to be clonable for redctx
+#[derive(Debug, Clone, From)]
 pub struct RunSoloOptions {
+	inner: Arc<RunSoloOptionsInner>,
+}
+
+// inner
+#[derive(Debug)]
+pub struct RunSoloOptionsInner {
 	target_path: SPath,
 	base_run_config: RunBaseOptions,
+}
+
+impl From<RunSoloOptionsInner> for RunSoloOptions {
+	fn from(inner: RunSoloOptionsInner) -> Self {
+		Self { inner: Arc::new(inner) }
+	}
 }
 
 /// Getters
 impl RunSoloOptions {
 	pub fn target_path(&self) -> &SPath {
-		&self.target_path
+		&self.inner.target_path
 	}
 
 	pub fn base_run_config(&self) -> &RunBaseOptions {
-		&self.base_run_config
+		&self.inner.base_run_config
 	}
 }
 
@@ -108,10 +137,11 @@ impl RunSoloOptions {
 			open: args.open,
 		};
 
-		Ok(Self {
+		Ok(RunSoloOptionsInner {
 			target_path,
 			base_run_config,
-		})
+		}
+		.into())
 	}
 }
 
@@ -119,10 +149,11 @@ impl RunSoloOptions {
 impl RunSoloOptions {
 	#[cfg(test)]
 	pub fn from_target_path(path: &str) -> Result<Self> {
-		Ok(Self {
+		Ok(RunSoloOptionsInner {
 			target_path: SPath::new(path)?,
 			base_run_config: RunBaseOptions::default(),
-		})
+		}
+		.into())
 	}
 }
 

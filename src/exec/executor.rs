@@ -19,10 +19,20 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 
 #[derive(From)]
 enum RedoCtx {
-	#[from]
 	RunRedoCtx(Arc<RunRedoCtx>),
-	#[from]
 	SoloRedoCtx(Arc<SoloRedoCtx>),
+}
+
+impl From<RunRedoCtx> for RedoCtx {
+	fn from(run_redo_ctx: RunRedoCtx) -> Self {
+		RedoCtx::RunRedoCtx(run_redo_ctx.into())
+	}
+}
+
+impl From<SoloRedoCtx> for RedoCtx {
+	fn from(solo_redo_ctx: SoloRedoCtx) -> Self {
+		RedoCtx::SoloRedoCtx(solo_redo_ctx.into())
+	}
 }
 
 impl RedoCtx {
@@ -117,13 +127,13 @@ impl Executor {
 						RedoCtx::RunRedoCtx(redo_ctx) => {
 							// if sucessul, we recapture the redo_ctx to have the latest agent.
 							if let Some(redo_ctx) = exec_run_redo(redo_ctx).await {
-								self.current_redo_ctx = Some(Arc::new(redo_ctx).into())
+								self.current_redo_ctx = Some(redo_ctx.into())
 							}
 						}
 						RedoCtx::SoloRedoCtx(redo_ctx) => {
 							// if sucessul, we recapture the redo_ctx to have the latest agent.
 							if let Some(redo_ctx) = exec_solo_redo(redo_ctx).await {
-								self.current_redo_ctx = Some(Arc::new(redo_ctx).into())
+								self.current_redo_ctx = Some(redo_ctx.into())
 							}
 						}
 					}
