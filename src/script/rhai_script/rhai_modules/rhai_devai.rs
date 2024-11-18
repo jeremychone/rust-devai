@@ -90,7 +90,7 @@ fn run_with_inputs(ctx: &RuntimeContext, cmd_agent: &str, inputs: Option<Vec<Dyn
 	let res =
 		serde_json::to_value(res).map_err(|err| Error::cc("devai::run, failed to result convert to json", err))?;
 
-	let rhai_res = value_to_dynamic(&res);
+	let rhai_res = value_to_dynamic(res);
 
 	Ok(rhai_res)
 }
@@ -167,7 +167,7 @@ fn skip() -> RhaiResult {
 			"kind": "Skip"
 		}
 	});
-	let res = value_to_dynamic(&res);
+	let res = value_to_dynamic(res);
 
 	Ok(res)
 }
@@ -198,7 +198,7 @@ fn skip_with_reason(reason: &str) -> RhaiResult {
 			}
 		}
 	});
-	let res = value_to_dynamic(&res);
+	let res = value_to_dynamic(res);
 
 	Ok(res)
 }

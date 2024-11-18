@@ -54,11 +54,23 @@ impl DynaMap {
 	}
 }
 
+// region:    --- Froms
+
 impl From<DynaMap> for Dynamic {
 	fn from(val: DynaMap) -> Self {
 		val.into_dynamic()
 	}
 }
+
+impl TryFrom<Dynamic> for DynaMap {
+	type Error = crate::Error;
+
+	fn try_from(value: Dynamic) -> Result<Self, Self::Error> {
+		DynaMap::from_dynamic(value).map_err(|e| e.into())
+	}
+}
+
+// endregion: --- Froms
 
 // region:    --- DynamicSupportExt
 

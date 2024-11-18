@@ -22,6 +22,8 @@ pub enum Error {
 	},
 
 	// -- Rhai Custom
+	// Dynamic to Value error
+	RhaiDynamicToValue(serde_json::Error),
 	// This is when we already formatted the error in Rhai for Rhai
 	#[from]
 	RhaiDynamic(Dynamic),

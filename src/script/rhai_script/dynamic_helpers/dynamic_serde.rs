@@ -28,47 +28,33 @@ pub fn dynamic_into_strings(dynamic: Dynamic, err_suffix: &'static str) -> Resul
 
 // region:    --- Serde/Dynamic Helpers
 
+/// Make a list of dynamics into a list of serde value
 pub fn dynamics_to_values(dynamics: Vec<Dynamic>) -> Result<Vec<Value>> {
 	dynamics.into_iter().map(dynamic_to_value).collect::<Result<Vec<_>>>()
 }
 
-/// TODO: Need to look if the rhai serde feature provide that better
+/// Just a passthrough to Rhai serde implementation,
+/// with a custom map error.
 pub fn dynamic_to_value(dynamic: Dynamic) -> Result<Value> {
-	// Check the type of Dynamic and convert it to serde_json::Value
-	let val = if dynamic.is::<i64>() {
-		Value::Number(dynamic.as_int()?.into())
-	} else if dynamic.is::<f64>() {
-		Value::Number(serde_json::Number::from_f64(dynamic.as_float()?).ok_or("not a json number")?)
-	} else if dynamic.is::<bool>() {
-		Value::Bool(dynamic.as_bool()?)
-	} else if dynamic.is::<String>() {
-		Value::String(dynamic.into_string()?)
-	} else if dynamic.is::<Array>() {
-		let arr = dynamic.into_array()?;
-		let serde_array = arr.into_iter().map(dynamic_to_value).collect::<Result<Vec<Value>>>()?;
-		Value::Array(serde_array)
-	} else if dynamic.is::<Map>() {
-		let map = dynamic.cast::<rhai::Map>();
-		let mut serde_map = SerdeMap::new();
-		for (k, v) in map {
-			serde_map.insert(k.to_string(), dynamic_to_value(v)?);
-		}
-		Value::Object(serde_map)
-	} else {
-		// If it's none of the above, return a null value
-		Value::Null
-	};
-
+	let val = serde_json::to_value(dynamic).map_err(Error::RhaiDynamicToValue)?;
 	Ok(val)
 }
 
+/// All the rhai default deserialization,
+/// but return Dynamic::UNIT if fails (for now)
+pub fn value_to_dynamic(value: Value) -> Dynamic {
+	serde_json::from_value(value).unwrap_or_else(|_| Dynamic::from(Dynamic::UNIT))
+}
+
+/// Create a Rhai scope from a Value.
+/// Requires the Value is an Object.
 pub fn value_to_scope(value: &Value) -> Result<Scope> {
 	let mut scope = Scope::new();
 
 	match value {
 		Value::Object(map) => {
 			for (k, v) in map {
-				let dynamic_value = value_to_dynamic(v);
+				let dynamic_value = value_to_dynamic(v.clone());
 				scope.push_dynamic(k.as_str(), dynamic_value);
 			}
 			Ok(scope)
@@ -77,37 +63,131 @@ pub fn value_to_scope(value: &Value) -> Result<Scope> {
 	}
 }
 
-/// Here is a custom serde json to dynamic
-/// TODO: Need to look if the rhai serde feature provide that better
-pub fn value_to_dynamic(value: &Value) -> Dynamic {
-	match value {
-		Value::Null => Dynamic::UNIT,
-		Value::Bool(b) => (*b).into(),
-		Value::Number(n) => {
-			if let Some(i) = n.as_i64() {
-				i.into()
-			} else if let Some(f) = n.as_f64() {
-				f.into()
-			} else {
-				Dynamic::UNIT
-			}
-		}
-		Value::String(s) => s.clone().into(),
-		Value::Array(arr) => {
-			let mut rhai_array = Array::new();
-			for v in arr {
-				rhai_array.push(value_to_dynamic(v));
-			}
-			rhai_array.into()
-		}
-		Value::Object(obj) => {
-			let mut rhai_map = Map::new();
-			for (k, v) in obj {
-				rhai_map.insert(k.clone().into(), value_to_dynamic(v));
-			}
-			rhai_map.into()
-		}
+// endregion: --- Serde/Dynamic Helpers
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+
+	use super::*;
+	use crate::script::rhai_script::dynamic_helpers::into_dynamic;
+	use crate::script::{DynaMap, IntoDynamic as _};
+	use serde_json::json;
+	use value_ext::JsonValueExt;
+
+	#[test]
+	fn test_dynamic_helpers_to_dynamic_from_serde_object_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_value_1 = json!({
+			"one": 1,
+			"two": "some for two",
+			"nest": {
+				"three": [4, 5, "six"],
+				"seven": null
+			},
+			"not_here": null
+		});
+
+		// -- Exec
+		let dynamic: Dynamic = value_to_dynamic(fx_value_1);
+
+		// -- Check
+		let mut dyna = DynaMap::try_from(dynamic)?;
+		let nest_dyna = dyna.remove_to_dynamic("nest")?.ok_or("missing nest")?;
+		let nest_dyna = DynaMap::from_dynamic(nest_dyna)?;
+
+		assert_eq!(dyna.get::<i64>("one")?, 1);
+		assert!(
+			nest_dyna.get::<Dynamic>("seven")?.is_unit(),
+			"nest.seven should be UNIT"
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_dynamic_helpers_to_dynamic_from_serde_scalars_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_value_str = json!("some string");
+		let fx_value_num = json!(123);
+		let fx_value_bool = json!(false);
+
+		// -- Exec
+		let dyna_str: Dynamic = value_to_dynamic(fx_value_str);
+		let fx_value_num: Dynamic = value_to_dynamic(fx_value_num);
+		let fx_value_bool: Dynamic = value_to_dynamic(fx_value_bool);
+
+		// -- Check
+		assert_eq!(dyna_str.try_cast::<String>().ok_or("should be str")?, "some string");
+		assert_eq!(fx_value_num.try_cast::<i64>().ok_or("should be i64")?, 123);
+		assert!(
+			!fx_value_bool.try_cast::<bool>().ok_or("should be bool")?,
+			"fx_value_bool should be false"
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_dynamic_helpers_to_serde_from_dynamic_object_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_value = json!({
+		  "one": 1,
+		  "three": {
+			"five": 5,
+			"four": 4,
+			"seven": null,
+			"six": "some for 6"
+		  },
+		  "two": "some for two"
+		});
+		let dyna = DynaMap::default()
+			.insert("one", 1)
+			.insert("two", "some for two")
+			.insert(
+				"three",
+				DynaMap::default()
+					.insert("four", 4)
+					.insert("five", 5)
+					.insert("six", "some for 6")
+					.insert("seven", ()),
+			)
+			.into_dynamic();
+
+		// -- Exec
+		let value: Value = dynamic_to_value(dyna)?;
+
+		// -- Check
+		assert_eq!(value, fx_value);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_dynamic_helpers_to_serde_from_dynamic_scalars_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_value_str = json!("some string");
+		let fx_value_num = json!(123);
+		let fx_value_bool = json!(false);
+
+		let dyna_str = "some string".into_dynamic();
+		let dyna_num = 123.into_dynamic();
+		let dyna_bool = false.into_dynamic();
+
+		// -- Exec
+		let value_str: Value = dynamic_to_value(dyna_str)?;
+		let value_num: Value = dynamic_to_value(dyna_num)?;
+		let value_bool: Value = dynamic_to_value(dyna_bool)?;
+
+		// -- Check
+		assert_eq!(value_str, fx_value_str);
+		assert_eq!(value_num, fx_value_num);
+		assert_eq!(value_bool, fx_value_bool);
+
+		Ok(())
 	}
 }
 
-// endregion: --- Serde/Dynamic Helpers
+// endregion: --- Tests
