@@ -99,7 +99,7 @@ impl TuiApp {
 						KeyCode::Char('q') => hub.publish(HubEvent::Quit).await,
 
 						// -- Open agent
-						KeyCode::Char('o') => {
+						KeyCode::Char('a') => {
 							// clear_last_n_lines(1);
 							send_to_executor(&exec_tx, ExecCommand::OpenAgent).await;
 						}

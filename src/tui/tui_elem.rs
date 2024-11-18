@@ -19,11 +19,11 @@ pub fn print_bottom_bar() {
 
 	term_key_comp(&mut stdout, "r", "Redo");
 
-	let _ = execute!(stdout, Print(" | "),);
+	let _ = execute!(stdout, Print("  "),);
 
-	term_key_comp(&mut stdout, "o", "Open Agent");
+	term_key_comp(&mut stdout, "a", "Open Agent");
 
-	let _ = execute!(stdout, Print(" | "),);
+	let _ = execute!(stdout, Print("  "),);
 
 	term_key_comp(&mut stdout, "q", "Quit");
 
