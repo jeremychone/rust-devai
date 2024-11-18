@@ -4,7 +4,7 @@ use serde_json::{Map as SerdeMap, Value};
 
 // region:    --- Dynamic Helpers
 
-/// Make a Dynamic of type String or type Array of String, as Vec<String>
+/// Make a Dynamic of type String or type Array of String, as `Vec<String>`
 pub fn dynamic_into_strings(dynamic: Dynamic, err_suffix: &'static str) -> Result<Vec<String>> {
 	let values: Vec<String> = if let Ok(single) = dynamic.as_immutable_string_ref() {
 		// `take_immutable_string` consumes the value and gives an owned `String`

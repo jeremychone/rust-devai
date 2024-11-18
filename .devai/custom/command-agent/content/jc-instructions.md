@@ -33,34 +33,50 @@ Then, on top of each of the rust functions that is mapped to one or more rhai mo
 
 ```rust
 /// ## RHAI Documentation
-/// ```rhai
-/// html::prune_to_content(html_content: string) -> string
+///
+/// Perform a http GET request to the specified URL and returns an response object contain `.content` for it's text content.
+///
+/// ```
+/// // API Signature
+/// web::get(url: string) -> WebGetResponse (throws: WebGetException)
 /// ```
 ///
-/// Strips non-content elements from the provided HTML content and returns the cleaned HTML as a string.
+/// By default, it will follows up to 5 redirects.
 ///
-/// This function removes:
-/// - Non-visible tags such as `<script>`, `<link>`, `<style>`, and `<svg>`.
-/// - HTML comments.
-/// - Empty lines.
-/// - Attributes except for `class`, `aria-label`, and `href`.
+/// > Note: For now, only support text based content type.
 ///
-/// # Arguments
 ///
-/// * `html_content` - (required) A `String` containing the HTML content to be processed.
+/// ### Example
+/// ```
+/// let response = web::get("https://britesnow.com/test/text-page.txt")
+/// let content = reponse.content;
+/// ```
 ///
-/// # Returns
+/// ### Returns (WebGetResponse)
 ///
-/// A `String` containing the cleaned HTML content.
+/// Returns when the http response status code is 2xx range (will follow up to 5 redirects).
 ///
-fn prune_to_content_rhai(html_content: &str) -> RhaiResult {
-	match prune_to_content(html_content.to_string()) {
-		Ok(cleaned_html) => Ok(Dynamic::from(cleaned_html)),
-		Err(err) => Err(Box::new(EvalAltResult::ErrorRuntime(
-			format!("Failed to prune HTML content: {}", err).into(),
-			rhai::Position::NONE,
-		))),
-	}
+/// ```
+/// {
+///   success: true,    // true when the "final" http request is successful (2xx range)
+///   status:  number,  // The status code returned by the http request
+///   url:     string,  // The full URL requested
+///   content: string,  // The text content
+/// }
+/// ```
+///
+/// ### Exception (WebGetException)
+///
+/// ```
+/// {
+///   success: false,   // false when the HTTP request is not successful
+///   status?: number,  // (optional) The status code returned by the HTTP request
+///   url:     string,  // The full URL requested
+///   error:   string,  // The error message
+/// }
+/// ```
+fn get(url: &str) -> RhaiResult {
+	....
 }
 ```
 

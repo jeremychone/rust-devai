@@ -15,9 +15,9 @@ pub enum CliCommand {
 	/// Initialize the `.devai/` folder with the base setting files. Any file that already exists will not be touched.
 	Init(InitArgs),
 
-	/// Executes the Command Agent <name> based on its name or short name.
+	/// Executes the Command Agent `<name>` based on its name or short name.
 	///
-	/// The <name> is relative to the `.devai/[default|custom]/command-agent/<name>.devai`
+	/// The `<name>` is relative to the `.devai/[default|custom]/command-agent/<name>.devai`
 	///
 	/// for example `devai run proof-comments` or `devai run pc` will match:
 	/// either `.devai/custom/command-agent/proof-comments.devai`

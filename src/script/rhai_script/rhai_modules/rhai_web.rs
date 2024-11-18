@@ -30,15 +30,24 @@ pub fn rhai_module() -> Module {
 // region:    --- Rhai Functions
 
 /// ## RHAI Documentation
-/// ```rhai
+///
+/// Perform a http GET request to the specified URL and returns an response object contain `.content` for it's text content.
+///
+/// ```
+/// // API Signature
 /// web::get(url: string) -> WebGetResponse (throws: WebGetException)
 /// ```
-///
-/// This function is used to perform a GET request to the specified URL.
 ///
 /// By default, it will follows up to 5 redirects.
 ///
 /// > Note: For now, only support text based content type.
+///
+///
+/// ### Example
+/// ```
+/// let response = web::get("https://britesnow.com/test/text-page.txt")
+/// let content = reponse.content;
+/// ```
 ///
 /// ### Returns (WebGetResponse)
 ///
@@ -57,23 +66,11 @@ pub fn rhai_module() -> Module {
 ///
 /// ```
 /// {
-///   success: false,   // false when the http request is not sucessful
-///   status?: number,  // (optional) The status code returned by the http request
+///   success: false,   // false when the HTTP request is not successful
+///   status?: number,  // (optional) The status code returned by the HTTP request
 ///   url:     string,  // The full URL requested
-///   error:   string,  // The text content
+///   error:   string,  // The error message
 /// }
-/// ```
-///
-///
-/// ### Example
-///
-/// For example, in a Rhai code block:
-///
-/// ```rhai
-/// // When the request is successful
-/// let result = web::get("https://example.com");
-/// // result = { content: "HTML content here", status: 200, url: "https://example.com", success: true, error: null }
-///
 /// ```
 fn get(url: &str) -> RhaiResult {
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
