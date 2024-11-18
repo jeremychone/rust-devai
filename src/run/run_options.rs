@@ -4,7 +4,9 @@ use simple_fs::SPath;
 
 // region:    --- RunCommandOptions
 
-#[derive(Debug)]
+/// TODO: Put inner Arc for perf
+/// Note: Need to be cloned to able to be part of the RedoCtx
+#[derive(Debug, Clone)]
 pub struct RunCommandOptions {
 	on_file_globs: Option<Vec<String>>,
 	on_inputs: Option<Vec<String>>,
@@ -77,7 +79,7 @@ impl RunCommandOptions {
 
 // region:    --- RunSoloOptions
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RunSoloOptions {
 	target_path: SPath,
 	base_run_config: RunBaseOptions,

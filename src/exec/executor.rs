@@ -1,7 +1,9 @@
 //! The command executor.
 //! Will create it's own queue and listen to ExecCommand events.
 
+use crate::agent::Agent;
 use crate::exec::exec_command::ExecCommand;
+use crate::exec::support::open_vscode;
 use crate::exec::{
 	exec_list, exec_new, exec_new_solo, exec_run, exec_run_redo, exec_solo, exec_solo_redo, ExecEvent, RunRedoCtx,
 	SoloRedoCtx,
@@ -13,6 +15,8 @@ use derive_more::derive::From;
 use std::sync::Arc;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
 
+// region:    --- RedoCtx
+
 #[derive(From)]
 enum RedoCtx {
 	#[from]
@@ -20,6 +24,17 @@ enum RedoCtx {
 	#[from]
 	SoloRedoCtx(Arc<SoloRedoCtx>),
 }
+
+impl RedoCtx {
+	pub fn get_agent(&self) -> Option<&Agent> {
+		match self {
+			RedoCtx::RunRedoCtx(redo_ctx) => Some(redo_ctx.agent()),
+			RedoCtx::SoloRedoCtx(redo_ctx) => Some(redo_ctx.agent()),
+		}
+	}
+}
+
+// endregion: --- RedoCtx
 
 pub struct Executor {
 	/// The receiver that this executor will itreate on "start"
@@ -47,6 +62,11 @@ impl Executor {
 	pub fn command_tx(&self) -> Sender<ExecCommand> {
 		self.command_tx.clone()
 	}
+
+	/// Return the latest agent file_path that was executed
+	fn get_agent_file_path(&self) -> Option<&str> {
+		Some(self.current_redo_ctx.as_ref()?.get_agent()?.file_path())
+	}
 }
 
 /// Runner
@@ -66,13 +86,6 @@ impl Executor {
 				ExecCommand::Init(init_args) => {
 					init_devai_files(init_args.path.as_deref(), true).await?;
 				}
-				ExecCommand::RunCommandAgent(run_args) => {
-					let redo = exec_run(run_args, init_devai_files(None, false).await?).await?;
-					self.current_redo_ctx = Some(redo.into());
-				}
-				ExecCommand::RunSoloAgent(solo_args) => {
-					exec_solo(solo_args, init_devai_files(None, false).await?).await?;
-				}
 				ExecCommand::NewCommandAgent(new_args) => {
 					exec_new(new_args, init_devai_files(None, false).await?).await?;
 				}
@@ -81,14 +94,46 @@ impl Executor {
 				}
 				ExecCommand::List => exec_list(init_devai_files(None, false).await?).await?,
 
+				ExecCommand::RunCommandAgent(run_args) => {
+					hub.publish(ExecEvent::RunStart).await;
+					let redo = exec_run(run_args, init_devai_files(None, false).await?).await?;
+					self.current_redo_ctx = Some(redo.into());
+					hub.publish(ExecEvent::RunEnd).await;
+				}
+				ExecCommand::RunSoloAgent(solo_args) => {
+					hub.publish(ExecEvent::RunStart).await;
+					exec_solo(solo_args, init_devai_files(None, false).await?).await?;
+					hub.publish(ExecEvent::RunEnd).await;
+				}
+
 				ExecCommand::Redo => {
 					let Some(redo_ctx) = self.current_redo_ctx.as_ref() else {
 						hub.publish(Error::custom("No redo available to be performed")).await;
 						continue;
 					};
+
+					hub.publish(ExecEvent::RunStart).await;
 					match redo_ctx {
-						RedoCtx::RunRedoCtx(redo_ctx) => exec_run_redo(redo_ctx).await,
-						RedoCtx::SoloRedoCtx(redo_ctx) => exec_solo_redo(redo_ctx).await,
+						RedoCtx::RunRedoCtx(redo_ctx) => {
+							// if sucessul, we recapture the redo_ctx to have the latest agent.
+							if let Some(redo_ctx) = exec_run_redo(redo_ctx).await {
+								self.current_redo_ctx = Some(Arc::new(redo_ctx).into())
+							}
+						}
+						RedoCtx::SoloRedoCtx(redo_ctx) => {
+							// if sucessul, we recapture the redo_ctx to have the latest agent.
+							if let Some(redo_ctx) = exec_solo_redo(redo_ctx).await {
+								self.current_redo_ctx = Some(Arc::new(redo_ctx).into())
+							}
+						}
+					}
+					hub.publish(ExecEvent::RunEnd).await;
+				}
+
+				ExecCommand::OpenAgent => {
+					//
+					if let Some(agent_file_path) = self.get_agent_file_path() {
+						open_vscode(agent_file_path).await
 					}
 				}
 			}

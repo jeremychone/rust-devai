@@ -22,6 +22,13 @@ pub enum HubEvent {
 	},
 	#[from]
 	Executor(ExecEvent),
+
+	// -- Action event
+	// for now, the watches send and event to the hub,
+	// which will trigger the app to send it to the executor.
+	DoExecRedo,
+
+	// The quit events
 	Quit,
 }
 

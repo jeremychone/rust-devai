@@ -1,8 +1,7 @@
 use super::support::open_vscode;
 use crate::agent::{find_agent, Agent};
 use crate::cli::RunArgs;
-use crate::exec::ExecEvent;
-use crate::hub::get_hub; // Importing get_hub
+use crate::hub::{get_hub, HubEvent}; // Importing get_hub
 use crate::run::{run_command_agent, PathResolver, Runtime};
 use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
@@ -11,12 +10,32 @@ use crate::{Error, Result};
 use simple_fs::{list_files, watch, SEventKind};
 use std::sync::Arc;
 
+// region:    --- RunRedoCtx
+
 /// A Context that hold the information to redo this run
 pub struct RunRedoCtx {
 	runtime: Runtime,
 	agent: Agent,
 	run_options: RunCommandOptions,
 }
+
+/// getters
+#[allow(unused)]
+impl RunRedoCtx {
+	pub fn runtime(&self) -> &Runtime {
+		&self.runtime
+	}
+
+	pub fn agent(&self) -> &Agent {
+		&self.agent
+	}
+
+	pub fn run_options(&self) -> &RunCommandOptions {
+		&self.run_options
+	}
+}
+
+// endregion: --- RunRedoCtx
 
 /// Exec for the Run command
 /// Might do a single run or a watch
@@ -60,7 +79,7 @@ pub async fn exec_run_first(run_args: RunArgs, dir_context: DirContext) -> Resul
 
 /// Redo the exec_run, with its context
 /// NOTE: The redo pattern just take one ctx arg, and handle its own error
-pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) {
+pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) -> Option<RunRedoCtx> {
 	let hub = get_hub();
 
 	let RunRedoCtx {
@@ -74,14 +93,21 @@ pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) {
 		Ok(agent) => agent,
 		Err(err) => {
 			hub.publish(err).await;
-			return;
+			return None;
 		}
 	};
 
 	match do_run(run_options, runtime, &agent).await {
-		Ok(_) => (),
-		Err(err) => hub.publish(Error::cc("Error while redo", err)).await,
-	};
+		Ok(_) => Some(RunRedoCtx {
+			runtime: runtime.clone(),
+			agent,
+			run_options: run_options.clone(),
+		}),
+		Err(err) => {
+			hub.publish(Error::cc("Error while redo", err)).await;
+			None
+		}
+	}
 }
 
 /// Exec the run watch.
@@ -107,10 +133,8 @@ pub fn exec_run_watch(redo_ctx: Arc<RunRedoCtx>) {
 							SEventKind::Modify => {
 								let hub = get_hub();
 								hub.publish("\n==== Agent file modified, running command agent again\n").await;
-								// Make sure to change reload the agent
-								exec_run_redo(&redo_ctx).await;
-								// NOTE: here we trick the EndWatchRedo
-								hub.publish(ExecEvent::EndWatchRedo).await;
+								// We go through the hub -> executor to be exactly as "redo"
+								hub.publish(HubEvent::DoExecRedo).await;
 							}
 							_ => {
 								// NOTE: No need to notify for now

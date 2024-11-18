@@ -1,19 +1,38 @@
 use super::support::open_vscode;
 use crate::agent::{get_solo_and_target_path, load_solo_agent, Agent};
 use crate::cli::SoloArgs;
-use crate::exec::ExecEvent;
-use crate::hub::get_hub;
+use crate::hub::{get_hub, HubEvent};
 use crate::run::{run_solo_agent, PathResolver, Runtime};
 use crate::run::{DirContext, RunSoloOptions};
 use crate::{Error, Result};
 use simple_fs::{watch, SEventKind};
 use std::sync::Arc;
 
+// region:    --- SoloRedoCtx
+
 pub struct SoloRedoCtx {
 	runtime: Runtime,
 	agent: Agent,
 	solo_options: RunSoloOptions,
 }
+
+/// getters
+#[allow(unused)]
+impl SoloRedoCtx {
+	pub fn runtime(&self) -> &Runtime {
+		&self.runtime
+	}
+
+	pub fn agent(&self) -> &Agent {
+		&self.agent
+	}
+
+	pub fn solo_options(&self) -> &RunSoloOptions {
+		&self.solo_options
+	}
+}
+
+// endregion: --- SoloRedoCtx
 
 /// Executes the Run command
 /// Can either perform a single run or run in watch mode
@@ -29,7 +48,7 @@ pub async fn exec_solo(solo_args: SoloArgs, dir_context: DirContext) -> Result<A
 	Ok(redo_ctx)
 }
 
-pub async fn exec_solo_redo(solo_ctx: &SoloRedoCtx) {
+pub async fn exec_solo_redo(solo_ctx: &SoloRedoCtx) -> Option<SoloRedoCtx> {
 	let hub = get_hub();
 	let SoloRedoCtx {
 		runtime,
@@ -42,13 +61,20 @@ pub async fn exec_solo_redo(solo_ctx: &SoloRedoCtx) {
 		Ok(agent) => agent,
 		Err(err) => {
 			hub.publish(err).await;
-			return;
+			return None;
 		}
 	};
 
 	match run_solo_agent(runtime, &agent, solo_options, PathResolver::CurrentDir).await {
-		Ok(_) => (),
-		Err(err) => hub.publish(Error::cc("Error while redo", err)).await,
+		Ok(_) => Some(SoloRedoCtx {
+			runtime: runtime.clone(),
+			agent,
+			solo_options: solo_options.clone(),
+		}),
+		Err(err) => {
+			hub.publish(Error::cc("Error while redo", err)).await;
+			None
+		}
 	}
 }
 
@@ -103,10 +129,8 @@ fn exec_solo_watch(solo_ctx: Arc<SoloRedoCtx>) {
 							SEventKind::Modify => {
 								let hub = get_hub();
 								hub.publish("\n==== Agent file modified, running solo agent again\n").await;
-								// Make sure to change reload the agent
-								exec_solo_redo(&solo_ctx).await;
-								// NOTE: here we trick the EndWatchRedo
-								hub.publish(ExecEvent::EndWatchRedo).await;
+								// We go through the hub -> executor to be exactly as "redo"
+								hub.publish(HubEvent::DoExecRedo).await;
 							}
 							_ => {
 								// NOTE: No need to notify for now

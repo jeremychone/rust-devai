@@ -37,10 +37,15 @@ impl HubCapture {
 								let mut content = content_clone.lock().await;
 								content.push_str(&format!("Exec: {exec_event} \n"));
 							},
+							HubEvent::DoExecRedo => {
+								let mut content = content_clone.lock().await;
+								content.push_str("DoExecRedo\n");
+							}
 							HubEvent::Quit => {
 								let mut content = content_clone.lock().await;
 								content.push_str("Quit\n");
-							}
+							},
+
 						}
 					}
 				} => {

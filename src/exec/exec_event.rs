@@ -9,14 +9,19 @@ use derive_more::derive::Display;
 #[derive(Debug, Clone, Display)]
 pub enum ExecEvent {
 	/// Start an exec command like run, solo, init, ...
+	/// Get triggers for all executor event
 	StartExec,
 
+	/// Emitted at the start of the Run/Redo of (command and solo agent)
+	RunStart,
+
+	/// Emitted at the end of the Run/Redo of (command and solo agent)
+	RunEnd,
+
 	/// The end of an exec command
+	/// Get triggers for all executor event
 	/// Note: When watch mode is on, the EndExec will be sent after the watch mode is started,
 	///       but not when it finished (because it won't finished by definition)
 	///       So, EndExec always get triggered for each ExecCommand
 	EndExec,
-
-	/// This is send at the end of a watch redo.
-	EndWatchRedo,
 }

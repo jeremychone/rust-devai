@@ -89,16 +89,20 @@ impl TuiApp {
 				while let Ok(key_event) = in_rx.recv_async().await {
 					match key_event.code {
 						// -- Redo
-						KeyCode::Char('R') | KeyCode::Char('r') => {
+						KeyCode::Char('r') => {
 							// clear_last_n_lines(1);
 							safer_println("\n-- R pressed - Redo\n", interactive);
-							if let Err(err) = exec_tx.send(ExecCommand::Redo).await {
-								hub.publish(Error::cc("start_app - cannot send ExecCommand::Redo", err)).await;
-							};
+							send_to_executor(&exec_tx, ExecCommand::Redo).await;
 						}
 
 						// -- Quit
-						KeyCode::Char('Q') | KeyCode::Char('q') => hub.publish(HubEvent::Quit).await,
+						KeyCode::Char('q') => hub.publish(HubEvent::Quit).await,
+
+						// -- Open agent
+						KeyCode::Char('o') => {
+							// clear_last_n_lines(1);
+							send_to_executor(&exec_tx, ExecCommand::OpenAgent).await;
+						}
 
 						// -- Ctrl c
 						KeyCode::Char('c') if key_event.modifiers.contains(KeyModifiers::CONTROL) => {
@@ -118,6 +122,8 @@ impl TuiApp {
 	/// The hub events are typically to be displayed to the user one way or another
 	/// For now, we just print most of tose event content.
 	fn handle_hub_event(&self, interactive: bool) {
+		let exec_tx = self.executor_tx();
+
 		tokio::spawn(async move {
 			let mut rx = get_hub().subscriber();
 
@@ -130,11 +136,12 @@ impl TuiApp {
 						safer_println(&format!("Error: {error}"), interactive);
 					}
 					HubEvent::Executor(exec_event) => {
-						if let (ExecEvent::EndExec | ExecEvent::EndWatchRedo, true) = (exec_event, interactive) {
+						if let (ExecEvent::RunStart | ExecEvent::RunEnd, true) = (exec_event, interactive) {
 							// safer_println("\n[ r ]: Redo   |   [ q ]: Quit", interactive);
 							tui_elem::print_bottom_bar();
 						}
 					}
+					HubEvent::DoExecRedo => send_to_executor(&exec_tx, ExecCommand::Redo).await,
 					HubEvent::Quit => {
 						// Nothing to do for now
 					}
@@ -211,6 +218,15 @@ fn safer_println(msg: &str, interactive: bool) {
 	} else {
 		println!("{msg}");
 	}
+}
+
+async fn send_to_executor(exec_tx: &mpsc::Sender<ExecCommand>, exec_cmd: ExecCommand) {
+	// clear_last_n_lines(1);
+	if let Err(err) = exec_tx.send(exec_cmd).await {
+		get_hub()
+			.publish(Error::cc("start_app - cannot send ExecCommand::Redo", err))
+			.await;
+	};
 }
 
 /// IMPORTANT: Assumes term is in raw mode
