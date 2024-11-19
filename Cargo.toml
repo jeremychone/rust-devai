@@ -12,14 +12,14 @@ repository = "https://github.com/jeremychone/rust-devai"
 
 [lints.rust]
 unsafe_code = "forbid"
-unused = { level = "allow", priority = -1 } # For exploratory dev.
+# unused = { level = "allow", priority = -1 } # For exploratory dev.
 
 [dependencies]
 # -- Async
 tokio = { version = "1", features = ["full"] }
 flume = "0.11.1"
 # -- AI
-genai = "0.1.11"
+genai = "0.1.12"
 # -- Json & Data Files
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

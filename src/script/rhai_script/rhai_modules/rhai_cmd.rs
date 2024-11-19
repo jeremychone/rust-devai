@@ -11,7 +11,7 @@
 use crate::script::{dynamic_into_strings, DynaMap};
 use crate::Error;
 use rhai::plugin::RhaiResult;
-use rhai::{Array, Dynamic, FuncRegistration, Module};
+use rhai::{Dynamic, FuncRegistration, Module};
 use std::process::Command;
 
 pub fn rhai_module() -> Module {
@@ -117,7 +117,6 @@ fn exec(cmd_name: &str, args: Option<Dynamic>) -> RhaiResult {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
 	use crate::_test_support::run_reflective_agent;
 	use value_ext::JsonValueExt;
 

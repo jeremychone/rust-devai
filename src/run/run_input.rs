@@ -1,4 +1,4 @@
-use crate::agent::Agent;
+use crate::agent::{Agent, PromptPart};
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
@@ -7,7 +7,7 @@ use crate::script::rhai_eval;
 use crate::support::hbs::hbs_render;
 use crate::Result;
 use genai::adapter::AdapterKind;
-use genai::chat::ChatRequest;
+use genai::chat::{ChatMessage, ChatRequest};
 use genai::ModelName;
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -98,13 +98,33 @@ pub async fn run_agent_input(
 	let data_scope = HashMap::from([("data".to_string(), data.clone())]);
 
 	// -- Execute genai if we have an instruction
-	let inst = hbs_render(agent.inst(), &data_scope)?;
+	let mut chat_messages: Vec<ChatMessage> = Vec::new();
+	for prompt_part in agent.prompt_parts() {
+		let PromptPart { kind, content } = prompt_part;
+		let content = hbs_render(content, &data_scope)?;
+		// For now, only add if not empty
+		if !content.trim().is_empty() {
+			chat_messages.push(ChatMessage {
+				role: kind.into(),
+				content: content.into(),
+			})
+		}
+	}
+	// let inst = hbs_render(agent.inst(), &data_scope)?;
 
-	let is_inst_empty = inst.trim().is_empty();
+	let is_inst_empty = chat_messages.is_empty();
 
 	// TODO: Might want to handle if no instruction.
 	if run_base_options.verbose() {
-		hub.publish(format!("\n-- Instruction:\n\n{inst}\n")).await;
+		hub.publish("\n").await;
+		for msg in chat_messages.iter() {
+			hub.publish(format!(
+				"-- {}:\n{}",
+				msg.role,
+				msg.content.text_as_str().unwrap_or_default()
+			))
+			.await;
+		}
 	}
 
 	// if dry_mode req, we stop
@@ -115,7 +135,7 @@ pub async fn run_agent_input(
 	// Now execute the instruction
 	let ai_response: Option<AiResponse> = if !is_inst_empty {
 		// NOTE: Put the instruction as user as with openai o1-... models does not seem to support system.
-		let chat_req = ChatRequest::from_user(inst);
+		let chat_req = ChatRequest::from_messages(chat_messages);
 
 		hub.publish(format!(
 			"-> Sending rendered instruction to {} ...",

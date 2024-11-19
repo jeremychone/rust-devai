@@ -8,6 +8,7 @@ mod runners;
 
 pub use asserts::*;
 pub use base::*;
+#[allow(unused)]
 pub use hub_capture::*;
 pub use loaders::*;
 pub use runners::*;

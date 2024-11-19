@@ -1,6 +1,6 @@
 use crate::{Error, Result};
-use rhai::{Array, Dynamic, Map, Scope};
-use serde_json::{Map as SerdeMap, Value};
+use rhai::{Dynamic, Scope};
+use serde_json::Value;
 
 // region:    --- Serde/Dynamic Helpers
 
@@ -48,10 +48,8 @@ mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	use super::*;
-	use crate::script::rhai_script::dynamic_helpers::into_dynamic;
 	use crate::script::{DynaMap, IntoDynamic as _};
 	use serde_json::json;
-	use value_ext::JsonValueExt;
 
 	#[test]
 	fn test_dynamic_helpers_to_dynamic_from_serde_object_ok() -> Result<()> {

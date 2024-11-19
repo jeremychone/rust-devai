@@ -3,11 +3,13 @@ use crate::hub::{get_hub, HubEvent};
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex};
 
+#[allow(unused)]
 pub struct HubCapture {
 	content: Arc<Mutex<String>>,
 	stop_signal: Option<oneshot::Sender<()>>,
 }
 
+#[allow(unused)]
 impl HubCapture {
 	pub fn new_and_start() -> Self {
 		let (stop_tx, stop_rx) = oneshot::channel();

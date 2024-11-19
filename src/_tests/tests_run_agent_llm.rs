@@ -1,3 +1,5 @@
+//! IMPORTANT: THis file run real agents
+
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 use super::*;
@@ -21,7 +23,6 @@ async fn test_run_agent_llm_c_simple_ok() -> Result<()> {
 	Ok(())
 }
 
-/// NOTE: RUN REAL AGENT
 #[tokio::test]
 async fn test_run_agent_llm_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
@@ -41,6 +42,28 @@ async fn test_run_agent_llm_c_on_file_ok() -> Result<()> {
 	let ai_content = res.x_get_str("ai_content")?;
 	assert!(ai_content.len() > 10, "The AI response should have some content");
 	assert_contains(ai_content, "from the other/hello.txt");
+
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_run_agent_llm_full_chat_ok() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
+	let agent = load_test_agent("agent-llm/agent-full-chat.devai", &runtime)?;
+
+	// -- Execute
+	let res = run_test_agent(&runtime, &agent).await?;
+
+	// -- Check
+	let content = res.as_str().ok_or("Should return a string")?;
+	// concatinate the first char of each line
+	// Because the `agent-full-chat.devai` system instructs to give only 3 bullet points answer.
+	let first_chart_of_each_line = content
+		.lines()
+		.map(|line| line.chars().next().unwrap_or_default())
+		.collect::<String>();
+	assert_eq!(first_chart_of_each_line, "---");
 
 	Ok(())
 }

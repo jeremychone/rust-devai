@@ -1,4 +1,5 @@
 use crate::agent::agent_config::AgentConfig;
+use crate::agent::PromptPart;
 use crate::{Error, Result};
 use genai::chat::ChatOptions;
 use genai::ModelName;
@@ -14,7 +15,7 @@ pub struct Agent {
 
 /// Constructor from AgentInner
 impl Agent {
-	pub fn new(agent_inner: AgentInner) -> Result<Agent> {
+	pub(super) fn new(agent_inner: AgentInner) -> Result<Agent> {
 		let inner = Arc::new(agent_inner);
 
 		let genai_model = inner.genai_model_name.clone().ok_or_else(|| Error::ModelMissing {
@@ -65,8 +66,8 @@ impl Agent {
 		self.inner.before_all_script.as_deref()
 	}
 
-	pub fn inst(&self) -> &str {
-		&self.inner.inst
+	pub fn prompt_parts(&self) -> Vec<&PromptPart> {
+		self.inner.prompt_parts.iter().collect()
 	}
 
 	pub fn data_script(&self) -> Option<&str> {
@@ -86,7 +87,7 @@ impl Agent {
 
 /// AgentInner is ok to be public to allow user-code to build Agent simply.
 #[derive(Debug, Clone)]
-pub struct AgentInner {
+pub(super) struct AgentInner {
 	pub config: AgentConfig,
 
 	pub name: String,
@@ -96,11 +97,14 @@ pub struct AgentInner {
 	pub genai_model_name: Option<ModelName>,
 
 	pub before_all_script: Option<String>,
-	/// The agent's instruction
-	pub inst: String,
+
+	/// Contains the instruction, system, assistant in order of the file
+	pub prompt_parts: Vec<PromptPart>,
+
 	/// Script
 	pub data_script: Option<String>,
 	pub output_script: Option<String>,
 	pub after_all_script: Option<String>,
 }
+
 // endregion: --- AgentInner
