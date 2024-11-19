@@ -1,3 +1,4 @@
+use crate::script::DynaMap;
 use derive_more::derive::Display;
 use derive_more::From;
 use rhai::Dynamic;
@@ -81,10 +82,11 @@ impl From<Error> for Box<rhai::EvalAltResult> {
 		match devai_error {
 			Error::RhaiDynamic(dynamic) => Box::new(rhai::EvalAltResult::ErrorRuntime(dynamic, rhai::Position::NONE)),
 			Error::RhaiAltResult(val) => val.into(),
-			_ => Box::new(rhai::EvalAltResult::ErrorRuntime(
-				format!("Rhai Call error. Cause: {devai_error}").into(),
-				rhai::Position::NONE,
-			)),
+			_ => {
+				let err_dyna = DynaMap::default().insert("error", format!("Rhai Call error. Cause: {devai_error}"));
+
+				Box::new(rhai::EvalAltResult::ErrorRuntime(err_dyna.into(), rhai::Position::NONE))
+			}
 		}
 	}
 }
