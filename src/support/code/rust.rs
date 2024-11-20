@@ -47,6 +47,11 @@ pub fn run_prune_to_declarations(code: &str) -> Result<String> {
 	let mut in_fn = false;
 	let mut after_cfg_test = false;
 	let mut in_test_block = false;
+
+	// Note: This state is capture the start of line whitespace
+	//       so that when we close the `}` we can add back the eventual white pace
+	let mut start_whitespaces: Option<Vec<&str>> = None;
+
 	#[allow(unused)] // not sure why it said unused
 	let mut should_capture = true;
 
@@ -58,16 +63,19 @@ pub fn run_prune_to_declarations(code: &str) -> Result<String> {
 				if should_capture || brace_count == 0 {
 					result.push(lexer.slice());
 				}
+				start_whitespaces = None;
 			}
 			Token::Fn => {
 				if should_capture {
 					result.push(lexer.slice());
 				}
 				in_fn = true;
+				start_whitespaces = None;
 			}
 			Token::CfgTest => {
 				result.push(lexer.slice());
 				after_cfg_test = true;
+				start_whitespaces = None;
 			}
 
 			Token::OpenBrace => {
@@ -78,11 +86,12 @@ pub fn run_prune_to_declarations(code: &str) -> Result<String> {
 				if in_fn || in_test_block {
 					brace_count += 1;
 					if brace_count == 1 {
-						result.push(" {\n    // ...\n}\n");
+						result.push("{\n    // ...\n");
 					}
 				} else {
 					result.push("{");
 				}
+				start_whitespaces = None;
 			}
 			Token::CloseBrace => {
 				if (in_fn || in_test_block) && brace_count > 0 {
@@ -90,6 +99,12 @@ pub fn run_prune_to_declarations(code: &str) -> Result<String> {
 					if brace_count == 0 {
 						if in_fn {
 							in_fn = false;
+							// the last bracket of the function
+							if let Some(start_whitespaces) = start_whitespaces.take() {
+								result.extend(start_whitespaces);
+							}
+
+							result.push(lexer.slice());
 						}
 						if in_test_block {
 							after_cfg_test = false;
@@ -97,10 +112,14 @@ pub fn run_prune_to_declarations(code: &str) -> Result<String> {
 						}
 					}
 				} else {
-					result.push("}");
+					// was not in a function
+					result.push(lexer.slice());
 				}
+				start_whitespaces = None;
 			}
 			Token::Text => {
+				// reset the start line whitespace
+				start_whitespaces = None;
 				if should_capture || brace_count == 0 {
 					result.push(lexer.slice());
 				}
@@ -109,8 +128,14 @@ pub fn run_prune_to_declarations(code: &str) -> Result<String> {
 				if should_capture || brace_count == 0 {
 					result.push("\n");
 				}
+				// reset the start line whitespace
+				start_whitespaces = Some(Default::default());
 			}
 			Token::Whitespace => {
+				// will be some only if after a new line, and was not reset by another case
+				if let Some(start_whitespaces) = start_whitespaces.as_mut() {
+					start_whitespaces.push(lexer.slice());
+				}
 				if should_capture || brace_count == 0 {
 					result.push(lexer.slice());
 				}
@@ -177,6 +202,12 @@ fn some_normal() {
 		// DOING SOME STUFF
 		// some fn stuff
 }	 
+
+impl SomeStruct {
+  fn some_fn() {
+	   // Lot of stuff
+	}
+}
 
 #[cfg(test)]
 mod tests {
