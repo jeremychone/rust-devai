@@ -184,6 +184,7 @@ pub async fn run_agent_input(
 			"data": data,
 			"before_all": before_all_result,
 			"ai_response": ai_response,
+			"CTX": literals.to_ctx_value()
 		});
 
 		let output_response = rhai_eval(runtime.rhai_engine(), output_script, Some(scope_output))?;
