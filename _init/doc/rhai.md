@@ -1,4 +1,28 @@
-# devai Rhai CTX in script
+# Devai Rhai modules/functions Summary
+
+<!-- NOTE: Here block is with "```rust" for syntax highligthing convenience but make sure to put "```rhai" in .devai files-->
+
+```rust
+////// ```rhai script
+
+// -- file
+
+// Load file
+let file = file::load("src/main.rs");
+// file = {path: "src/main.rs", name: "main.rs", content: ..content_of_file, stem: "main", ext: "rs"}
+
+// Save conent to file
+file::save("src/main.rs", content);
+
+// -- path - File System path utilities
+
+
+// -- md - Markdown
+
+
+```
+
+# Available devai Rhai CTX in scripts 
 
 All of the rhai script, the following `CTX` are available. 
 
@@ -12,24 +36,18 @@ All of the rhai script, the following `CTX` are available.
 | CTX.AGENT_FILE_NAME  | `command-ctx-reflect.devai`                               |
 | CTX.AGENT_FILE_STEM  | `command-ctx-reflect`                                     |
 
-
 - All path are relative `DEVAI_PARENT_DIR`
 - The `AGENT_NAME` is the name given that resolve to the `AGENT_FILE_PATH`. Can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
 - Those are available in `devai run ..` and well as `devai solo ...`
 
 
-For example, put this in your `# Output`
+for example: 
 
 ```rhai
-return #{
-	DEVAI_PARENT_DIR: CTX.DEVAI_PARENT_DIR,
-    DEVAI_DIR:        CTX.DEVAI_DIR,
-    AGENT_NAME:       CTX.AGENT_NAME,
-    AGENT_FILE_PATH:  CTX.AGENT_FILE_PATH,
-    AGENT_FILE_DIR:   CTX.AGENT_FILE_DIR,
-    AGENT_FILE_NAME:  CTX.AGENT_FILE_NAME,
-    AGENT_FILE_STEM:  CTX.AGENT_FILE_STEM,
-}
+let shared_instruction = file::load(CTX.AGENT_FILE_DIR + "/agents-content/some-shared-instruction.md")
+
+// if the agent is in `.devai/custom/command-agent/my-agent.devai` the path will be 
+// `.devai/custom/command-agent/agents-content/some-shared-instruction.md`
 ```
 
 # devai Rhai Modules Documentation

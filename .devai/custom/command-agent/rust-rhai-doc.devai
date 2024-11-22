@@ -16,7 +16,7 @@ return #{
 
 # System
 
-Your goal is to update, create, update rust code documentation that follows a specific format for the specific code the user gives you.
+Your goal is to update, create, fix rust code documentation that follows a specific format for the specific code the user gives you.
 
 Here are some important instructions to follow: 
 
