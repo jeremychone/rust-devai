@@ -14,11 +14,15 @@ return #{
 }
 ```
 
-# Instruction
+# System
+
+Your goal is to update, create, update rust code documentation that follows a specific format for the specific code the user gives you.
 
 Here are some important instructions to follow: 
 
 {{data.rhai_doc_inst}}
+
+# Instruction
 
 Here is the rust file content to apply those instruction to. 
 

@@ -12,7 +12,10 @@
 //! * `text::remove_first_lines(content: string, n: int) -> string`
 //! * `text::remove_last_line(content: string) -> string`
 //! * `text::remove_last_lines(content: string, n: int) -> string`
+//! * `text::truncate(content: string, max_len: int) -> string`
+//! * `text::truncate(content: string, max_len: int, ellipsis: string) -> string`
 //! * `text::replace_markers(content: string, new_sections: array) -> string`
+//! * `text::ensure_single_ending_newline(content: string) -> string`
 
 use crate::script::rhai_script::rhai_modules::DEFAULT_MARKERS;
 use crate::support::html::decode_html_entities;
@@ -53,14 +56,6 @@ pub fn rhai_module() -> Module {
 		.in_global_namespace()
 		.set_into_module(&mut module, remove_last_line);
 
-	FuncRegistration::new("remove_last_line")
-		.in_global_namespace()
-		.set_into_module(&mut module, remove_last_line);
-
-	FuncRegistration::new("remove_last_line")
-		.in_global_namespace()
-		.set_into_module(&mut module, remove_last_line);
-
 	FuncRegistration::new("truncate")
 		.in_global_namespace()
 		.set_into_module(&mut module, |content: &str, max_len: usize| {
@@ -87,6 +82,13 @@ pub fn rhai_module() -> Module {
 
 // region:    --- Strings
 
+/// ## RHAI Documentation
+/// ```rhai
+/// text::replace_markers(content: string, new_sections: array) -> string
+/// ```
+///
+/// Replaces markers in `content` with corresponding sections from `new_sections`.
+/// Each section in `new_sections` can be a string or a map containing a `.content` string.
 fn replace_markers_with_default_parkers(content: &str, new_sections: Vec<Dynamic>) -> RhaiResult {
 	// TODO: Should try to optimize this to use the static string and get the &str (Vec<&str> does not work)
 	const NEW_SECTION_ERROR: &str =
@@ -240,12 +242,12 @@ fn remove_last_lines(content: &str, num_of_lines: usize) -> &str {
 
 // region:    --- Escape Fns
 
-/// Only escape if needed. right now, the test only test `&lt;`
-///
 /// ## RHAI Documentation
 /// ```rhai
-/// text::escape_decode(content: string) -> string
+/// text::escape_decode_if_needed(content: string) -> string
 /// ```
+///
+/// Only escape if needed. Right now, the test only tests `&lt;`.
 ///
 /// Some LLMs HTML-encode their responses. This function returns `content`
 /// after selectively decoding certain HTML tags.
@@ -259,7 +261,6 @@ fn escape_decode_if_needed(content: &str) -> RhaiResult {
 	}
 }
 
-// html-escape
 /// ## RHAI Documentation
 /// ```rhai
 /// text::escape_decode(content: string) -> string
