@@ -1,5 +1,4 @@
-use crate::script::{DynaMap, IntoDynamic};
-use rhai::Dynamic;
+use mlua::IntoLua;
 use serde::Serialize;
 
 /// Represents a Markdown block with optional language and content.
@@ -20,15 +19,16 @@ impl MdBlock {
 	}
 }
 
-// region:    --- Dynamic Froms
+// region:    --- Lua
 
-impl IntoDynamic for MdBlock {
-	/// Converts the `MdBlock` instance into a Rhai `Dynamic` type.
-	/// Note: Kind of needed, because Dynamic has a `from(..)` which make the into a little inconvenient.
-	fn into_dynamic(self) -> Dynamic {
-		let map = DynaMap::default().insert("lang", self.lang).insert("content", self.content);
-		map.into_dynamic()
+impl IntoLua for MdBlock {
+	/// Converts the `MdBlock` instance into a Lua Value
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+		table.set("lang", self.lang)?;
+		table.set("content", self.content)?;
+		Ok(mlua::Value::Table(table))
 	}
 }
 
-// endregion: --- Dynamic Froms
+// endregion: --- Lua

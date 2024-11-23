@@ -4,6 +4,13 @@ This is an agent for proofreading comments in Rust source code files.
 
 It is slightly more optimized for the Rust version compared to the `proof-comments.devai` version.
 
+# Config
+
+```toml
+[genai]
+model = "gpt-4o-mini"
+```
+
 # Data
 
 ```lua
@@ -43,9 +50,9 @@ local content = utils.md.outer_block_content_or_raw(ai_response.content)
 -- Note: See `proof-comments.devai` for an explanation.
 local content = utils.text.ensure_single_ending_newline(content)
 
-// Example of how to save to the same file
+-- Example of how to save to the same file
 utils.file.save(data.file.path, content)
 
-// This will be printed by devai if it is a string
-return "File processed: " + data.file.path
+-- This will be printed by devai if it is a string
+return "File processed: " .. data.file.path
 ```

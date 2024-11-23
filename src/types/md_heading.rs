@@ -1,4 +1,5 @@
 use derive_more::{Debug, Display};
+use mlua::IntoLua;
 use std::str::CharIndices;
 
 #[derive(Display, Debug)]
@@ -89,6 +90,22 @@ impl MdHeading {
 		self.content
 	}
 }
+
+// region:    --- Lua
+
+impl IntoLua for MdHeading {
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+		let name = self.name().to_string();
+		table.set("content", self.content)?;
+		table.set("level", self.level)?;
+		table.set("name", name)?;
+
+		Ok(mlua::Value::Table(table))
+	}
+}
+
+// endregion: --- Lua
 
 /// Helper type functions
 impl MdHeading {

@@ -70,7 +70,7 @@ impl AgentDoc {
 
 		impl CaptureMode {
 			/// Here we are inside a code block that is getting captured for an action
-			/// either rhai script, toml, ...
+			/// either LUA script, toml, ...
 			///
 			/// NOTE: This is not used anymore since we have the `is_in_any_block`, but can be later.
 			#[allow(unused)]
@@ -199,7 +199,7 @@ impl AgentDoc {
 
 				// -- Before All
 				CaptureMode::BeforeAllSection => {
-					if line.starts_with("```rhai") {
+					if line.starts_with("```lua") {
 						capture_mode = CaptureMode::BeforeAllCodeBlock;
 						continue;
 					}
@@ -215,7 +215,7 @@ impl AgentDoc {
 
 				// -- Data
 				CaptureMode::DataSection => {
-					if line.starts_with("```rhai") {
+					if line.starts_with("```lua") {
 						capture_mode = CaptureMode::DataCodeBlock;
 						continue;
 					}
@@ -241,7 +241,7 @@ impl AgentDoc {
 
 				// -- Output
 				CaptureMode::OutputSection => {
-					if line.starts_with("```rhai") {
+					if line.starts_with("```lua") {
 						capture_mode = CaptureMode::OutputCodeBlock;
 						continue;
 					}
@@ -257,7 +257,7 @@ impl AgentDoc {
 
 				// -- After All
 				CaptureMode::AfterAllSection => {
-					if line.starts_with("```rhai") {
+					if line.starts_with("```lua") {
 						capture_mode = CaptureMode::AfterAllCodeBlock;
 						continue;
 					}
@@ -383,9 +383,9 @@ mod tests {
 		assert_contains(inst, "# block-03");
 		assert_contains(inst, "# Instruction");
 		let data_script = agent.data_script().ok_or("Should have data_script")?;
-		assert_contains(data_script, "// Some scripts that load the data");
+		assert_contains(data_script, "-- Some scripts that load the data");
 		let output_script = agent.output_script().ok_or("Should have output_script")?;
-		assert_contains(output_script, "/// Optional output processing.");
+		assert_contains(output_script, "-- Optional output processing.");
 
 		Ok(())
 	}
@@ -408,9 +408,9 @@ mod tests {
 		let inst = &first_prompt_part.content;
 		assert_contains(inst, "Some paragraph for instruction");
 		let data_script = agent.data_script().ok_or("Should have data_script")?;
-		assert_contains(data_script, "// Some scripts that load the data");
+		assert_contains(data_script, "-- Some scripts that load the data");
 		let output_script = agent.output_script().ok_or("Should have output_script")?;
-		assert_contains(output_script, "/// Optional output processing.");
+		assert_contains(output_script, "-- Optional output processing.");
 
 		Ok(())
 	}

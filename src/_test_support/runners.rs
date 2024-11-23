@@ -6,13 +6,13 @@ use crate::run::RunBaseOptions;
 use serde::Serialize;
 use serde_json::Value;
 
-/// A reflective agent just return the value of the data rhai section.
-/// It's useful for testing rhai module functions.
+/// A reflective agent just return the value of the data LUA section.
+/// It's useful for testing LUA module functions.
 ///
-pub async fn run_reflective_agent(data_rhai_code: &str, input: Option<Value>) -> Result<Value> {
+pub async fn run_reflective_agent(data_lua_code: &str, input: Option<Value>) -> Result<Value> {
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 
-	let agent = load_reflective_agent(data_rhai_code)?;
+	let agent = load_reflective_agent(data_lua_code)?;
 	let input = if let Some(input) = input { input } else { Value::Null };
 
 	let res =

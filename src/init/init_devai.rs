@@ -16,9 +16,9 @@ use std::path::Path;
 const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_init/config.toml");
 
 // -- Doc Content
-const DEVAI_DOC_RHAI_CONTENT: &str = include_str!("../../_init/doc/rhai.md");
+const DEVAI_DOC_LUA_CONTENT: &str = include_str!("../../_init/doc/lua.md");
 
-/// Note: The `show_info_always` will make it that even if the `.devai/` is found, it will print the message
+/// Note: The `show_info_always` will ensure that even if the `.devai/` is found, it will print the message
 ///       This is useful for the `devai init` to always show the status, but not on `devai run`
 pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> Result<DirContext> {
 	let hub = get_hub();
@@ -65,7 +65,7 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 	Ok(dir_context)
 }
 
-/// Create or refresh missing file a devai dir
+/// Create or refresh missing files in a devai directory
 async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 	let hub = get_hub();
 
@@ -79,7 +79,7 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 		write(&config_path, DEVAI_CONFIG_FILE_CONTENT)?;
 		hub.publish(format!(
 			"-> {:<18} '{}'",
-			"Create doc file",
+			"Create config file",
 			config_path.diff(devai_parent_dir)?
 		))
 		.await;
@@ -123,15 +123,15 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 	)
 	.await?;
 
-	// -- Create the doc
+	// -- Create the documentation
 	ensure_dir(devai_dir.get_doc_dir()?)?;
-	let rhai_doc_path = devai_dir.get_doc_rhai_path()?;
-	if !rhai_doc_path.exists() {
-		write(&rhai_doc_path, DEVAI_DOC_RHAI_CONTENT)?;
+	let lua_doc_path = devai_dir.get_doc_lua_path()?;
+	if !lua_doc_path.exists() {
+		write(&lua_doc_path, DEVAI_DOC_LUA_CONTENT)?;
 		hub.publish(format!(
 			"-> {:<18} '{}'",
-			"Create doc file",
-			rhai_doc_path.diff(devai_parent_dir)?
+			"Create documentation file",
+			lua_doc_path.diff(devai_parent_dir)?
 		))
 		.await;
 	}
@@ -147,7 +147,7 @@ async fn update_devai_files(
 	embedded_agent_file: &[&EmbeddedFile],
 ) -> Result<()> {
 	let dir = dir.as_ref();
-	let existing_files = list_files(dir, Some(&["*.devai"]), None)?;
+	let existing_files = list_files(dir, Some(&["**/*.devai"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
 
 	for e_file in embedded_agent_file {

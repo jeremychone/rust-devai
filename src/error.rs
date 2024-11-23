@@ -1,7 +1,6 @@
-use crate::script::DynaMap;
 use derive_more::derive::Display;
 use derive_more::From;
-use rhai::Dynamic;
+use std::sync::Arc;
 use tokio::runtime::TryCurrentError;
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -22,30 +21,17 @@ pub enum Error {
 		cause: String,
 	},
 
-	// -- Rhai Custom
-	// Dynamic to Value error
-	RhaiDynamicToValue(serde_json::Error),
-	// This is when we already formatted the error in Rhai for Rhai
-	#[from]
-	RhaiDynamic(Dynamic),
-
 	// -- TokioSync
 	TokioTryCurrent(TryCurrentError),
 
-	// -- Sub Modules
-	#[from]
-	DynamicSupport(crate::script::DynamicSupportError),
-
 	// -- Externals
+	Lua(String),
 	#[from]
 	Toml(toml::de::Error),
 	#[from]
 	JsonValueExt(value_ext::JsonValueExtError),
 	#[from]
 	Serde(serde_json::Error),
-	#[from]
-	#[display("Rhai Execution error:\n{_0}")]
-	RhaiAltResult(rhai::EvalAltResult),
 	#[from]
 	Handlebars(handlebars::RenderError),
 	#[from]
@@ -71,23 +57,16 @@ pub enum Error {
 
 // region:    --- Froms
 
-impl From<Box<rhai::EvalAltResult>> for Error {
-	fn from(val: Box<rhai::EvalAltResult>) -> Self {
-		Self::RhaiAltResult(*val)
+// For now, we serialize as string for sync/send
+impl From<mlua::Error> for Error {
+	fn from(val: mlua::Error) -> Self {
+		Self::Lua(val.to_string())
 	}
 }
 
-impl From<Error> for Box<rhai::EvalAltResult> {
-	fn from(devai_error: Error) -> Self {
-		match devai_error {
-			Error::RhaiDynamic(dynamic) => Box::new(rhai::EvalAltResult::ErrorRuntime(dynamic, rhai::Position::NONE)),
-			Error::RhaiAltResult(val) => val.into(),
-			_ => {
-				let err_dyna = DynaMap::default().insert("error", format!("Rhai Call error. Cause: {devai_error}"));
-
-				Box::new(rhai::EvalAltResult::ErrorRuntime(err_dyna.into(), rhai::Position::NONE))
-			}
-		}
+impl From<Error> for mlua::Error {
+	fn from(value: Error) -> Self {
+		mlua::Error::ExternalError(Arc::new(value))
 	}
 }
 

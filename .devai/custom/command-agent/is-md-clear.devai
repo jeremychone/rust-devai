@@ -1,8 +1,8 @@
 # Data
 
-```rhai
-return #{
-    file: file::load(input.path)
+```lua
+return {
+    file = utils.file.load(input.path)
 }
 ```
 
@@ -16,7 +16,6 @@ Is the maro markdown file content below is clear?
 
 # Output
 
-```rhai
-
-return ai_response.content;
+```lua
+return ai_response.content
 ```

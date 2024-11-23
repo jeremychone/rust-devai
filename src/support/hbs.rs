@@ -26,22 +26,21 @@ pub fn hbs_render(hbs_tmpl: &str, data_root: &HashMap<String, Value>) -> Result<
 
 #[cfg(test)]
 mod tests {
-	type Error = Box<dyn std::error::Error>;
-	type Result<T> = core::result::Result<T, Error>; // For tests.
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use super::*;
 	use crate::_test_support::assert_contains;
 	use crate::run::Runtime;
-	use crate::script::rhai_eval;
+	use crate::support::hbs::hbs_render;
+	use std::collections::HashMap;
 
 	#[tokio::test]
-	async fn test_hbs_with_rhai_ok() -> Result<()> {
+	async fn test_hbs_with_lua_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 		let script = r#"
-        let file1 = file::load("file-01.txt");
-        let file2 = file::load("agent-script/agent-before-all.devai");
-        [file1, file2]  // Return an array of File structs
+        local file1 = utils.file.load("file-01.txt")
+        local file2 = utils.file.load("agent-script/agent-before-all.devai")
+        return {file1,file2}  -- Return an array of File structs
     "#;
 		let tmpl = r#"
 The files are: 
@@ -51,12 +50,14 @@ The files are:
 		"#;
 
 		// -- Exec
-		let result_json = rhai_eval(runtime.rhai_engine(), script, None)?;
+		let lua_engine = runtime.new_lua_engine()?;
+		let data = lua_engine.eval(script, None)?;
+		let data = serde_json::to_value(data)?;
 		// Execute the template
-		let data = HashMap::from([("data".to_string(), result_json)]);
+		let data = HashMap::from([("data".to_string(), data)]);
 		let res = hbs_render(tmpl, &data)?;
 
-		// -- Check
+		// // -- Check
 		assert_contains(&res, "- file-01.txt");
 		assert_contains(&res, "- agent-script/agent-before-all.devai");
 

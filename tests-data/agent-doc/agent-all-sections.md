@@ -7,13 +7,13 @@ model = "test_model_for_demo"
 
 # Before All 
 
-```rhai
+```lua
 let before_all = "before_all";
 ```
 
 # Data
 
-```rhai
+```lua
 let some_data = "Some Data";
 return some_data;
 ```
@@ -24,12 +24,12 @@ Some instruction
 
 # Output
 
-```rhai
+```lua
 let some_output = "Some Output";
 ```
 
 # After All
 
-```rhai
+```lua
 let after_all = "after_all";
 ```

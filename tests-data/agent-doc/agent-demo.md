@@ -10,15 +10,15 @@ inputs_concurrency = 8
 
 # Data
 
-```rhai
+```lua
 
-// Some scripts that load the data
-// Will have access to the command line args after command name
+-- Some scripts that load the data
+-- Will have access to the command line args after command name
 
-let src_builder_file = file::load("./src/client/builder.rs");
-// src_builder_file.name: "builder.rs"
-// src_builder_file.path: "./src/client/builder.rs"
-// src_builder_file.content: ".... content of the file ...."
+local src_builder_file = utils.file.load("./src/client/builder.rs")
+-- src_builder_file.name: "builder.rs"
+-- src_builder_file.path: "./src/client/builder.rs"
+-- src_builder_file.content: ".... content of the file ...."
 
 return "hello"
 ```
@@ -56,6 +56,6 @@ block-02
 
 # Output
 
-```rhai
-/// Optional output processing.
+```lua
+-- Optional output processing.
 ```

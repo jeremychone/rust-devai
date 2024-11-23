@@ -25,18 +25,18 @@ pub fn load_test_solo_agent_and_solo_config(path: &str, runtime: &Runtime) -> Re
 }
 
 /// Will create and agent where the `# Output` refect the return of the `# Data`
-/// Used to test rhai module functions
-pub fn load_reflective_agent(data_rhai_code: &str) -> Result<Agent> {
+/// Used to test LUA module functions
+pub fn load_reflective_agent(data_lua_code: &str) -> Result<Agent> {
 	load_inline_agent(
 		"./mock/reflective-agent.devai",
 		format!(
 			r#"
 # Data
-```rhai
-{data_rhai_code}
+```lua
+{data_lua_code}
 ```
 # Output
-```rhai
+```lua
 return data
 ```
 	"#

@@ -1,11 +1,11 @@
-name: "Generic Issue Report"
-description: "Generic issue report"
+name: "Generic issue / requirement / idea / question Report"
+description: "Generic issue, requirement, question report"
 body:
   - type: markdown
     attributes:
-      value: "### Please enter your issue below:"
+      value: "## Please enter your description below:"
   - type: textarea
     id: issue_description
     attributes:
       label: "Issue Description"
-      placeholder: "Describe your issue here"
+      placeholder: "Describe your issue, requirement, idea, question here"

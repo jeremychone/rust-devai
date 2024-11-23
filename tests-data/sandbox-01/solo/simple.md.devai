@@ -1,9 +1,10 @@
 # Data
 
-```rhai
+```lua
 
-return #{from_data: "From Data (input.path: " + input.path + ")"}
-// Nothing for now
+return {
+    from_data = "From Data (input.path: " .. input.path
+}
 ```
 
 
@@ -14,9 +15,9 @@ Why is the sky blue? Make it super concise.
 
 # Output 
 
-```rhai
+```lua
 
-// ai_response (with ai_response.content) is the variable in the context of the eventual response of the AI.
+-- ai_response (with ai_response.content) is the variable in the context of the eventual response of the AI.
 
-return "Output - " + input.path + " - " + data.from_data;
+return "Output - " .. input.path .. " - " .. data.from_data
 ```

@@ -1,5 +1,5 @@
 # Output
 
-```rhai
-return "hello '" + input + "' from sub-dir-a/sub-sub-dir/agent-hello-3.md";
+```lua
+return "hello '" .. input .. "' from sub-dir-a/sub-sub-dir/agent-hello-3.md"
 ```

@@ -6,6 +6,10 @@ pub(super) struct EmbeddedFile {
 pub(super) fn get_embedded_command_agent_files() -> &'static [&'static EmbeddedFile] {
 	&[
 		&EmbeddedFile {
+			name: "proof-read.devai",
+			content: include_str!("../../_init/agents/proof-read.devai"),
+		},
+		&EmbeddedFile {
 			name: "proof-comments.devai",
 			content: include_str!("../../_init/agents/proof-comments.devai"),
 		},

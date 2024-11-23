@@ -2,15 +2,15 @@ use crate::agent::{Agent, PromptPart};
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
-use crate::script::devai_custom::{DevaiCustom, FromValue};
-use crate::script::rhai_eval;
+use crate::script::{DevaiCustom, FromValue};
 use crate::support::hbs::hbs_render;
 use crate::Result;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatMessage, ChatRequest};
 use genai::ModelName;
+use mlua::IntoLua;
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::collections::HashMap;
 
 #[derive(Debug, Serialize)]
@@ -20,6 +20,19 @@ pub struct AiResponse {
 	pub adapter_kind: AdapterKind,
 }
 
+impl IntoLua for AiResponse {
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+
+		table.set("content", self.content.into_lua(lua)?)?;
+		table.set("model_name", self.model_name.into_lua(lua)?)?;
+		table.set("adapter_kind", self.adapter_kind.as_str().into_lua(lua)?)?;
+
+		Ok(mlua::Value::Table(table))
+	}
+}
+
+#[derive(Debug)]
 pub enum RunAgentInputResponse {
 	AiReponse(AiResponse),
 	OutputResponse(Value),
@@ -58,16 +71,18 @@ pub async fn run_agent_input(
 	let hub = get_hub();
 	let client = runtime.genai_client();
 
-	// -- Build the _ctx
-	let data_rhai_scope = json!({
-		"input": input.clone(), // clone because input is reused later
-		"before_all": before_all_result.clone(),
-		"CTX": literals.to_ctx_value()
-	});
+	// -- Build the scope
+	// Fix me: Probably need to get the engine from the arg
+	let lua_engine = runtime.new_lua_engine()?;
+	let lua_scope = lua_engine.create_table()?;
+	lua_scope.set("input", lua_engine.serde_to_lua_value(input.clone())?)?;
+	lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result.clone())?)?;
+	lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
 
 	// -- Execute data
 	let data = if let Some(data_script) = agent.data_script().as_ref() {
-		rhai_eval(runtime.rhai_engine(), data_script, Some(data_rhai_scope))?
+		let lua_value = lua_engine.eval(data_script, Some(lua_scope))?;
+		serde_json::to_value(lua_value)?
 	} else {
 		Value::Null
 	};
@@ -179,15 +194,17 @@ pub async fn run_agent_input(
 
 	// -- Exec output
 	let res = if let Some(output_script) = agent.output_script() {
-		let scope_output = json!({
-			"input": input,
-			"data": data,
-			"before_all": before_all_result,
-			"ai_response": ai_response,
-			"CTX": literals.to_ctx_value()
-		});
+		let lua_engine = runtime.new_lua_engine()?;
+		let lua_scope = lua_engine.create_table()?;
+		lua_scope.set("input", lua_engine.serde_to_lua_value(input)?)?;
+		lua_scope.set("data", lua_engine.serde_to_lua_value(data)?)?;
+		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result)?)?;
+		lua_scope.set("ai_response", ai_response)?;
+		lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
 
-		let output_response = rhai_eval(runtime.rhai_engine(), output_script, Some(scope_output))?;
+		let lua_value = lua_engine.eval(output_script, Some(lua_scope))?;
+		let output_response = serde_json::to_value(lua_value)?;
+
 		Some(RunAgentInputResponse::OutputResponse(output_response))
 	} else {
 		ai_response.map(RunAgentInputResponse::AiReponse)
