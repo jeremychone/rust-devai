@@ -1,54 +1,53 @@
-//! Defines the `rust` module, used in the rhai engine.
+//! Defines the `rust` module, used in the lua engine.
 //!
 //! ---
 //!
-//! ## RHAI documentation
+//! ## Lua documentation
 //! The `rust` module exposes functions used to process Rust code.
 //!
 //! ### Functions
-//! * `rust::prune_to_declarations(code: string) -> string`
+//! * `utils.rust.prune_to_declarations(code: string) -> string`
 
+use crate::run::RuntimeContext;
+use crate::script::lua_script::helpers::make_table_external_error;
 use crate::support::code::run_prune_to_declarations;
-use rhai::plugin::RhaiResult;
-use rhai::{EvalAltResult, FuncRegistration, Module};
+use crate::Result;
+use mlua::{Lua, Table, Value};
 
-pub fn rhai_module() -> Module {
-	let mut module = Module::new();
+pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
+	let table = lua.create_table()?;
 
-	FuncRegistration::new("prune_to_declarations")
-		.in_global_namespace()
-		.set_into_module(&mut module, prune_to_declarations);
+	let prune_fn = lua.create_function(prune_to_declarations)?;
 
-	module
+	table.set("prune_to_declarations", prune_fn)?;
+
+	Ok(table)
 }
 
-// region:    --- Rhai Functions
-
-/// ## RHAI Documentation
-/// ```rhai
-/// rust::prune_to_declarations(code: string) -> string
+/// ## Lua Documentation
+/// ```lua
+/// utils.rust.prune_to_declarations(code: string) -> string
 /// ```
 ///
 /// Trims Rust code to keep only function declarations by replacing function bodies with `{ ... }`.
 /// Preserves comments, whitespace, and non-function code structures.
 ///
 /// Example:
-/// ```rhai
-/// let code = "fn add(a: i32, b: i32) -> i32 { a + b }";
-/// let result = rust::prune_to_declarations(code);
-/// // result will be: "fn add(a: i32, b: i32) -> i32 { ... }"
+/// ```lua
+/// local code = "fn add(a: i32, b: i32) -> i32 { a + b }"
+/// local result = utils.rust.prune_to_declarations(code)
+/// -- result will be: "fn add(a: i32, b: i32) -> i32 { ... }"
 /// ```
-fn prune_to_declarations(code: &str) -> RhaiResult {
-	match run_prune_to_declarations(code) {
-		Ok(result) => Ok(result.into()),
-		Err(err) => Err(Box::new(EvalAltResult::ErrorRuntime(
-			format!("Failed to prune Rust code: {}", err).into(),
-			rhai::Position::NONE,
-		))),
+fn prune_to_declarations(lua: &Lua, code: String) -> mlua::Result<Value> {
+	match run_prune_to_declarations(&code) {
+		Ok(result) => Ok(Value::String(lua.create_string(&result)?)),
+		Err(err) => {
+			let error_table = lua.create_table()?;
+			error_table.set("error", format!("Failed to prune Rust code: {}", err))?;
+			Err(make_table_external_error(error_table))
+		}
 	}
 }
-
-// endregion: --- Rhai Functions
 
 // region:    --- Tests
 
@@ -60,7 +59,7 @@ mod tests {
 	use serde_json::Value;
 
 	#[tokio::test]
-	async fn test_rhai_rust_prune_to_declarations() -> Result<()> {
+	async fn test_lua_rust_prune_to_declarations() -> Result<()> {
 		// -- Fixtures
 		let data_script = r#"
 //! Some top comment 
@@ -82,7 +81,7 @@ fn some_normal() {
 
 		// -- Exec
 		let res = run_reflective_agent(
-			r#"return rust::prune_to_declarations(input);"#,
+			r#"return utils.rust.prune_to_declarations(input)"#,
 			Some(Value::String(data_script.to_string())),
 		)
 		.await?;

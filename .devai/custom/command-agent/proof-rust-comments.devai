@@ -1,9 +1,15 @@
 # Description
 
-This is an agent for proof reading comments in Rust source code files.
+This is an agent for proofreading comments in Rust source code files.
 
-It is slightly more optimized for the Rust version compared to the `proof-comments.devai` version, but it is also 
-to show that we can have more specific agents even in the same category. 
+It is slightly more optimized for the Rust version compared to the `proof-comments.devai` version.
+
+# Config
+
+```toml
+[genai]
+model = "gpt-4o-mini"
+```
 
 # Data
 
@@ -25,14 +31,15 @@ For the following Rust file:
 
 {{data.file.path}}
 
-```rust
+```
 {{data.file.content}}
 ```
 
 - Correct the English of all comments if it is a code base (do not correct the code).
-- Do not change Rust code.
+- Correct the English of all content if it is a Markdown file.
+- Only correct comments if necessary.
 - Preserve the whitespace (do not change tabs into spaces and vice versa).
-- If the file contains module comment `//! ` make sure an empty line follow the module comment block.
+- If English spelling and grammar are correct, do not change.
 - Return the corrected content without any explanation.
 
 # Output
@@ -43,9 +50,9 @@ local content = utils.md.outer_block_content_or_raw(ai_response.content)
 -- Note: See `proof-comments.devai` for an explanation.
 local content = utils.text.ensure_single_ending_newline(content)
 
-// Example of how to save to the same file
+-- Example of how to save to the same file
 utils.file.save(data.file.path, content)
 
-// This will be printed by devai if it is a string
-return "File processed: " + data.file.path
+-- This will be printed by devai if it is a string
+return "File processed: " .. data.file.path
 ```

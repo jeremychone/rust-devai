@@ -41,7 +41,7 @@ const DEVAI_NEW_SOLO_DIRS: &[&str] = &[
 
 // -- Doc
 const DEVAI_DOC_DIR: &str = "doc";
-const DEVAI_DOC_RHAI_PATH: &str = "doc/rhai.md";
+const DEVAI_DOC_LUA_PATH: &str = "doc/lua.md";
 
 // endregion: --- Consts
 
@@ -163,8 +163,8 @@ impl DevaiDir {
 		Ok(dir)
 	}
 
-	pub fn get_doc_rhai_path(&self) -> Result<SPath> {
-		let path = self.devai_dir_full_path.join(DEVAI_DOC_RHAI_PATH)?;
+	pub fn get_doc_lua_path(&self) -> Result<SPath> {
+		let path = self.devai_dir_full_path.join(DEVAI_DOC_LUA_PATH)?;
 		Ok(path)
 	}
 }

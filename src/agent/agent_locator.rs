@@ -117,7 +117,7 @@ pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
 	let mut file_stems: HashSet<String> = HashSet::new();
 
 	for dir in dirs {
-		let files = list_files(dir, Some(&["*.devai"]), None)?;
+		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
 		for file in files.into_iter() {
 			let stem = file.stem().to_string();
 			if file_stems.contains(&stem) {
@@ -146,7 +146,7 @@ pub fn agent_sfile_as_bullet(sfile: &SFile) -> String {
 /// Finds the first matching AgentDoc in the provided directories.
 fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>> {
 	for dir in dirs {
-		let files = list_files(dir, Some(&["*.devai"]), None)?;
+		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
 		if let Some(found_file) = files.into_iter().find(|f| match_agent(name, f)) {
 			// NOTE: Because the dirs are form the DevaiDir and might not be absolute, and relative to working dir
 			//       But later, need to remove from the current_dir of the DirContext, so, needs full path
@@ -178,7 +178,7 @@ fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
 	let mut candidates = Vec::new();
 
 	for dir in dirs {
-		let files = list_files(dir, Some(&["*.devai"]), None)?;
+		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
 		for file in files {
 			candidates.push(file);
 		}

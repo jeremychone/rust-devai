@@ -6,6 +6,12 @@
 
 </div>
 
+# IMPORTANT - Now v0.5.0-WIP with Lua
+
+The main branch is no `v0.5.0-WIP` (Work in progress), a huge upgrade from the currently released `0.1.0`, and now uses **Lua** for scripting (rather than Rhai).
+
+ _Rhai is great, but Lua is more known, very small, efficient, supports async, and is perfect fit for the embedding needs of devai_
+
 # **devai** - **Command Agent File Runner**
 
 ```sh
@@ -15,36 +21,40 @@ cargo install devai
 # Init (optional; will be executed on each run as well)
 devai init
 
-# Will fix all code comments in all matching files
-devai run proof-rust-comments -f "./src/m*.rs"
+# Will proof-read and update of the direct .md file from the current direct
+devai run proof-read -f "./*.md"
+# Can use multiple globs or direct file -f "./*.md" -f "./doc/**/*.md"
 
-# How: It will run the installed Command Agent file ".devai/defaults/proof-rust-comments.md" on all source files matching "./src/m*.rs"
+# How it works: 
+#   It will run the installed Command Agent file ".devai/defaults/proof-read.devai" on all source files matching "./src/m*.rs"
 
 # IMPORTANT: Make sure everything is committed before usage.
 ```
 
 **TOP COLLABORATOR** Big **thanks** to [Stephan Philipakis](https://github.com/sphilipakis), a top **devai** collaborator contributing to the next-generation methodology for production coding with GenAI.
 
-## **ONE Markdown** == **ONE Agent** 
+## KEY CONCEPT - **ONE Markdown** == **ONE Agent**
 
-At one of its simplest forms, there are 3 main stages
+The main goal of devai is to minimize the friction of creating and running an agent while giving maximum control over how we want those agents to run, and maximizing iteration speed to mature them quickly.
+
+In one of its simplest forms, there are 3 main stages:
 
 ```sh
-# Run the ./my-first-agent.devai on all files ending matching "**/*.md"
-devai run ./my-first-agent.devai -f "**/*.md"
+# Run the ./first-agent.devai on all files ending matching "**/*.md"
+devai run ./my-agents/first-agent.devai -f "./README.md"
 ```
 
-`./my-first-agent.devai`
+`./my-agents/my-first-agent.devai`
 ``````md
 # Data 
 
-```rhai
-// Here, there will be some script to run before each instruction
-// Get access to `input` and can fetch more data and return it for the next stage
-// Input is what was given by the command line (when -f, this will be the file metadata)
+```lua
+-- Here, there will be some script to run before each instruction
+-- Get access to `input` and can fetch more data and return it for the next stage
+-- Input is what was given by the command line (when -f, this will be the file metadata)
 
-return #{
-    file: file::load(input.path)
+return {
+    file: utils.file.load(input.path)
 }
 ```
 
@@ -63,18 +73,20 @@ Here is the content of the file to proofread
 
 # Output
 
-```rhai
+```lua
 
-// Here, we can take the ai_response.content, and do some final processing. 
-// For example: 
-// Here, we remove the eventual top markdown block. In certain cases, this might be useful. 
-let content = md::outer_block_content_or_raw(ai_response.content);
-// For code, it is nice to make sure it ends with one and only one new line. 
-let content = text::ensure_single_ending_newline(content)
-// More processing....
+-- Here, we can take the ai_response.content, and do some final processing. 
+-- For example: 
+-- Here, we remove the eventual top markdown block. In certain cases, this might be useful. 
+local content = utils.md.outer_block_content_or_raw(ai_response.content);
+-- For code, it is nice to make sure it ends with one and only one new line. 
+content = utils.text.ensure_single_ending_newline(content)
+-- More processing....
 
-// input.path is the same as data.file.path, so we can use either
-file::save(input.path, content )
+-- input.path is the same as data.file.path, so we can use either
+utils.file.save(input.path, content)
+
+return "This will be printed in the terminal if String"
 
 ```
 
@@ -82,7 +94,7 @@ file::save(input.path, content )
 
 See [Complete Stages Description](#complete-stages-description) for more details
 
-## Info
+## More Details
 
 Supports all models/providers supported by the [genai crate](https://crates.io/crates/genai) (see below for more information).
 
@@ -124,8 +136,8 @@ Here is a full description of the complete flow
         - `-i` or `--input` to specify one input (can add multiple `-i/--input`)
         - `-f some_glob` will create one input per file matched with input as `{path, name, step, ext}`
     - Then the following stages happen (all optional)
-- **Stage 1**: `# Before All` (rhai block) (optional) 
-    - The `rhai` block has the following scope
+- **Stage 1**: `# Before All` (lua block) (optional) 
+    - The `lua` block has the following scope
         - `inputs` which is all of the inputs
     - Then can return
         - Nothing
@@ -134,24 +146,24 @@ Here is a full description of the complete flow
         - Override or generate inputs via 
             `return devai::before_all_response(#{inputs: [1, 2, 3]})`
         - or both by passing `#{inputs: ..., before_all: ...}` to the `devai::before_all_response` argument. 
-- **Stage 2**: `# Data` (rhai block) (optional)
-    - The `rhai` block gets the following variable in scope: 
+- **Stage 2**: `# Data` (lua block) (optional)
+    - The `lua` block gets the following variable in scope: 
         - `input` from the command line and/or Before All section (or null if no input)
     - Can return some data that will be labeled `data` in the future stage and can be used in the next steps. 
 - **Stage 3**: `# Instruction` (handlebars template)
     - The content of the instruction is rendered via Handlebars, which is a templating engine, with the following variables in scope
         - `input` from Stage 1 or command line
         - `data` from Stage 2 (or null if no stage 2 or Stage 2 returns void/null/nothing)
-- **Stage 4**: `# Output` (rhai block) (optional)
-    - The `rhai` block will get the following scope
+- **Stage 4**: `# Output` (lua block) (optional)
+    - The `lua` block will get the following scope
         - `input` from Stage 1 or command line (or null if no input)
         - `data` from Stage 2 (or null if no Stage 2 or Stage 2 returns void/null/nothing)
         - `ai_response` (if instruction) with 
             - `.content` the text content of the response
             - `.model_name` the model name it was executed with
     - Can return some data, which will be put in the `output` scope for the following stages
-- **Stage 5**: `After All` (rhai block) (optional)
-    - The `rhai` block will get the following scope
+- **Stage 5**: `After All` (lua block) (optional)
+    - The `lua` block will get the following scope
         - `inputs` the list of inputs from Stage 1 or command line
         - `outputs` the list of outputs from Stage 4 or null for each input
         - Note: the `inputs` and `outputs` arrays are kept in sync, and `null` will be in the output if not found. 
@@ -166,11 +178,11 @@ Usage: `devai run proof-rust-comments -f "./src/main.rs"`
 (or have any glob like `-f "./src/**/*.rs"`)
 - This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rust-comments.md` (see [.devai/defaults/proof-comments.md`](./_init/agents/proof-comments.devai)) and run it with genai as follows: 
     - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "input" for each file, which can then be accessed in the `# Data` scripting section.
-    - `# Data`, which contains a ```rhai``` block that will get executed with the `input` value (the file reference in our example above).
-        - With `rhai`, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
+    - `# Data`, which contains a ```lua``` block that will get executed with the `input` value (the file reference in our example above).
+        - With **Lua**, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
     - `# Instruction`, which is a Handlebars template section, has access to `input` as well as the output of the `# Data` section, accessible as the `data` variable. 
         - This will be sent to the AI.
-    - `# Output`, which now executes another ```rhai``` block, using the `input`, `data`, and `ai_response` (with `ai_response.content`), which is the string returned by the AI. 
+    - `# Output`, which now executes another ```lua``` block, using the `input`, `data`, and `ai_response` (with `ai_response.content`), which is the string returned by the AI. 
         - It can save files in place or create new files. 
         - Later, it will even be able to queue new devai work.
 - By default, this will run with `gpt-4o-mini` and look for the `OPENAI_API_KEY` environment variable.
@@ -248,7 +260,7 @@ inputs_concurrency = 1
 
 ## Future Plan
 
-- Support for the `# inputs` section with `yaml` or `Rhai`.
-- More `Rhai` modules/functions.
-- Support for `# Before All`, `# Before`, `# After`, and `# After All` (all `Rhai`).
+- Support for the `# inputs` section with `yaml` or **Lua**.
+- More **Lua** modules/functions.
+- Support for `# Before All`, `# Before`, `# After`, and `# After All` (all **Lua**).
 - `--capture` will perform the normal run but capture the request and response in the request/response file.

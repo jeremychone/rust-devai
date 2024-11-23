@@ -3,7 +3,6 @@ type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tes
 use super::*;
 use crate::_test_support::{assert_contains, load_inline_agent, load_test_agent, run_test_agent_with_input};
 use crate::types::FileRef;
-use serial_test::serial;
 use simple_fs::SPath;
 
 #[tokio::test]
@@ -19,7 +18,7 @@ async fn test_run_agent_script_hello_ok() -> Result<()> {
 	// Note here '' because input is null
 	assert_eq!(
 		res.as_str().ok_or("Should have output result")?,
-		"hello 'input-01' from agent-hello.devai"
+		"Hello 'input-01' from agent-hello.devai"
 	);
 
 	Ok(())
@@ -28,27 +27,26 @@ async fn test_run_agent_script_hello_ok() -> Result<()> {
 /// NOTE: For now disable the HubCapture test see below
 ///
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-#[serial(some_key)]
 async fn test_run_agent_script_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
 	let agent = load_test_agent("./agent-script/agent-before-all.devai", &runtime)?;
-
-	// NOTE: For now, we disable the hub_capture check as the do not always work (because the way test are ran)
-	// let hub_capture = HubCapture::new_and_start();
 
 	// -- Execute
 	let on_path = SPath::new("./some-random/file.txt")?;
 	let path_ref = FileRef::from(on_path);
 	let inputs = vec![serde_json::to_value(path_ref)?];
 
-	let _res = run_command_agent(&runtime, &agent, Some(inputs), &RunBaseOptions::default(), false).await;
+	let res = run_command_agent(&runtime, &agent, Some(inputs), &RunBaseOptions::default(), true).await?;
 
 	// -- Check
-	// NOTE: For now, we disable the hub_capture check as the do not always work (because the way test are ran)
-	// let _hub_content = hub_capture.into_content().await?;
-	// TODO: Need to find a way to assert the result
-	// assert_contains(&_hub_content, "Some Before All - Some Data - ./some-random/file.txt");
+	let outputs = res.outputs.ok_or("Should have output values")?;
+	assert_eq!(outputs.len(), 1, "should have one and only one output");
+	let output = outputs.into_iter().next().ok_or("Should have one output")?;
+	assert_eq!(
+		output.as_str().ok_or("Output should be string")?,
+		"Some Before All - Some Data - ./some-random/file.txt"
+	);
 
 	Ok(())
 }
@@ -128,24 +126,21 @@ async fn common_test_run_agent_script_skip(reason: Option<&str>) -> Result<()> {
 	let fx_agent = format!(
 		r#"
 # Data
-```rhai
-if input == "one" {{
-  return devai::skip({reason_str});
-}}
+```lua
+if input == "one" then
+  return devai.skip({reason_str})
+end
 ```
 
 # Output 
 
-```rhai
-return "output for: " + input
+```lua
+return "output for: " .. input
 ```
 	"#
 	);
 
 	let agent = load_inline_agent("./dummy/path.devai", fx_agent)?;
-
-	// NOTE: For now, we disable the hub_capture check as the do not always work (because the way test are ran)
-	// let hub_capture = HubCapture::new_and_start();
 
 	// -- Execute
 	let inputs = fx_inputs.iter().map(|v| Value::String(v.to_string())).collect();
@@ -155,13 +150,6 @@ return "output for: " + input
 		.ok_or("Should have output result")?;
 
 	// -- Check
-	// let hub_content = hub_capture.into_content().await?;
-	// // check the prints/hub:
-	// assert_contains(&hub_content, "-! DevAI Skip input at Data stage: input index: 0");
-	// if let Some(reason) = reason.as_ref() {
-	// 	assert!(hub_content.contains(reason), "should have reason in the skip message");
-	// }
-
 	// check the result
 	assert_eq!(res.first().ok_or("Should have input 0")?, &Value::Null);
 	assert_eq!(

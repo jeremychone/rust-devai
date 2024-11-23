@@ -3,11 +3,10 @@ use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::run_input::{run_agent_input, RunAgentInputResponse};
 use crate::run::{RunBaseOptions, Runtime};
-use crate::script::devai_custom::{DevaiCustom, FromValue};
-use crate::script::rhai_eval;
+use crate::script::{DevaiCustom, FromValue};
 use crate::{Error, Result};
 use serde::Serialize;
-use serde_json::{json, Value};
+use serde_json::Value;
 use tokio::task::JoinSet;
 use value_ext::JsonValueExt;
 
@@ -43,12 +42,14 @@ pub async fn run_command_agent(
 
 	// -- Run the before all
 	let (inputs, before_all_response) = if let Some(before_all_script) = agent.before_all_script() {
-		let before_all_scope = json!({
-			"inputs": inputs.clone(), // clone because input is reused later
-			"CTX": literals.to_ctx_value()
-		});
+		let lua_engine = runtime.new_lua_engine()?;
+		let lua_scope = lua_engine.create_table()?;
+		let lua_inputs = inputs.clone().map(Value::Array).unwrap_or_default();
+		lua_scope.set("inputs", lua_engine.serde_to_lua_value(lua_inputs)?)?;
+		lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
 
-		let before_all_res = rhai_eval(runtime.rhai_engine(), before_all_script, Some(before_all_scope))?;
+		let lua_value = lua_engine.eval(before_all_script, Some(lua_scope))?;
+		let before_all_res = serde_json::to_value(lua_value)?;
 
 		match DevaiCustom::from_value(before_all_res)? {
 			// it is an skip action
@@ -186,17 +187,17 @@ pub async fn run_command_agent(
 			Value::Null
 		};
 
-		let after_all_scope = json!({
-			"inputs": inputs,
-			"outputs": outputs_value, // Will be Value::Null if outputs were not collected
-			"before_all": before_all,
-			"CTX": literals.to_ctx_value()
-		});
-		Some(rhai_eval(
-			runtime.rhai_engine(),
-			after_all_script,
-			Some(after_all_scope),
-		)?)
+		let lua_engine = runtime.new_lua_engine()?;
+		let lua_scope = lua_engine.create_table()?;
+		let inputs = Value::Array(inputs);
+		lua_scope.set("inputs", lua_engine.serde_to_lua_value(inputs)?)?;
+		// Will be Value::Null if outputs were not collected
+		lua_scope.set("outputs", lua_engine.serde_to_lua_value(outputs_value)?)?;
+		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all)?)?;
+		lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
+
+		let lua_value = lua_engine.eval(after_all_script, Some(lua_scope))?;
+		Some(serde_json::to_value(lua_value)?)
 	} else {
 		None
 	};

@@ -2,7 +2,7 @@ use crate::{Error, Result};
 use serde_json::Value;
 use value_ext::JsonValueExt;
 
-/// Custom data that can be returned by the Rhai script for special actions
+/// Custom data that can be returned by the lua script for special actions
 #[derive(Debug, strum::AsRefStr)]
 pub enum DevaiCustom {
 	/// Will

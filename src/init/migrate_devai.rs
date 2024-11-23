@@ -11,12 +11,12 @@ pub const DEVAI_0_1_0_AGENT_CUSTOMS_DIR: &str = ".devai/customs";
 pub const DEVAI_0_1_0_DEPRECATED_DIR: &str = ".devai/_deprecated_v0_1_0";
 
 pub fn migrate_devai_0_1_0_if_needed(base_dir: &SPath, devai_dir: &DevaiDir) -> Result<bool> {
-	// -- migrate the default command agents
+	// -- Migrate the default command agents
 	let agent_default_dir = devai_dir.get_command_agent_default_dir()?;
 	let defaults_migrated = migrate_agent_dir(base_dir, DEVAI_0_1_0_AGENT_DEFAULTS_DIR, agent_default_dir)?;
 	archive_agent_dir(base_dir, DEVAI_0_1_0_AGENT_DEFAULTS_DIR)?;
 
-	// -- migrate the custom command agents
+	// -- Migrate the custom command agents
 	let agent_custom_dir = devai_dir.get_command_agent_custom_dir()?;
 	let customs_migrated = migrate_agent_dir(base_dir, DEVAI_0_1_0_AGENT_CUSTOMS_DIR, agent_custom_dir)?;
 	archive_agent_dir(base_dir, DEVAI_0_1_0_AGENT_CUSTOMS_DIR)?;
@@ -26,8 +26,8 @@ pub fn migrate_devai_0_1_0_if_needed(base_dir: &SPath, devai_dir: &DevaiDir) -> 
 
 /// This is a v0.1.0 to v0.1.1 migration
 /// For example (from .devai/customs/.. to ./devai/custom/command-agent/..)
-/// - Copy the legacy `*.md` at the root of the folder to the new target folder with `*.devai`
-///    -  Only the direct decending .md files
+/// - Copy the legacy `*.md` files at the root of the folder to the new target folder with `*.devai`
+///    - Only the directly descending .md files
 /// - Move the whole legacy folder `.devai/customs` to the `.devai/deprecated_v0_1_0/customs`
 fn migrate_agent_dir(base_dir: &SPath, old_dir: impl AsRef<Path>, dest_dir: impl AsRef<Path>) -> Result<bool> {
 	let hub = get_hub();
@@ -49,7 +49,7 @@ fn migrate_agent_dir(base_dir: &SPath, old_dir: impl AsRef<Path>, dest_dir: impl
 		let dest_file_name = format!("{}.devai", file.stem());
 		let dest_file = dest_dir.join(&dest_file_name)?;
 
-		// we skip
+		// We skip
 		if dest_file.exists() {
 			continue;
 		}

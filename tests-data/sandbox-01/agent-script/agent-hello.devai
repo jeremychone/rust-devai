@@ -1,5 +1,5 @@
 # Output
 
-```rhai
-return "hello '" + input + "' from agent-hello.devai";
+```lua
+return "Hello '" .. input .. "' from agent-hello.devai"
 ```

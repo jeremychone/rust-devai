@@ -1,10 +1,10 @@
 # Data
 
-```rhai
-let file = file::load(input.path);
+```lua
+local file = utils.file.load(input.path);
 
-// return the file (with .name, .path, .content)
-return #{ file: file };
+-- return the file (with .name, .path, .content)
+return { file = file }
 ```
 
 # Instruction
@@ -17,11 +17,12 @@ Correct english in the comments of the rust content below, while preserving ever
 
 # Output
 
-```rhai
-let rust_code = md::extract_blocks(ai_response.content, "rust")[0];
-// file::save(data.file.path, rust_code); // do not save, otherwise, cwt run forever
+```lua
+local rust_code = utils.md.extract_blocks(ai_response.content, "rust")[0];
+-- file::save(data.file.path, rust_code); // do not save, otherwise, cwt run forever
 
-return #{data_path: data.file.path, 
-        input_name: input.name,
-        ai_content: ai_response.content}
+return {data_path  =  data.file.path, 
+        input_name =  input.name,
+        ai_content =  ai_response.content
+       }
 ```

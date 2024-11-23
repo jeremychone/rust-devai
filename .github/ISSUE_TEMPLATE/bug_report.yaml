@@ -1,6 +1,6 @@
 name: Bug Report
-description: File a bug report.
-title: "bug - "
+description: File a devai command issue
+title: "cli issue - "
 labels: ["bug"]
 body:
   - type: markdown
@@ -23,7 +23,7 @@ body:
     attributes:
       label: Error
       description: Error message, if any
-      placeholder: 'Error: Rhai(ErrorArrayBounds(0, 0, 2:36))'
+      placeholder: '...'
   - type: textarea
     attributes:
       label: Config
@@ -42,9 +42,9 @@ body:
       description: 'Contents of "{{my-agent}}.md". Markdown will be escaped automatically.'
       value: |
         # Data
-        ```rhai
-        let path = input.path;
-        // ...
+        ```lua
+        local path = input.path;
+        -- ...
         ```
 
         # Instruction
@@ -54,7 +54,7 @@ body:
         - ...
 
         # Output
-        ```rhai
+        ```lua
         // ...
         ```
       render: md

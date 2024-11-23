@@ -1,6 +1,5 @@
-use crate::script::DynaMap;
 use crate::Result;
-use rhai::Dynamic;
+use mlua::{IntoLua, Lua};
 use serde::Serialize;
 use simple_fs::SPath;
 use std::fs::read_to_string;
@@ -36,35 +35,18 @@ impl FileRecord {
 	}
 }
 
-// region:    --- Rhai Dynamic From/To
+// region:    --- Lua
 
-// Implement conversion from File to Dynamic
-impl From<FileRecord> for Dynamic {
-	fn from(file: FileRecord) -> Dynamic {
-		let mut map = rhai::Map::new();
-		map.insert("name".into(), file.name.into());
-		map.insert("path".into(), file.path.into());
-		map.insert("stem".into(), file.stem.into());
-		map.insert("ext".into(), file.ext.into());
-		map.insert("content".into(), file.content.into());
-		Dynamic::from_map(map)
+impl IntoLua for FileRecord {
+	fn into_lua(self, lua: &Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+		table.set("path", self.path)?;
+		table.set("name", self.name)?;
+		table.set("stem", self.stem)?;
+		table.set("ext", self.ext)?;
+		table.set("content", self.content)?;
+		Ok(mlua::Value::Table(table))
 	}
 }
 
-// Implement conversion from Dynamic to File
-impl TryFrom<Dynamic> for FileRecord {
-	type Error = crate::Error;
-
-	fn try_from(value: Dynamic) -> Result<Self> {
-		let map = DynaMap::from_dynamic(value)?;
-		Ok(FileRecord {
-			name: map.get("name")?,
-			path: map.get("path")?,
-			stem: map.get("stem")?,
-			ext: map.get("ext")?,
-			content: map.get("content")?,
-		})
-	}
-}
-
-// endregion: --- Rhai Dynamic From/To
+// endregion: --- Lua

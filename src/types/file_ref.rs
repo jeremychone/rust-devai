@@ -1,5 +1,4 @@
-use crate::script::IntoDynamic;
-use rhai::Dynamic;
+use mlua::{IntoLua, Lua};
 use serde::Serialize;
 use simple_fs::{SFile, SPath};
 
@@ -44,24 +43,17 @@ impl From<SFile> for FileRef {
 	}
 }
 
-// region:    --- Dynamic Froms
+// region:    --- Lua
 
-impl From<FileRef> for Dynamic {
-	fn from(file_ref: FileRef) -> Self {
-		file_ref.into_dynamic()
+impl IntoLua for FileRef {
+	fn into_lua(self, lua: &Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+		table.set("path", self.path)?;
+		table.set("name", self.name)?;
+		table.set("stem", self.stem)?;
+		table.set("ext", self.ext)?;
+		Ok(mlua::Value::Table(table))
 	}
 }
 
-/// Need to implement this since  Rhai have its own 'from' function on Dynamic,
-/// making it a little tricky to use in some scenarios.
-impl IntoDynamic for FileRef {
-	fn into_dynamic(self) -> Dynamic {
-		let mut map = rhai::Map::new();
-		map.insert("path".into(), self.path.into());
-		map.insert("name".into(), self.name.into());
-		map.insert("stem".into(), self.stem.into());
-		map.insert("ext".into(), self.ext.into());
-		Dynamic::from_map(map)
-	}
-}
-// endregion: --- Dynamic Froms
+// endregion: --- Lua

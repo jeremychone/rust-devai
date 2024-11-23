@@ -1,42 +1,44 @@
 # Before All
 
-```rhai
+```lua
 
-return devai::before_all_response(#{
-    before_all: inputs,
-    inputs: ["one", "two", "three", 4, "five"]
-});
+return devai.before_all_response({
+    -- Some data for before all
+    before_all = inputs,
+    -- inputs generation
+    inputs = {"one", "two", "three", 4, "five"}
+})
 
 ```
 
 # Data 
 
-```rhai
+```lua
 
-if input == "two" {
-    return devai::skip("Skip the 'two' at data stage");
-}
+if input == "two" then
+    return devai.skip("Skip the 'two' at data stage")
+end
 
-return "Data with input: '" + input + "'"
+return "Data with input: '" .. input .. "'"
 
 ```
 
 # Output
 
-```rhai
+```lua
 
-if input == "five" {
-    return devai::skip("Don't output process 'five'");
-}
+if input == "five" then
+    return devai.skip("Don't output process 'five'")
+end
 
-if input == 4 {
-    return;
-} else {
-  return #{
-    before_all_data_was: before_all,
-    data: data
-  }
-}
+if input == 4 then
+    return
+else
+    return {
+        before_all_data_was = before_all,
+        data = data
+    }
+end
 
 
 
@@ -44,7 +46,12 @@ if input == 4 {
 
 # After All
 
-```rhai
+```lua
 
-return "this is after all data: inputs: " + inputs + " - " + outputs.len() ;
+return {
+ message = "this is after all data: inputs: " ,
+ inputs = inputs,
+ outputs = outputs
+}
+
 ```

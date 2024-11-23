@@ -1,5 +1,6 @@
 use crate::agent::Agent;
 use crate::run::DirContext;
+use crate::script::LuaEngine;
 use crate::Result;
 use serde_json::{Map, Value};
 use simple_fs::SPath;
@@ -73,6 +74,15 @@ impl Literals {
 
 /// Transformers
 impl Literals {
+	pub fn to_ctx_lua_value(&self, lua_engine: &LuaEngine) -> Result<mlua::Value> {
+		let table = lua_engine.create_table()?;
+		for (name, value) in self.as_strs() {
+			table.set(name, value)?;
+		}
+		Ok(mlua::Value::Table(table))
+	}
+
+	#[allow(unused)]
 	pub fn to_ctx_value(&self) -> Value {
 		let mut _ctx = Map::new();
 		for (name, value) in self.as_strs() {
@@ -95,13 +105,13 @@ mod tests {
 	#[tokio::test]
 	async fn test_run_literals_devai_dir() -> Result<()> {
 		let script = r#"
-return #{
-	  DEVAI_PARENT_DIR: CTX.DEVAI_PARENT_DIR,
-		DEVAI_DIR:        CTX.DEVAI_DIR,
-		AGENT_FILE_NAME:  CTX.AGENT_FILE_NAME,
-		AGENT_FILE_PATH:  CTX.AGENT_FILE_PATH,
-		AGENT_FILE_DIR:   CTX.AGENT_FILE_DIR,
-		AGENT_FILE_STEM:  CTX.AGENT_FILE_STEM,
+return {
+	  DEVAI_PARENT_DIR = CTX.DEVAI_PARENT_DIR,
+		DEVAI_DIR        = CTX.DEVAI_DIR,
+		AGENT_FILE_NAME  = CTX.AGENT_FILE_NAME,
+		AGENT_FILE_PATH  = CTX.AGENT_FILE_PATH,
+		AGENT_FILE_DIR   = CTX.AGENT_FILE_DIR,
+		AGENT_FILE_STEM  = CTX.AGENT_FILE_STEM,
 }
 		"#;
 
