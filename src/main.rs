@@ -17,6 +17,7 @@ mod _test_support;
 
 use crate::cli::CliArgs;
 use crate::exec::Executor;
+use crate::hub::{get_hub, HubEvent};
 use crate::tui::TuiApp;
 use clap::Parser;
 use error::{Error, Result};
@@ -35,7 +36,9 @@ async fn main() -> Result<()> {
 	// TODO: todo probably want to move the spwn inside executor.start
 	tokio::spawn(async move {
 		if let Err(err) = executor.start().await {
-			println!("Error starting the executor - {err}");
+			let hub = get_hub();
+			hub.publish(HubEvent::Error { error: err.into() }).await;
+			hub.publish(HubEvent::Quit).await;
 		}
 	});
 
