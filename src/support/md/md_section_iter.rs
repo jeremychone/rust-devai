@@ -88,6 +88,11 @@ impl SectionPattern {
 // (0, "") means root (no heading)
 
 /// Represents an iterator over Markdown sections with multiple section filters.
+/// IMPORTANT:
+/// - When filter: [] (empty), the No Filter mode will return every section as a new item, regardless if they are nested.
+/// - When filter: [...] is not empty, it will respect the hierarchy, meaning the "# Heading 1"
+///                 will include the descendant heading and content as string content.
+/// - When a filter item is an empty string, it means only the top content, before any heading, and in this case, subheadings are not captured.
 pub struct MdSectionIter<'a> {
 	// -- Iterator data
 	lines: CowLines<'a>,
@@ -100,7 +105,18 @@ pub struct MdSectionIter<'a> {
 	last_heading: Option<MdHeading>,
 }
 
+/// Constructors
 impl<'a> MdSectionIter<'a> {
+	pub fn from_path(path: impl AsRef<Path>, heading_patterns: Option<&[&str]>) -> Result<Self> {
+		let lines = CowLines::from_path(path)?;
+		Self::new(lines, heading_patterns)
+	}
+
+	pub fn from_str(content: &'a str, heading_patterns: Option<&[&str]>) -> Result<Self> {
+		let lines = CowLines::from_str(content);
+		Self::new(lines, heading_patterns)
+	}
+
 	/// Creates a new MdSection iterator from the given content source.
 	fn new(source: CowLines<'a>, heading_patterns: Option<&[&str]>) -> Result<Self> {
 		let section_filter = Self::resolve_heading_patterns(heading_patterns).unwrap();
@@ -113,17 +129,10 @@ impl<'a> MdSectionIter<'a> {
 			last_heading: None,
 		})
 	}
+}
 
-	pub fn from_path(path: impl AsRef<Path>, heading_patterns: Option<&[&str]>) -> Result<Self> {
-		let lines = CowLines::from_path(path)?;
-		Self::new(lines, heading_patterns)
-	}
-
-	pub fn from_str(content: &'a str, heading_patterns: Option<&[&str]>) -> Result<Self> {
-		let lines = CowLines::from_str(content);
-		Self::new(lines, heading_patterns)
-	}
-
+/// Lexec
+impl<'a> MdSectionIter<'a> {
 	fn resolve_heading_patterns(heading_patterns: Option<&[&str]>) -> Result<Vec<SectionPattern>> {
 		let Some(heading_patterns) = heading_patterns else {
 			return Ok(Vec::new());
@@ -355,6 +364,8 @@ impl<'a> Iterator for MdSectionIter<'a> {
 	}
 }
 
+// region:    --- Support Types
+
 #[derive(Debug)]
 enum LineData<'a> {
 	Content(Cow<'a, str>),
@@ -376,6 +387,8 @@ enum ActionState {
 	CaptureLine,
 	CloseCurrentSection,
 }
+
+// endregion: --- Support Types
 
 // region:    --- Tests
 
@@ -418,13 +431,23 @@ Some other content-2
 # Heading three
 		"#;
 
+	const FX_MD_02: &str = r#"
+# First heading
+
+first heading content
+
+## Second Heading
+
+second heading content
+
+"#;
+
 	// endregion: --- consts
 
 	#[test]
-	fn test_md_section_iter_no_filter() -> Result<()> {
+	fn test_md_section_iter_no_filter_with_md_01() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_md = FX_MD_01;
-		let fx_headings = &[""];
 
 		// -- Exec
 		let sec_iter = MdSectionIter::from_str(fx_md, None)?;
@@ -435,7 +458,7 @@ Some other content-2
 		// check first section
 		let first = sections.first().ok_or("Should have first section")?;
 		assert!(first.heading().is_none(), "First section heading should be none");
-		assert_contains(first.content(), "Some early text");
+		assert_eq!(first.content().trim(), "Some early text");
 		// Check last
 		let last = sections.last().ok_or("Should have last section")?;
 		let last_heading = last.heading().ok_or("Last section heading should be some")?;
@@ -443,22 +466,27 @@ Some other content-2
 		assert_eq!(last_heading.level(), 1);
 		assert_contains(last.content().trim(), "");
 
-		// // extract first
-		// let MdSection { heading, content } = sections.into_iter().next().ok_or("Should have returned a result")?;
+		Ok(())
+	}
 
-		// // // check heading
-		// assert!(heading.is_none(), "heading should be none");
-		// // // Should not content
-		// assert_contains(&content, "Some early text");
-		// assert_not_contains(&content, "# Heading 1");
-		// assert_not_contains(&content, "content-2");
-		// assert_not_contains(&content, "heading-1-content");
+	#[test]
+	fn test_md_section_iter_no_filter_with_md_02() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_md = FX_MD_02;
+
+		// -- Exec
+		let sec_iter = MdSectionIter::from_str(fx_md, None)?;
+		let mut sections = sec_iter.collect::<Vec<_>>();
+
+		// -- Check
+		// Note: Since no filter, all section will be captured separatly
+		assert_eq!(sections.len(), 3, "Should have only 3 sections");
 
 		Ok(())
 	}
 
 	#[test]
-	fn test_md_section_iter_reader_heading_1_root() -> Result<()> {
+	fn test_md_section_iter_heading_1_root() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_md = FX_MD_01;
 		let fx_headings = &["# Heading 1"];
@@ -490,7 +518,7 @@ Some other content-2
 	}
 
 	#[test]
-	fn test_md_section_iter_reader_heading_1_a() -> Result<()> {
+	fn test_md_section_iter_heading_1_a() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_md = FX_MD_01;
 		let fx_headings = &["## sub heading 1-a"];
@@ -520,7 +548,7 @@ Some other content-2
 	}
 
 	#[test]
-	fn test_md_section_iter_reader_level_0() -> Result<()> {
+	fn test_md_section_iter_level_0() -> Result<()> {
 		// -- Setup & Fixtures
 		let fx_md = FX_MD_01;
 		let fx_headings = &[""];
