@@ -60,7 +60,7 @@ fn join_cows(parts: Vec<Cow<str>>, separator: &str) -> String {
 // endregion: --- CowLines
 
 /// The Section filter pattern.
-/// Right now, supports heading only which is a good start and efficient since no need to look ahead.
+/// Currently, it supports headings only, which is a good start and efficient since there is no need to look ahead.
 #[derive(Debug)]
 struct SectionPattern {
 	heading_level: usize,
@@ -198,7 +198,7 @@ impl<'a> MdSectionIter<'a> {
 							// TODO: need to return LineData::Heading should have the (level, name, line: Cow...)
 							match MdHeading::parse_line(line.to_string()) {
 								ParseResponse::Item(heading) => LineData::Heading(heading),
-								// TODO: Here we should hever have Other, as the peek_line return Some.
+								// TODO: Here we should never have Other, as the peek_line returns Some.
 								//       But just in case, fall back to other
 								ParseResponse::Other(_) => LineData::Content(line),
 							}
@@ -218,7 +218,7 @@ impl<'a> MdSectionIter<'a> {
 			self.action_state = match &line_data {
 				// -- We are on a Heading
 				LineData::Heading(line_heading) => {
-					// if we capture all section, this is a new section
+					// if we capture all sections, this is a new section
 					if all_sections {
 						ActionState::NewHeadingForAllSections
 					}
@@ -231,7 +231,7 @@ impl<'a> MdSectionIter<'a> {
 						ActionState::CloseCurrentSection
 					} else {
 						match current_captured_heading.as_ref() {
-							// If were capturing the heading, then only capture if lower
+							// If we were capturing the heading, then only capture if lower
 							Some(captured_heading) => {
 								if line_heading.level() > captured_heading.level() {
 									ActionState::CaptureLine
@@ -244,7 +244,7 @@ impl<'a> MdSectionIter<'a> {
 								if let Some(ref_idx) = filter_matches_fn(line_heading) {
 									ActionState::NewMatchingHeading { ref_idx }
 								} else {
-									// same state as before (for now clone, but ok because statck/size. Can be optimized later.)
+									// same state as before (for now clone, but ok because stack/size. Can be optimized later.)
 									self.action_state.clone()
 								}
 							}
@@ -258,7 +258,7 @@ impl<'a> MdSectionIter<'a> {
 							if let Some(ref_idx) = filter_has_level_0_fn() {
 								ActionState::NewMatchingHeading { ref_idx }
 							} else {
-								// Now, we chech if all_sections
+								// Now, we check if all_sections
 								if all_sections {
 									ActionState::CaptureLine
 								} else {
@@ -266,7 +266,7 @@ impl<'a> MdSectionIter<'a> {
 								}
 							}
 						} else {
-							// Now, we chech if all_sections
+							// Now, we check if all_sections
 							if all_sections {
 								ActionState::CaptureLine
 							} else {
@@ -298,7 +298,7 @@ impl<'a> MdSectionIter<'a> {
 				},
 				ActionState::NewHeadingForAllSections => match line_data {
 					LineData::Heading(line_heading) => {
-						/// if we are in a NewHeadingForAllSections and already capturin something, we close current
+						/// if we are in a NewHeadingForAllSections and already capturing something, we close current
 						if current_captured_heading.is_some() || current_captured_content.is_some() {
 							self.last_heading = Some(line_heading);
 							return close_section(&mut current_captured_content, &mut current_captured_heading);
@@ -316,7 +316,7 @@ impl<'a> MdSectionIter<'a> {
 				ActionState::NewMatchingHeading { ref_idx } => {
 					match line_data {
 						LineData::Heading(line_heading) => {
-							// TODO: Probalby need to have the same logic as above if we start something and during capture
+							// TODO: Probably need to have the same logic as above if we start something and during capture
 
 							let Some(matching_ref) = self.filter.get(ref_idx) else {
 								// NOTE: Given the logic, this should not happen, but do not panic just return None.
@@ -367,9 +367,9 @@ enum LineData<'a> {
 enum ActionState {
 	NoCapture,
 	SkipLineInCapture,
-	/// WE are in all sections match, and this is a new heading
+	/// We are in all sections match, and this is a new heading
 	NewHeadingForAllSections,
-	/// we have a new matching eadhing for a ref_idx in the SectionPattern array
+	/// We have a new matching heading for a ref_idx in the SectionPattern array
 	NewMatchingHeading {
 		ref_idx: usize,
 	},
@@ -433,7 +433,7 @@ Some other content-2
 		// -- Check
 		assert_eq!(sections.len(), 5, "Should have only 5 sections match");
 		// check first section
-		let first = sections.first().ok_or("SHould have first section")?;
+		let first = sections.first().ok_or("Should have first section")?;
 		assert!(first.heading().is_none(), "First section heading should be none");
 		assert_contains(first.content(), "Some early text");
 		// Check last
