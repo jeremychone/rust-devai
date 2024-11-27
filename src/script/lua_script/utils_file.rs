@@ -1,7 +1,7 @@
 use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
 use crate::script::lua_script::helpers::to_vec_of_strings;
-use crate::support::md::read_file_md_sections;
+use crate::support::md::MdSectionIter;
 use crate::types::{FileRecord, FileRef};
 use crate::{Error, Result};
 use mlua::{IntoLua, Lua, Table, Value};
@@ -220,8 +220,8 @@ fn file_load_md_sections(lua: &Lua, ctx: &RuntimeContext, path: String, headings
 
 	let path = ctx.dir_context().resolve_path(path, PathResolver::DevaiParentDir)?;
 
-	let sections = read_file_md_sections(path, &headings)?;
-
+	let sec_iter = MdSectionIter::from_path(path, Some(&headings))?;
+	let sections = sec_iter.collect::<Vec<_>>();
 	let res = sections.into_lua(lua)?;
 
 	Ok(res)

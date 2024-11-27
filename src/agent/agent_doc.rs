@@ -1,5 +1,6 @@
 use crate::agent::agent_config::AgentConfig;
 use crate::agent::{Agent, AgentInner, PartKind, PromptPart};
+use crate::support::md::InBlockState;
 use crate::support::tomls::parse_toml;
 use crate::Result;
 use genai::ModelName;
@@ -103,56 +104,13 @@ impl AgentDoc {
 		//       Markdown parsers tend to be lossless and would need wuite a bit of extra post-processing anyway.
 		//       So, here we do one path, and capture what we need, exactly the way we need it
 
-		// This is a simple flag that toggle on and off when entering a code block
-		enum BlockState {
-			In3,
-			In6,
-			Out,
-		}
-
-		impl BlockState {
-			fn compute_new(self, line: &str) -> Self {
-				if !line.starts_with("```") {
-					return self;
-				}
-				let is_6 = line.starts_with("``````");
-
-				match self {
-					BlockState::In3 => {
-						// toggle out only if same (if not 6, it's 3)
-						if !is_6 {
-							BlockState::Out
-						} else {
-							self
-						}
-					}
-					BlockState::In6 => {
-						// toggle out only if same
-						if is_6 {
-							BlockState::Out
-						} else {
-							self
-						}
-					}
-					BlockState::Out => {
-						if is_6 {
-							BlockState::In6
-						} else {
-							BlockState::In3
-						}
-					}
-				}
-			}
-		}
-
-		let mut block_state = BlockState::Out;
+		let mut block_state = InBlockState::Out;
 
 		for line in self.raw_content.lines() {
-			// TODO needs to support the
 			block_state = block_state.compute_new(line);
 
 			// If heading we decide the capture mode
-			if matches!(block_state, BlockState::Out) && line.starts_with('#') && !line.starts_with("##") {
+			if block_state.is_out() && line.starts_with('#') && !line.starts_with("##") {
 				let header = line[1..].trim().to_lowercase();
 				if header == "config" {
 					capture_mode = CaptureMode::ConfigSection;
