@@ -10,4 +10,4 @@ model = "gpt-4o-mini"
 
 [runtime]
 # Default to 1 if absent
-inputs_concurrency = 1
+inputs_concurrency = 6

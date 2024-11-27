@@ -33,7 +33,7 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 ///
 /// Return the list of markdown blocks that match a given lang_name.
 fn extract_blocks_with_lang(lua: &Lua, (md_content, lang_name): (String, Option<String>)) -> mlua::Result<Value> {
-	let blocks: Vec<MdBlock> = md::MdBlocks::new(&md_content, lang_name.as_deref()).collect();
+	let blocks: Vec<MdBlock> = md::MdBlockIter::new(&md_content, lang_name.as_deref()).collect();
 	blocks.into_lua(lua)
 }
 

@@ -5,9 +5,9 @@ use std::fs::File;
 use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 
-/// This function opens the file and creates the reader, then passes it to `read_md_section`
-/// Design to buffer read the file to optimize memory.
-/// If ref_section is empty, then, meaning the content before the first heading
+/// This function opens the file and creates the reader, then passes it to `read_md_section`.
+/// Designed to buffer read the file to optimize memory.
+/// If `ref_section` is empty, it means the content before the first heading.
 pub fn read_file_md_sections(path: impl AsRef<Path>, ref_sections: &[&str]) -> Result<Vec<MdSection>> {
 	// Open the file using the given path
 	let sfile = SFile::from_path(path)?;
@@ -16,7 +16,7 @@ pub fn read_file_md_sections(path: impl AsRef<Path>, ref_sections: &[&str]) -> R
 	// Create a buffered reader from the file
 	let reader = BufReader::new(file);
 
-	// Call read_md_section with the reader to perform the actual reading
+	// Call read_md_sections with the reader to perform the actual reading
 	read_md_sections(reader, ref_sections)
 }
 
@@ -24,7 +24,7 @@ pub fn read_file_md_sections(path: impl AsRef<Path>, ref_sections: &[&str]) -> R
 enum LineData {
 	Content(String),
 	Heading(MdHeading),
-	#[allow(unused)] // does not hurt to keep it for now.
+	#[allow(unused)] // It does not hurt to keep it for now.
 	Blockquote(String),
 }
 
@@ -37,8 +37,8 @@ enum ActionState {
 	CloseCurrentSection,
 }
 
-/// This function takes a generic reader and reads its content to allow read String readers for example.
-/// Note: This separation of concern is mostly for testing as if we have the full content,
+/// This function takes a generic reader and reads its content to allow reading String readers, for example.
+/// Note: This separation of concerns is mostly for testing, as if we have the full content,
 ///       we will probably do a `.lines()` to get the `&str` and avoid string allocation.
 fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdSection>> {
 	// Create a buffered reader to read the content line by line
@@ -46,6 +46,7 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 
 	let mut sections: Vec<MdSection> = Vec::new();
 
+	// Reference Heading to match (level and name)
 	let ref_headings: Vec<(usize, String)> = ref_headings
 		.iter()
 		.map(|&ref_heading| {
@@ -55,7 +56,7 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 				MdHeading::peek_line(ref_heading)
 					.ok_or_else(|| {
 						Error::custom(format!(
-							"read_md_section - ref '{ref_heading}' is not a value markdown heading"
+							"read_md_section - ref '{ref_heading}' is not a valid markdown heading"
 						))
 					})
 					.map(|(level, name)| (level, name.to_string()))
@@ -86,7 +87,7 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 		if let Some(content) = current_captured_content.take() {
 			*current_matching_ref = None;
 			// TODO: needs to stream the content array to be faster and avoid double allocation
-			//       Also we ensure last single new line
+			//       Also, we ensure the last single new line
 			let content = content.join("\n").trim().to_string();
 			sections.push(MdSection::new(content, current_captured_heading.take()))
 		}
@@ -115,21 +116,21 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 		// -- Compute the ActionState
 		action_state = match &line_data {
 			// -- if the line is a heading,
-			// - We need to check if lower level
+			// - We need to check if it is a lower level
 			LineData::Heading(line_heading) => {
-				// if the the current matching ref is 0 and this is a heading
-				// we put the matching current_matching_ref = None
+				// if the current matching ref is 0 and this is a heading
+				// we set the matching current_matching_ref = None
 				if current_matching_ref.map(|v| v.0 == 0).unwrap_or_default() {
 					ActionState::CloseCurrentSection
 				} else {
 					match current_captured_heading.as_ref() {
-						// if we already have a heading, then, it's the end
+						// if we already have a heading, then it's the end
 						Some(captured_heading) => {
 							// if we are a level down, we keep capturing
 							if line_heading.level() > captured_heading.level() {
 								ActionState::CaptureLine
 							}
-							// TODO: need to add support for CloseAndNewMatchingHeading in there are two adjacent section with saem atmching edding
+							// TODO: need to add support for CloseAndNewMatchingHeading if there are two adjacent sections with the same matching heading
 							// otherwise close the current section
 							else {
 								ActionState::CloseCurrentSection
@@ -166,7 +167,7 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 
 			LineData::Blockquote(_) => {
 				match action_state {
-					// Regular no capture if we not in a match section
+					// Regular no capture if we are not in a matching section
 					ActionState::NoCapture | ActionState::CloseCurrentSection => ActionState::NoCapture,
 					// Otherwise, mark it as SkipLineInCapture
 					_ => ActionState::SkipLineInCapture,
@@ -235,14 +236,14 @@ fn read_md_sections<R: Read>(reader: R, ref_headings: &[&str]) -> Result<Vec<MdS
 
 // region:    --- Tests
 
-/// This is for test only as for full string, we will probably not have a BufferReader
-/// (to avoid new alocation per line.)
+/// This is for testing only, as for full string, we will probably not have a BufferReader
+/// (to avoid new allocation per line.)
 #[cfg(test)]
 fn read_string_md_sections(content: impl Into<String>, sections: &[&str]) -> Result<Vec<MdSection>> {
 	// Use Cursor to wrap the String and provide it as a reader
 	let reader = std::io::Cursor::new(content.into());
 
-	// Call read_md_section with the reader to perform the actual reading
+	// Call read_md_sections with the reader to perform the actual reading
 	read_md_sections(reader, sections)
 }
 
@@ -297,10 +298,10 @@ Some other content-2
 		let MdSection { heading, content } = read_string_md_sections(fx_md, fx_headings)?
 			.into_iter()
 			.next()
-			.ok_or("Should have return result")?;
+			.ok_or("Should have returned a result")?;
 
 		// -- Check
-		let heading = heading.ok_or("Should have heading")?;
+		let heading = heading.ok_or("Should have a heading")?;
 		assert_eq!(heading.line(), fx_headings[0]);
 		assert_eq!(heading.level(), 1);
 		// Should contain
@@ -327,10 +328,10 @@ Some other content-2
 		let MdSection { heading, content } = read_string_md_sections(fx_md, fx_headings)?
 			.into_iter()
 			.next()
-			.ok_or("Should have return result")?;
+			.ok_or("Should have returned a result")?;
 
 		// -- Check
-		let heading = heading.ok_or("Should have heading")?;
+		let heading = heading.ok_or("Should have a heading")?;
 		assert_eq!(heading.line(), fx_headings[0]);
 		assert_eq!(heading.level(), 2);
 		// Should contain
@@ -355,10 +356,10 @@ Some other content-2
 		let MdSection { heading, content } = read_string_md_sections(fx_md, fx_heading)?
 			.into_iter()
 			.next()
-			.ok_or("Should have return result")?;
+			.ok_or("Should have returned a result")?;
 
 		// -- Check
-		assert!(heading.is_none(), "heading sould be none");
+		assert!(heading.is_none(), "heading should be none");
 		assert_contains(&content, "Some early text");
 
 		// Should not contain
