@@ -8,42 +8,6 @@ use mlua::{IntoLua, Lua, Table, Value};
 use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
 use std::fs::write;
 
-pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
-	let table = lua.create_table()?;
-
-	// -- load
-	let ctx = runtime_context.clone();
-	let file_load_fn = lua.create_function(move |lua, (path,): (String,)| file_load(lua, &ctx, path))?;
-
-	// -- save
-	let ctx = runtime_context.clone();
-	let file_save_fn =
-		lua.create_function(move |lua, (path, content): (String, String)| file_save(lua, &ctx, path, content))?;
-
-	// -- list
-	let ctx = runtime_context.clone();
-	let file_list_fn = lua.create_function(move |lua, (glob,): (String,)| file_list(lua, &ctx, glob))?;
-
-	// -- first
-	let ctx = runtime_context.clone();
-	let file_first_fn = lua.create_function(move |lua, (glob,): (String,)| file_first(lua, &ctx, glob))?;
-
-	// -- load_md_sections
-	let ctx = runtime_context.clone();
-	let file_load_md_sections_fn = lua.create_function(move |lua, (path, headings): (String, Value)| {
-		file_load_md_sections(lua, &ctx, path, headings)
-	})?;
-
-	// -- All all function to the module
-	table.set("load", file_load_fn)?;
-	table.set("save", file_save_fn)?;
-	table.set("list", file_list_fn)?;
-	table.set("first", file_first_fn)?;
-	table.set("load_md_sections", file_load_md_sections_fn)?;
-
-	Ok(table)
-}
-
 /// ## Lua Documentation
 ///
 /// Load a File Record object with its ontent
@@ -68,7 +32,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 /// ```
 ///
 ///
-fn file_load(lua: &Lua, ctx: &RuntimeContext, rel_path: String) -> mlua::Result<mlua::Value> {
+pub(super) fn file_load(lua: &Lua, ctx: &RuntimeContext, rel_path: String) -> mlua::Result<mlua::Value> {
 	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
 	let rel_path = SPath::new(rel_path).map_err(Error::from)?;
 
@@ -90,7 +54,7 @@ fn file_load(lua: &Lua, ctx: &RuntimeContext, rel_path: String) -> mlua::Result<
 ///
 /// Does not return anything
 ///
-fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, content: String) -> mlua::Result<()> {
+pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, content: String) -> mlua::Result<()> {
 	let path = ctx.dir_context().resolve_path(&rel_path, PathResolver::DevaiParentDir)?;
 	ensure_file_dir(&path).map_err(Error::from)?;
 
@@ -124,7 +88,7 @@ fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, content: String
 ///
 /// To get the content of files, needs iterate and load each
 ///
-fn file_list(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Result<Value> {
+pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Result<Value> {
 	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
 	let sfiles = list_files(
 		&base_path,
@@ -172,7 +136,7 @@ fn file_list(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Res
 /// ```lua
 /// let file = utils.file.load(file_ref.path)
 /// ```
-fn file_first(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Result<Value> {
+pub(super) fn file_first(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Result<Value> {
 	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
 	let mut sfiles = iter_files(
 		&base_path,
@@ -190,39 +154,6 @@ fn file_first(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Re
 		.map_err(|err| Error::cc("Cannot diff with base_path", err))?;
 
 	let res = FileRef::from(sfile).into_lua(lua)?;
-
-	Ok(res)
-}
-
-/// ## Lua Documentation
-///
-/// Return the first FileRef or Nil
-///
-/// ```lua
-/// let all_summary_section = utils.file.list("doc/readme.md", "# Summary");
-/// ```
-///
-///
-/// ### Returns
-///
-/// ```lua
-/// -- Array/Table of MdSection
-/// {
-///   content = "Content of the section",
-///   -- heading is optional
-///   heading = {content = "# Summary", level = 1, name = "Summary"},
-/// }
-/// ```
-///
-fn file_load_md_sections(lua: &Lua, ctx: &RuntimeContext, path: String, headings: Value) -> mlua::Result<Value> {
-	let headings: Vec<String> = to_vec_of_strings(headings, "file::load_md_sections headings argument")?;
-	let headings = headings.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
-
-	let path = ctx.dir_context().resolve_path(path, PathResolver::DevaiParentDir)?;
-
-	let sec_iter = MdSectionIter::from_path(path, Some(&headings))?;
-	let sections = sec_iter.collect::<Vec<_>>();
-	let res = sections.into_lua(lua)?;
 
 	Ok(res)
 }
@@ -340,44 +271,6 @@ mod tests {
 
 		// -- Check
 		assert_eq!(res, serde_json::Value::Null, "Should have returned null");
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_lua_file_load_md_sections_heading_1_top_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let fx_path = "other/md-sections.md";
-
-		// -- Exec
-		let mut res = run_reflective_agent(
-			&format!(r##"return utils.file.load_md_sections("{fx_path}", {{"# Heading 1   "}})"##),
-			None,
-		)
-		.await?;
-
-		// -- Check
-		let first_item = res
-			.as_array_mut()
-			.ok_or("Res should be array")?
-			.iter_mut()
-			.next()
-			.ok_or("Should have at least one item")?;
-
-		let content = first_item.x_get_str("content")?;
-		let heading_content = first_item.x_get_str("/heading_content")?;
-		let heading_level = first_item.x_get_i64("/heading_level")?;
-		let heading_name = first_item.x_get_str("/heading_name")?;
-		assert_eq!(heading_level, 1, "heading level");
-		// contains
-		assert_contains(heading_content, "# Heading 1");
-		assert_contains(heading_name, "Heading 1");
-		assert_contains(content, "heading-1-content");
-		assert_contains(content, "sub heading 1-a");
-		assert_contains(content, "heading-1-a-blockquote");
-		// not contains
-		assert_not_contains(content, "content-2");
-		assert_not_contains(content, "heading-2-blockquote");
 
 		Ok(())
 	}
