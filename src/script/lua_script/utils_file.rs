@@ -365,9 +365,9 @@ mod tests {
 			.ok_or("Should have at least one item")?;
 
 		let content = first_item.x_get_str("content")?;
-		let heading_content = first_item.x_get_str("/heading/content")?;
-		let heading_level = first_item.x_get_i64("/heading/level")?;
-		let heading_name = first_item.x_get_str("/heading/name")?;
+		let heading_content = first_item.x_get_str("/heading_content")?;
+		let heading_level = first_item.x_get_i64("/heading_level")?;
+		let heading_name = first_item.x_get_str("/heading_name")?;
 		assert_eq!(heading_level, 1, "heading level");
 		// contains
 		assert_contains(heading_content, "# Heading 1");

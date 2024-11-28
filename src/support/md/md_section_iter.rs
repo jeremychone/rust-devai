@@ -74,10 +74,7 @@ impl<'a> MdSectionIter<'a> {
 			last_heading: None,
 		})
 	}
-}
 
-/// Lexer
-impl<'a> MdSectionIter<'a> {
 	fn resolve_heading_patterns(heading_patterns: Option<&[&str]>) -> Result<Vec<SectionPattern>> {
 		let Some(heading_patterns) = heading_patterns else {
 			return Ok(Vec::new());
@@ -102,7 +99,10 @@ impl<'a> MdSectionIter<'a> {
 
 		Ok(ref_headings)
 	}
+}
 
+/// Lexer / next_section
+impl<'a> MdSectionIter<'a> {
 	/// Retrieves the next `MdSection` that matches the section filters, if any.
 	fn next_section(&mut self) -> Option<MdSection> {
 		// -- Helper function to close and return the section
@@ -110,7 +110,7 @@ impl<'a> MdSectionIter<'a> {
 			current_captured_content: &mut Option<Vec<Cow<str>>>,
 			current_captured_heading: &mut Option<MdHeading>,
 		) -> Option<MdSection> {
-			current_captured_content.take().map(|content| {
+			current_captured_content.take().map(|mut content| {
 				let content = join_cows(content, "\n");
 				MdSection::new(content, current_captured_heading.take())
 			})
@@ -304,6 +304,7 @@ impl<'a> MdSectionIter<'a> {
 	}
 }
 
+/// Iterator impl
 impl<'a> Iterator for MdSectionIter<'a> {
 	type Item = MdSection;
 
@@ -311,6 +312,18 @@ impl<'a> Iterator for MdSectionIter<'a> {
 		self.next_section()
 	}
 }
+
+// region:    --- Splitter
+
+/// Splitter extractor uses the iterator to split the md content in certain ways
+impl<'a> MdSectionIter<'a> {
+	// /// Split the first MdSection out, and have the rest as string.
+	// /// To reconstruct the full md, do  md_section.heading_raw() + md_section.content()
+	// /// Heading raw
+	// // pub fn split_first(&mut self) ->
+}
+
+// endregion: --- Splitter
 
 // region:    --- Support Types
 
@@ -449,7 +462,7 @@ second heading content
 		let MdSection { heading, content } = sections.into_iter().next().ok_or("Should have returned a result")?;
 		// check heading
 		let heading = heading.ok_or("Should have a heading")?;
-		assert_eq!(heading.line(), fx_headings[0]);
+		assert_eq!(heading.content(), fx_headings[0]);
 		assert_eq!(heading.level(), 1);
 		// Should contain
 		assert_contains(&content, "heading-1-content");
@@ -481,7 +494,7 @@ second heading content
 		let MdSection { heading, content } = sections.into_iter().next().ok_or("Should have returned a result")?;
 		// check heading
 		let heading = heading.ok_or("Should have a heading")?;
-		assert_eq!(heading.line(), fx_headings[0]);
+		assert_eq!(heading.content(), fx_headings[0]);
 		assert_eq!(heading.level(), 2);
 		// Should contain
 		assert_contains(&content, "Some heading-1-a-content");

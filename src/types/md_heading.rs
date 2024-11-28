@@ -15,8 +15,8 @@ pub struct MdHeading {
 /// Getters
 impl MdHeading {
 	/// Return the full line with the `#`
-	#[allow(unused)]
-	pub fn line(&self) -> &str {
+	/// NOTE: Does not end with newline
+	pub fn content(&self) -> &str {
 		&self.content
 	}
 
