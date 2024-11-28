@@ -1,5 +1,9 @@
 // region:    --- Modules
 
+mod cow_lines;
+
+pub use cow_lines::*;
+
 pub mod code;
 pub mod cred;
 pub mod files;

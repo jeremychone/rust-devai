@@ -1,63 +1,11 @@
 use crate::support::md::InBlockState;
+use crate::support::{join_cows, CowLines};
 use crate::types::{MdHeading, MdSection, ParseResponse};
 use crate::{Error, Result};
 use std::borrow::{BorrowMut, Cow};
 use std::io::BufRead;
 use std::path::Path;
 use std::{fs, io, str};
-
-// region:    --- CowLines
-
-/// Enum to represent Cow Lines iterator
-pub enum CowLines<'a> {
-	StrLines(str::Lines<'a>),
-	FileLines(io::Lines<io::BufReader<fs::File>>),
-}
-
-impl<'a> Iterator for CowLines<'a> {
-	type Item = Cow<'a, str>;
-
-	fn next(&mut self) -> Option<Self::Item> {
-		match self {
-			CowLines::StrLines(lines) => lines.next().map(Cow::Borrowed),
-			CowLines::FileLines(lines) => lines.next().map(|line| Cow::Owned(line.unwrap())),
-		}
-	}
-}
-
-impl<'a> CowLines<'a> {
-	fn from_str(content: &'a str) -> Self {
-		CowLines::StrLines(content.lines())
-	}
-
-	fn from_path(path: impl AsRef<Path>) -> Result<Self> {
-		let file = std::fs::File::open(path)?;
-		let reader = io::BufReader::new(file);
-		Ok(CowLines::FileLines(reader.lines()))
-	}
-}
-
-impl<'a> CowLines<'a> {
-	/// Joins a `Vec<Cow<str>>` into a single `String` efficiently.
-	pub fn join(&mut self, separator: &str) -> String {
-		let parts: Vec<Cow<str>> = self.collect();
-		join_cows(parts, separator)
-	}
-}
-
-fn join_cows(parts: Vec<Cow<str>>, separator: &str) -> String {
-	let total_len: usize = parts.iter().map(|s| s.len()).sum();
-	let mut result = String::with_capacity(total_len + separator.len() * (parts.len().saturating_sub(1)));
-	for (i, part) in parts.iter().enumerate() {
-		if i > 0 {
-			result.push_str(separator);
-		}
-		result.push_str(part);
-	}
-	result
-}
-
-// endregion: --- CowLines
 
 /// The Section filter pattern.
 /// Currently, it supports headings only, which is a good start and efficient since there is no need to look ahead.
@@ -83,9 +31,6 @@ impl SectionPattern {
 		self.matches(heading.level(), heading.name())
 	}
 }
-
-// (level, name) (name is the trimmed version after the last "#" of the heading)
-// (0, "") means root (no heading)
 
 /// Represents an iterator over Markdown sections with multiple section filters.
 /// IMPORTANT:
