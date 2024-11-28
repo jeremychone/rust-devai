@@ -131,7 +131,7 @@ impl<'a> MdSectionIter<'a> {
 	}
 }
 
-/// Lexec
+/// Lexer
 impl<'a> MdSectionIter<'a> {
 	fn resolve_heading_patterns(heading_patterns: Option<&[&str]>) -> Result<Vec<SectionPattern>> {
 		let Some(heading_patterns) = heading_patterns else {
@@ -261,7 +261,7 @@ impl<'a> MdSectionIter<'a> {
 					}
 				}
 				// -- If we are on a content line
-				LineData::Content(_) => match self.action_state {
+				LineData::Content(_) | LineData::Blockquote(_) => match self.action_state {
 					ActionState::NoCapture => {
 						if !self.passed_first_heading {
 							if let Some(ref_idx) = filter_has_level_0_fn() {
@@ -289,21 +289,24 @@ impl<'a> MdSectionIter<'a> {
 					ActionState::CaptureLine => ActionState::CaptureLine,
 					ActionState::CloseCurrentSection => ActionState::NoCapture,
 				},
-				LineData::Blockquote(_) => match self.action_state {
-					ActionState::NoCapture | ActionState::CloseCurrentSection => ActionState::NoCapture,
-					_ => ActionState::SkipLineInCapture,
-				},
+				// NOTE: This as before, when we wanted to skip blockquote even when in capture
+				//       This might comeback later, but when and config of some sort.
+				// LineData::Blockquote(_) => match self.action_state {
+				// 	ActionState::NoCapture | ActionState::CloseCurrentSection => ActionState::NoCapture,
+				// 	_ => ActionState::SkipLineInCapture,
+				// },
 			};
 
 			// -- Execute the action
 			match self.action_state {
 				ActionState::NoCapture | ActionState::SkipLineInCapture => (),
 				ActionState::CaptureLine => match line_data {
-					LineData::Content(line) => current_captured_content.get_or_insert_with(Vec::new).push(line),
+					LineData::Content(line) | LineData::Blockquote(line) => {
+						current_captured_content.get_or_insert_with(Vec::new).push(line)
+					}
 					LineData::Heading(line_heading) => current_captured_content
 						.get_or_insert_with(Vec::new)
 						.push(line_heading.into_content().into()),
-					LineData::Blockquote(_) => (),
 				},
 				ActionState::NewHeadingForAllSections => match line_data {
 					LineData::Heading(line_heading) => {
@@ -507,10 +510,10 @@ second heading content
 		assert_contains(&content, "heading-1-content");
 		assert_contains(&content, "Some heading-1-a-content");
 		assert_contains(&content, "Some heading-1-a-other-content");
+		assert_contains(&content, "heading-1-blockquote");
+		assert_contains(&content, "heading-1-a-blockquote");
 		// Should not contain
 		assert_not_contains(&content, fx_headings[0]);
-		assert_not_contains(&content, "heading-1-blockquote");
-		assert_not_contains(&content, "heading-1-a-blockquote");
 		assert_not_contains(&content, "Some early text");
 		assert_not_contains(&content, "content-2");
 
@@ -538,6 +541,7 @@ second heading content
 		// Should contain
 		assert_contains(&content, "Some heading-1-a-content");
 		assert_contains(&content, "Some heading-1-a-other-content");
+		assert_contains(&content, "> Some heading-1-a-blockquote");
 		// Should not contain
 		assert_not_contains(&content, fx_headings[0]);
 		assert_not_contains(&content, "Some early text");

@@ -22,6 +22,8 @@ Some heading-1-a-other-content
 
 Some other content-2
 
+> heading-2-blockquote 
+
 ```
 # Some block content for content-2
 ```

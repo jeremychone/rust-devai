@@ -368,13 +368,16 @@ mod tests {
 		let heading_content = first_item.x_get_str("/heading/content")?;
 		let heading_level = first_item.x_get_i64("/heading/level")?;
 		let heading_name = first_item.x_get_str("/heading/name")?;
-		assert_contains(heading_content, "# Heading 1");
 		assert_eq!(heading_level, 1, "heading level");
+		// contains
+		assert_contains(heading_content, "# Heading 1");
 		assert_contains(heading_name, "Heading 1");
 		assert_contains(content, "heading-1-content");
 		assert_contains(content, "sub heading 1-a");
-		assert_not_contains(content, "heading-1-a-blockquote");
+		assert_contains(content, "heading-1-a-blockquote");
+		// not contains
 		assert_not_contains(content, "content-2");
+		assert_not_contains(content, "heading-2-blockquote");
 
 		Ok(())
 	}
