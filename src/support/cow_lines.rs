@@ -40,19 +40,6 @@ impl<'a> CowLines<'a> {
 	/// Joins a `Vec<Cow<str>>` into a single `String` efficiently.
 	pub fn join(&mut self, separator: &str) -> String {
 		let parts: Vec<Cow<str>> = self.collect();
-		join_cows(parts, separator)
+		parts.join(separator)
 	}
-}
-
-/// Join a vector of Cow<str> while trying do some some pre-alocation
-pub fn join_cows(parts: Vec<Cow<str>>, separator: &str) -> String {
-	let total_len: usize = parts.iter().map(|s| s.len()).sum();
-	let mut result = String::with_capacity(total_len + separator.len() * (parts.len().saturating_sub(1)));
-	for (i, part) in parts.iter().enumerate() {
-		if i > 0 {
-			result.push_str(separator);
-		}
-		result.push_str(part);
-	}
-	result
 }

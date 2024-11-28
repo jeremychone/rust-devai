@@ -1,5 +1,5 @@
 use crate::support::md::InBlockState;
-use crate::support::{join_cows, CowLines};
+use crate::support::CowLines;
 use crate::types::{MdHeading, MdSection, ParseResponse};
 use crate::{Error, Result};
 use std::borrow::{BorrowMut, Cow};
@@ -109,9 +109,13 @@ impl<'a> MdSectionIter<'a> {
 		fn close_section(
 			current_captured_content: &mut Option<Vec<Cow<str>>>,
 			current_captured_heading: &mut Option<MdHeading>,
+			add_new_line: bool,
 		) -> Option<MdSection> {
 			current_captured_content.take().map(|mut content| {
-				let content = join_cows(content, "\n");
+				if add_new_line {
+					content.push("".into());
+				}
+				let content = content.join("\n");
 				MdSection::new(content, current_captured_heading.take())
 			})
 		}
@@ -139,18 +143,14 @@ impl<'a> MdSectionIter<'a> {
 			/// -- Capture the LineData
 			let line_data = {
 				if is_inside_code_block {
-					if line.starts_with('>') {
-						LineData::Blockquote(line)
-					} else {
-						LineData::Content(line)
-					}
+					LineData::Content(line)
 				} else {
 					//
 					match MdHeading::peek_line(line.as_ref()) {
 						Some((level, name)) => {
 							self.passed_first_heading = true;
-							// TODO: need to return LineData::Heading should have the (level, name, line: Cow...)
-							match MdHeading::parse_line(line.to_string()) {
+							// TODO: Needs to handle the correct add_new_line flag
+							match MdHeading::parse_line(line.as_ref()) {
 								ParseResponse::Item(heading) => LineData::Heading(heading),
 								// TODO: Here we should never have Other, as the peek_line returns Some.
 								//       But just in case, fall back to other
@@ -258,7 +258,7 @@ impl<'a> MdSectionIter<'a> {
 						/// if we are in a NewHeadingForAllSections and already capturing something, we close current
 						if current_captured_heading.is_some() || current_captured_content.is_some() {
 							self.last_heading = Some(line_heading);
-							return close_section(&mut current_captured_content, &mut current_captured_heading);
+							return close_section(&mut current_captured_content, &mut current_captured_heading, true);
 						}
 						// if we start a new capture, just set it
 						else {
@@ -295,12 +295,13 @@ impl<'a> MdSectionIter<'a> {
 					}
 				}
 				ActionState::CloseCurrentSection => {
-					return close_section(&mut current_captured_content, &mut current_captured_heading);
+					return close_section(&mut current_captured_content, &mut current_captured_heading, true);
 				}
 			}
 		}
 
-		close_section(&mut current_captured_content, &mut current_captured_heading)
+		// - Close the last section
+		close_section(&mut current_captured_content, &mut current_captured_heading, false)
 	}
 }
 
@@ -315,12 +316,41 @@ impl<'a> Iterator for MdSectionIter<'a> {
 
 // region:    --- Splitter
 
+#[derive(Debug)]
+pub struct MdSectionSplit {
+	before: String,
+	first: MdSection,
+	after: String,
+}
 /// Splitter extractor uses the iterator to split the md content in certain ways
 impl<'a> MdSectionIter<'a> {
-	// /// Split the first MdSection out, and have the rest as string.
-	// /// To reconstruct the full md, do  md_section.heading_raw() + md_section.content()
-	// /// Heading raw
-	// // pub fn split_first(&mut self) ->
+	/// Split the first MdSection out, and have the before and after as strings.
+	/// NOTE: Right now, jsut take the top MdSection, so `.before` will always be empty string
+	pub fn split_first(&mut self) -> MdSectionSplit {
+		// -- Capture the first section
+		let first = self.next_section();
+
+		// -- Today hardcode before the ""
+		let before = String::new();
+
+		// -- Capture the after
+		let after_lines: Vec<Cow<str>> = if let Some(heading) = self.last_heading.take() {
+			let heading_content = heading.into_content();
+			let heading_line = std::iter::once(Cow::Owned(heading_content));
+			let lines = heading_line.chain(self.lines.borrow_mut());
+			lines.collect()
+		} else {
+			self.lines.borrow_mut().collect()
+		};
+
+		let after = after_lines.join("\n");
+
+		MdSectionSplit {
+			before,
+			first: first.unwrap(),
+			after,
+		}
+	}
 }
 
 // endregion: --- Splitter
@@ -364,7 +394,6 @@ mod tests {
 
 	const FX_MD_01: &str = r#"
 Some early text
-
 # Heading 1
 
 > Some heading-1-blockquote
@@ -390,7 +419,8 @@ Some other content-2
 ```
 
 # Heading three
-		"#;
+
+"#;
 
 	const FX_MD_02: &str = r#"
 # First heading
@@ -399,12 +429,11 @@ first heading content
 
 ## Second Heading
 
-second heading content
-
-"#;
+second heading content"#;
 
 	// endregion: --- consts
 
+	// TODO: Need to fix with the last Heading `# Heading three` has empty content (it wil give 4 sections and not 5)
 	#[test]
 	fn test_md_section_iter_no_filter_with_md_01() -> Result<()> {
 		// -- Setup & Fixtures
@@ -462,7 +491,7 @@ second heading content
 		let MdSection { heading, content } = sections.into_iter().next().ok_or("Should have returned a result")?;
 		// check heading
 		let heading = heading.ok_or("Should have a heading")?;
-		assert_eq!(heading.content(), fx_headings[0]);
+		assert_eq!(heading.content(), format!("{}", fx_headings[0]));
 		assert_eq!(heading.level(), 1);
 		// Should contain
 		assert_contains(&content, "heading-1-content");
@@ -494,7 +523,7 @@ second heading content
 		let MdSection { heading, content } = sections.into_iter().next().ok_or("Should have returned a result")?;
 		// check heading
 		let heading = heading.ok_or("Should have a heading")?;
-		assert_eq!(heading.content(), fx_headings[0]);
+		assert_eq!(heading.content(), format!("{}", fx_headings[0]));
 		assert_eq!(heading.level(), 2);
 		// Should contain
 		assert_contains(&content, "Some heading-1-a-content");
@@ -531,6 +560,33 @@ second heading content
 		assert_not_contains(&content, "# Heading 1");
 		assert_not_contains(&content, "content-2");
 		assert_not_contains(&content, "heading-1-content");
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_md_section_iter_split_first_simple() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_md = FX_MD_01;
+
+		// -- Exec
+		let mut sec_iter = MdSectionIter::from_str(fx_md, None)?;
+		let split_first = sec_iter.split_first();
+
+		// -- Check
+		let before = split_first.before;
+		let after = split_first.after;
+		let first = split_first.first;
+
+		// Check before
+		assert_eq!(before, "", "for now, before, always empty string");
+		// Check first
+		assert!(first.heading().is_none(), "Should not have heading");
+		// Check after
+		println!("->>\n{}", after);
+		assert_contains(&after, "> Some heading-1-blockquote");
+		assert_contains(&after, "## sub heading 1-a");
+		assert_contains(&after, "# Heading 2");
 
 		Ok(())
 	}

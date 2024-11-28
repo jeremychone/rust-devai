@@ -8,6 +8,7 @@ use std::str::CharIndices;
 pub struct MdHeading {
 	content: String,
 	/// Represents the start and end positions of the name in the raw line
+	/// NOTE: Does NOT contain newline at the end.
 	name_span: (usize, usize),
 	level: usize,
 }
@@ -60,8 +61,10 @@ impl MdHeading {
 			return ParseResponse::Other(line);
 		};
 
+		let content = line;
+
 		ParseResponse::Item(MdHeading {
-			content: line,
+			content,
 			name_span,
 			level,
 		})
