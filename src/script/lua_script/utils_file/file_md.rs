@@ -16,7 +16,6 @@ use std::fs::write;
 /// let all_summary_section = utils.file.list("doc/readme.md", "# Summary");
 /// ```
 ///
-///
 /// ### Returns
 ///
 /// ```lua
@@ -42,6 +41,17 @@ pub(super) fn file_load_md_sections(
 	let sec_iter = MdSectionIter::from_path(path, Some(&headings))?;
 	let sections = sec_iter.collect::<Vec<_>>();
 	let res = sections.into_lua(lua)?;
+
+	Ok(res)
+}
+
+pub(super) fn file_load_md_split_first(lua: &Lua, ctx: &RuntimeContext, path: String) -> mlua::Result<Value> {
+	let path = ctx.dir_context().resolve_path(path, PathResolver::DevaiParentDir)?;
+
+	let mut sec_iter = MdSectionIter::from_path(path, None)?;
+	let split_first = sec_iter.split_first();
+
+	let res = split_first.into_lua(lua)?;
 
 	Ok(res)
 }
@@ -101,12 +111,33 @@ mod tests {
 
 		// -- Exec
 		let mut res = run_reflective_agent(
-			&format!(r##"return utils.file.load_md_sections("{fx_path}", {{"# Heading 1   "}})"##),
+			&format!(r##"return utils.file.load_md_split_first("{fx_path}")"##),
 			None,
 		)
 		.await?;
 
 		// -- Check
+		// check before
+		let before = res.x_get_str("/before")?;
+		assert_eq!(before, "", "before should be empty");
+		// check first heading
+		assert_eq!(
+			res.x_get_str("/first/heading_content")?,
+			"",
+			"heading_content should be empty"
+		);
+		assert_eq!(res.x_get_i64("/first/heading_level")?, 0, "heading level should be 0");
+		// check first content
+		let content = res.x_get_str("/first/content")?;
+		assert_contains(content, "Some early text");
+		assert_contains(content, "- and more early text");
+		assert_not_contains(content, "# Heading 1");
+		assert_not_contains(content, "Some heading-1-content");
+		// check the after
+		let after = res.x_get_str("/after")?;
+		assert_contains(after, "# Heading 1");
+		assert_contains(after, "Some heading-1-content");
+		assert_contains(after, "# Heading three");
 
 		Ok(())
 	}
