@@ -29,14 +29,21 @@ impl MdSection {
 impl MdSection {
 	/// The content of the section
 	/// NOTE: The eventual end newline for this section in the markdown is not included in the content
-	#[allow(unused)]
 	pub fn content(&self) -> &str {
 		&self.content
 	}
 
-	#[allow(unused)]
 	pub fn heading(&self) -> Option<&MdHeading> {
 		self.heading.as_ref()
+	}
+
+	// Convenient function that returnes the heading content
+	// - "" empty string if not present
+	// - "{content}\n" if present (adding the new line)
+	pub fn heading_raw(&self) -> String {
+		self.heading
+			.as_ref()
+			.map_or_else(|| "".to_string(), |h| h.content().to_string() + "\n")
 	}
 }
 
@@ -45,7 +52,10 @@ impl MdSection {
 impl IntoLua for MdSection {
 	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
 		let table = lua.create_table()?;
+		let heading_raw = self.heading_raw();
+
 		table.set("content", self.content)?;
+		table.set("heading_raw", heading_raw)?;
 		if let Some(heading) = self.heading {
 			table.set("heading_content", heading.content())?;
 			table.set("heading_level", heading.level())?;

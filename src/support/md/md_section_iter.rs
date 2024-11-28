@@ -295,13 +295,13 @@ impl<'a> MdSectionIter<'a> {
 					}
 				}
 				ActionState::CloseCurrentSection => {
-					return close_section(&mut current_captured_content, &mut current_captured_heading, true);
+					return close_section(&mut current_captured_content, &mut current_captured_heading, false);
 				}
 			}
 		}
 
 		// - Close the last section
-		close_section(&mut current_captured_content, &mut current_captured_heading, false)
+		close_section(&mut current_captured_content, &mut current_captured_heading, true)
 	}
 }
 
@@ -410,6 +410,8 @@ Some heading-1-a-content
 
 Some heading-1-a-other-content 
 
+
+
 # Heading 2
 
 Some other content-2
@@ -420,7 +422,7 @@ Some other content-2
 
 # Heading three
 
-"#;
+ "#;
 
 	const FX_MD_02: &str = r#"
 # First heading
@@ -583,10 +585,17 @@ second heading content"#;
 		// Check first
 		assert!(first.heading().is_none(), "Should not have heading");
 		// Check after
-		println!("->>\n{}", after);
+
+		assert_contains(&after, "# Heading 1");
 		assert_contains(&after, "> Some heading-1-blockquote");
 		assert_contains(&after, "## sub heading 1-a");
 		assert_contains(&after, "# Heading 2");
+
+		let heading_content = first.heading().map(|h| format!("{}\n", h.content())).unwrap_or_default();
+
+		// Check to reconstitute
+		let recon = format!("{before}{}{}{after}", heading_content, first.content);
+		assert_eq!(recon, FX_MD_01);
 
 		Ok(())
 	}
