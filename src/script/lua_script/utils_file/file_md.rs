@@ -94,6 +94,23 @@ mod tests {
 		Ok(())
 	}
 
+	#[tokio::test]
+	async fn test_lua_file_load_md_split_first_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let fx_path = "other/md-sections.md";
+
+		// -- Exec
+		let mut res = run_reflective_agent(
+			&format!(r##"return utils.file.load_md_sections("{fx_path}", {{"# Heading 1   "}})"##),
+			None,
+		)
+		.await?;
+
+		// -- Check
+
+		Ok(())
+	}
+
 	// other/md-sections.md
 }
 

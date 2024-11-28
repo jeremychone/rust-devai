@@ -1,3 +1,4 @@
+use crate::support::md::md_section_split::MdSectionSplit;
 use crate::support::md::InBlockState;
 use crate::support::CowLines;
 use crate::types::{MdHeading, MdSection, ParseResponse};
@@ -316,12 +317,6 @@ impl<'a> Iterator for MdSectionIter<'a> {
 
 // region:    --- Splitter
 
-#[derive(Debug)]
-pub struct MdSectionSplit {
-	before: String,
-	first: MdSection,
-	after: String,
-}
 /// Splitter extractor uses the iterator to split the md content in certain ways
 impl<'a> MdSectionIter<'a> {
 	/// Split the first MdSection out, and have the before and after as strings.
