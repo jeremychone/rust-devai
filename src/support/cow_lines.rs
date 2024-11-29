@@ -7,6 +7,7 @@ use std::{fs, io, str};
 /// Enum to represent Cow Lines iterator over &str or File Buffer (for now)
 /// Note: This allows to have static dispatch
 pub enum CowLines<'a> {
+	#[allow(unused)] // for now, only used in test
 	StrLines(str::Lines<'a>),
 	FileLines(io::Lines<io::BufReader<fs::File>>),
 }
@@ -24,6 +25,7 @@ impl<'a> Iterator for CowLines<'a> {
 
 /// Constructors
 impl<'a> CowLines<'a> {
+	#[allow(unused)] // for now, only used in test
 	pub fn from_str(content: &'a str) -> Self {
 		CowLines::StrLines(content.lines())
 	}
@@ -32,14 +34,5 @@ impl<'a> CowLines<'a> {
 		let file = std::fs::File::open(path)?;
 		let reader = io::BufReader::new(file);
 		Ok(CowLines::FileLines(reader.lines()))
-	}
-}
-
-/// Utilities
-impl<'a> CowLines<'a> {
-	/// Joins a `Vec<Cow<str>>` into a single `String` efficiently.
-	pub fn join(&mut self, separator: &str) -> String {
-		let parts: Vec<Cow<str>> = self.collect();
-		parts.join(separator)
 	}
 }

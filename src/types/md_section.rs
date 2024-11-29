@@ -29,10 +29,12 @@ impl MdSection {
 impl MdSection {
 	/// The content of the section
 	/// NOTE: The eventual end newline for this section in the markdown is not included in the content
+	#[allow(unused)]
 	pub fn content(&self) -> &str {
 		&self.content
 	}
 
+	#[allow(unused)]
 	pub fn heading(&self) -> Option<&MdHeading> {
 		self.heading.as_ref()
 	}

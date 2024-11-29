@@ -48,7 +48,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	table.set("list", file_list_fn)?;
 	table.set("first", file_first_fn)?;
 	table.set("load_md_sections", file_load_md_sections_fn)?;
-	table.set("load_md_split_first", file_load_md_split_first_fn);
+	table.set("load_md_split_first", file_load_md_split_first_fn)?;
 
 	Ok(table)
 }

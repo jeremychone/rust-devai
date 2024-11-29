@@ -4,9 +4,8 @@ use crate::support::CowLines;
 use crate::types::{MdHeading, MdSection, ParseResponse};
 use crate::{Error, Result};
 use std::borrow::{BorrowMut, Cow};
-use std::io::BufRead;
 use std::path::Path;
-use std::{fs, io, str};
+use std::str;
 
 /// The Section filter pattern.
 /// Currently, it supports headings only, which is a good start and efficient since there is no need to look ahead.
@@ -58,6 +57,7 @@ impl<'a> MdSectionIter<'a> {
 		Self::new(lines, heading_patterns)
 	}
 
+	#[allow(unused)]
 	pub fn from_str(content: &'a str, heading_patterns: Option<&[&str]>) -> Result<Self> {
 		let lines = CowLines::from_str(content);
 		Self::new(lines, heading_patterns)
@@ -141,14 +141,14 @@ impl<'a> MdSectionIter<'a> {
 			block_state = block_state.compute_new(line.as_ref());
 			let is_inside_code_block = !block_state.is_out();
 
-			/// -- Capture the LineData
+			// -- Capture the LineData
 			let line_data = {
 				if is_inside_code_block {
 					LineData::Content(line)
 				} else {
 					//
 					match MdHeading::peek_line(line.as_ref()) {
-						Some((level, name)) => {
+						Some((_level, _name)) => {
 							self.passed_first_heading = true;
 							// TODO: Needs to handle the correct add_new_line flag
 							match MdHeading::parse_line(line.as_ref()) {
@@ -256,7 +256,7 @@ impl<'a> MdSectionIter<'a> {
 				},
 				ActionState::NewHeadingForAllSections => match line_data {
 					LineData::Heading(line_heading) => {
-						/// if we are in a NewHeadingForAllSections and already capturing something, we close current
+						// if we are in a NewHeadingForAllSections and already capturing something, we close current
 						if current_captured_heading.is_some() || current_captured_content.is_some() {
 							self.last_heading = Some(line_heading);
 							return close_section(&mut current_captured_content, &mut current_captured_heading, true);
@@ -363,6 +363,7 @@ enum LineData<'a> {
 #[derive(Debug, Clone)]
 enum ActionState {
 	NoCapture,
+	#[allow(unused)]
 	SkipLineInCapture,
 	/// We are in all sections match, and this is a new heading
 	NewHeadingForAllSections,
@@ -438,7 +439,7 @@ second heading content"#;
 
 		// -- Exec
 		let sec_iter = MdSectionIter::from_str(fx_md, None)?;
-		let mut sections = sec_iter.collect::<Vec<_>>();
+		let sections = sec_iter.collect::<Vec<_>>();
 
 		// -- Check
 		assert_eq!(sections.len(), 5, "Should have only 5 sections match");
@@ -463,7 +464,7 @@ second heading content"#;
 
 		// -- Exec
 		let sec_iter = MdSectionIter::from_str(fx_md, None)?;
-		let mut sections = sec_iter.collect::<Vec<_>>();
+		let sections = sec_iter.collect::<Vec<_>>();
 
 		// -- Check
 		// Note: Since no filter, all section will be captured separatly
@@ -480,7 +481,7 @@ second heading content"#;
 
 		// -- Exec
 		let sec_iter = MdSectionIter::from_str(fx_md, Some(fx_headings))?;
-		let mut sections = sec_iter.collect::<Vec<_>>();
+		let sections = sec_iter.collect::<Vec<_>>();
 
 		// -- Check
 		assert_eq!(sections.len(), 1, "Should have only one match");
@@ -512,7 +513,7 @@ second heading content"#;
 
 		// -- Exec
 		let sec_iter = MdSectionIter::from_str(fx_md, Some(fx_headings))?;
-		let mut sections = sec_iter.collect::<Vec<_>>();
+		let sections = sec_iter.collect::<Vec<_>>();
 
 		// -- Check
 		assert_eq!(sections.len(), 1, "Should have only one match");
@@ -543,7 +544,7 @@ second heading content"#;
 
 		// -- Exec
 		let sec_iter = MdSectionIter::from_str(fx_md, Some(fx_headings))?;
-		let mut sections = sec_iter.collect::<Vec<_>>();
+		let sections = sec_iter.collect::<Vec<_>>();
 
 		// -- Check
 		assert_eq!(sections.len(), 1, "Should have only one match");

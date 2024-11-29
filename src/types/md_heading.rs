@@ -30,6 +30,7 @@ impl MdHeading {
 		self.level
 	}
 
+	#[allow(unused)]
 	pub fn matches(&self, level: usize, name: &str) -> bool {
 		self.level == level && self.name() == name.trim()
 	}
@@ -37,6 +38,7 @@ impl MdHeading {
 
 pub enum ParseResponse<T> {
 	Item(T),
+	#[allow(unused)]
 	Other(String),
 }
 

@@ -1,10 +1,9 @@
 use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
 use crate::script::lua_script::helpers::to_vec_of_strings;
-use crate::support::md::MdSectionIter;
 use crate::types::{FileRecord, FileRef};
-use crate::{Error, Result};
-use mlua::{IntoLua, Lua, Table, Value};
+use crate::Error;
+use mlua::{IntoLua, Lua, Value};
 use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
 use std::fs::write;
 
@@ -168,7 +167,7 @@ pub(super) fn file_first(lua: &Lua, ctx: &RuntimeContext, include_glob: String) 
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{assert_contains, assert_not_contains, run_reflective_agent, SANDBOX_01_DIR};
+	use crate::_test_support::{assert_contains, run_reflective_agent, SANDBOX_01_DIR};
 	use std::path::Path;
 	use value_ext::JsonValueExt as _;
 
