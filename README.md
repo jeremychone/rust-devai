@@ -8,20 +8,20 @@
 
 # IMPORTANT - Now v0.5.0-WIP with Lua
 
-The main branch is no `v0.5.0-WIP` (Work in progress), a huge upgrade from the currently released `0.1.0`, and now uses **Lua** for scripting (rather than Rhai).
+The main branch is now `v0.5.0-WIP` (Work in progress), a huge upgrade from the currently released `0.1.0`, and now uses **Lua** for scripting (rather than Rhai).
 
- _Rhai is great, but Lua is more known, very small, efficient, supports async, and is perfect fit for the embedding needs of devai_
+_Rhai is great, but Lua is more known, very small, efficient, supports async, and is a perfect fit for the embedding needs of devai._
 
 # **devai** - **Command Agent File Runner**
 
 ```sh
-# Install
+# Install (for now, the simpler way to install is with cargo install)
 cargo install devai
 
 # Init (optional; will be executed on each run as well)
 devai init
 
-# Will proof-read and update of the direct .md file from the current direct
+# Will proofread and update the direct .md file from the current directory
 devai run proof-read -f "./*.md"
 # Can use multiple globs or direct file -f "./*.md" -f "./doc/**/*.md"
 
@@ -33,7 +33,7 @@ devai run proof-read -f "./*.md"
 
 **TOP COLLABORATOR** Big **thanks** to [Stephan Philipakis](https://github.com/sphilipakis), a top **devai** collaborator contributing to the next-generation methodology for production coding with GenAI.
 
-## KEY CONCEPT - **ONE Markdown** == **ONE Agent**
+## KEY CONCEPT - ONE Markdown, ONE Agent, Multi Stages
 
 The main goal of devai is to minimize the friction of creating and running an agent while giving maximum control over how we want those agents to run, and maximizing iteration speed to mature them quickly.
 
@@ -96,15 +96,15 @@ See [Complete Stages Description](#complete-stages-description) for more details
 
 ## More Details
 
-Supports all models/providers supported by the [genai crate](https://crates.io/crates/genai) (see below for more information).
+**devai** is built on top of the [genai crate](https://crates.io/crates/genai), and therefore supports all major AI Providers and Models (OpenAi, Anthropic, Gemini, Ollama, Groq, Cohere)
 
 You can customize the model and concurrency in `.devai/config.toml`.
 
-**v0.1.1 Note:** New `.devai/` file structure with the new `.devai` file extension. See [.devai/ folder structure](#devai-folder-structure).
+ New `.devai/` file structure with the new `.devai` file extension. See [.devai/ folder structure](#devai-folder-structure).
 
-**IMPORTANT**: In VSCode or your editor, map the `*.devai` extension to `markdown` to benefit from markdown highlighting. Devai agent files are markdown files.
+**TIP 1**: In VSCode or your editor, map the `*.devai` extension to `markdown` to benefit from markdown highlighting. Devai agent files are markdown files.
 
-**IMPORTANT**: Make sure to run this command line when everything is committed so that overwritten files can be reverted easily.
+**TIP 2**: Make sure to run this command line when everything is committed so that overwritten files can be reverted easily.
 
 _P.S. If possible, please refrain from publishing `devai-custom` type crates on crates.io, as this might be more confusing than helpful. However, feel free to fork and code as you wish._
 
