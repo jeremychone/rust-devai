@@ -88,11 +88,15 @@ pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, cont
 ///
 /// To get the content of files, needs iterate and load each
 ///
-pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Result<Value> {
+pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -> mlua::Result<Value> {
 	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
+
+	let include_globs: Vec<String> = to_vec_of_strings(include_globs, "file::file_list globs argument")?;
+	let include_globs = include_globs.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+
 	let sfiles = list_files(
 		&base_path,
-		Some(&[&include_glob]),
+		Some(&include_globs),
 		Some(ListOptions::from_relative_glob(true)),
 	)
 	.map_err(Error::from)?;

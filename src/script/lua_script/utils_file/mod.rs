@@ -25,7 +25,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 
 	// -- list
 	let ctx = runtime_context.clone();
-	let file_list_fn = lua.create_function(move |lua, (glob,): (String,)| file_list(lua, &ctx, glob))?;
+	let file_list_fn = lua.create_function(move |lua, (globs,): (Value,)| file_list(lua, &ctx, globs))?;
 
 	// -- first
 	let ctx = runtime_context.clone();
