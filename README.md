@@ -173,10 +173,10 @@ Here is a full description of the complete flow
 
 ## Usage & Concept
 
-Usage: `devai run proof-rust-comments -f "./src/main.rs"`
+Usage: `devai run proof-rs-comments -f "./src/main.rs"`
 
 (or have any glob like `-f "./src/**/*.rs"`)
-- This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rust-comments.md` (see [.devai/defaults/proof-comments.md`](./_init/agents/proof-comments.devai)) and run it with genai as follows: 
+- This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rs-comments.md` (see [.devai/defaults/proof-comments.md`](./_init/agents/proof-comments.devai)) and run it with genai as follows: 
     - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "input" for each file, which can then be accessed in the `# Data` scripting section.
     - `# Data`, which contains a ```lua``` block that will get executed with the `input` value (the file reference in our example above).
         - With **Lua**, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
@@ -196,22 +196,22 @@ Usage: `devai run proof-rust-comments -f "./src/main.rs"`
 # Will create/update the .devai/ settings folder (not required, automatically runs on "run")
 devai init
 
-# Will execute the proof-rust-comments.md from `.devai/customs/` or `.devai/defaults/` on 
+# Will execute the proof-rs-comments.md from `.devai/customs/` or `.devai/defaults/` on 
 # any file matching `./**/mod.rs` (those will become 'inputs' in the data section)
-devai run proof-rust-comments -f mod.rs
+devai run proof-rs-comments -f mod.rs
 
 # Verbose mode will print in the console what is sent to the AI, the AI response, and the output returned if string-like
-devai run proof-rust-comments -f mod.rs --verbose 
+devai run proof-rs-comments -f mod.rs --verbose 
 
-# Verbose and watch mode. Every time proof-rust-comments is updated, it will run it again
-devai run proof-rust-comments -f main.rs -v -w
+# Verbose and watch mode. Every time proof-rs-comments is updated, it will run it again
+devai run proof-rs-comments -f main.rs -v -w
 
 # Will perform the verbose, watch, but in dry mode request, will print only the rendered instruction
-devai run proof-rust-comments -f main.rs -v -w --dry req
+devai run proof-rs-comments -f main.rs -v -w --dry req
 
 # Will perform the verbose, watch, but in dry mode response, will print rendered instruction, AI response
 # and will NOT execute the data
-devai run proof-rust-comments -f main.rs -v -w --dry res
+devai run proof-rs-comments -f main.rs -v -w --dry res
 
 # Happy coding!
 ```
@@ -242,7 +242,7 @@ devai run proof-rust-comments -f main.rs -v -w --dry res
 
 ## Example of a Command Agent File
 
-`.devai/defaults/proof-rust-comments.md` (see [.devai/defaults/proof-rust-comments.md`](./_base/agents/proof-rust-comments.md))
+`.devai/defaults/proof-rs-comments.md` (see [.devai/defaults/proof-rs-comments.md`](./_base/agents/proof-rs-comments.md))
 
 ## Config
 

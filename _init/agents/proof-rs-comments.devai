@@ -1,9 +1,8 @@
 # Description
 
-This is an agent for proof reading comments in Rust source code files.
+This is an agent for proofreading comments in Rust source code files.
 
-It is slightly more optimized for the Rust version compared to the `proof-comments.devai` version, but it is also 
-to show that we can have more specific agents even in the same category. 
+It is slightly more optimized for the Rust version compared to the `proof-comments.devai` version.
 
 # Data
 
@@ -12,7 +11,7 @@ to show that we can have more specific agents even in the same category.
 -- Notes:
 --   - input: This is the FileRef (with .path, .name, .stem, .ext) for each file matching the -f glob.
 --   - file::load(input.path) will return a FileRecord, adding .content for the content of the file.
---   - In Lua, to return a dictionary/object, use the notation `{ name = value, … }`.
+--   - In LUA, to return a dictionary/object, use the notation `{ name = value, … }`.
 
 return {
     file = utils.file.load(input.path)
@@ -25,14 +24,15 @@ For the following Rust file:
 
 {{data.file.path}}
 
-```rust
+```{{data.input.ext}}
 {{data.file.content}}
 ```
 
 - Correct the English of all comments if it is a code base (do not correct the code).
-- Do not change Rust code.
+- Correct the English of all content if it is a Markdown file.
+- Only correct comments if necessary.
 - Preserve the whitespace (do not change tabs into spaces and vice versa).
-- If the file contains module comment `//! ` make sure an empty line follow the module comment block.
+- If English spelling and grammar are correct, do not change.
 - Return the corrected content without any explanation.
 
 # Output

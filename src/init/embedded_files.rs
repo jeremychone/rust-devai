@@ -14,8 +14,8 @@ pub(super) fn get_embedded_command_agent_files() -> &'static [&'static EmbeddedF
 			content: include_str!("../../_init/agents/proof-comments.devai"),
 		},
 		&EmbeddedFile {
-			name: "proof-rust-comments.devai",
-			content: include_str!("../../_init/agents/proof-rust-comments.devai"),
+			name: "proof-rs-comments.devai",
+			content: include_str!("../../_init/agents/proof-rs-comments.devai"),
 		},
 	]
 }
