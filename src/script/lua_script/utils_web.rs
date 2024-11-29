@@ -28,14 +28,27 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 
 /// ## Lua Documentation
 ///
-/// Will do a `git restore path`
+/// Will web get
+///
+/// For Success, the WebResponse is
+/// ```lua
+/// {
+///  success = true,
+///  status = number,
+///  url = string,
+///  content = string,
+/// }
+/// ```
+/// In case of error, the WebError is
 ///
 /// ```lua
-///
+/// {
+///  success = false,
+///  status  = number | nill,
+///  url     = string,
+///  error   = string,
+/// }
 /// ```
-///
-/// NOTE: The git command will be with the working dir as the devai_parent_dir to be consistent with the other
-///
 ///
 fn web_get(lua: &Lua, url: String) -> mlua::Result<Value> {
 	let rt = tokio::runtime::Handle::try_current().map_err(Error::TokioTryCurrent)?;
