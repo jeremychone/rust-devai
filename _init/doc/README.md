@@ -10,8 +10,8 @@ The main **devai** concept is to minimize the friction of creating and running a
 - **Handlebars** for prompt templating. 
 - **Multi Stage** process, where ALL steps are optionals.
     - `# Before All` - (Lua) - reshape / generate inputs, and add command global data to sope (the "map" of the map/reduce capability). 
-    - `# Data` - (Lua) - Gather additional data per input, and return it for next stages. 
-    - `# System`, `# Instructions` - (Handlebars) - Customize prompt with the `data` and `before_all` data. 
+    - `# Data` - (Lua) - Gather additional data per input, and return `data` for next stages. 
+    - `# System`, `# Instruction`, `# Assistant`  - (Handlebars) - Customize prompt with the `data` for the Data stage and `before_all` data. 
         - Can event have `# Assistant` for "Jedi Mind Trick"
     - `# Output` - (Lua) Will process the `ai_response` from the LLM. Otherwise, `ai_response.content` will get outputed to terminal
     - `# After All` - If prefent, get call with `inputs` and `outputs` variables for some post processing after all of the input are completed.

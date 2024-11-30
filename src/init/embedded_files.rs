@@ -6,6 +6,10 @@ pub(super) struct EmbeddedFile {
 pub(super) fn get_embedded_command_agent_files() -> &'static [&'static EmbeddedFile] {
 	&[
 		&EmbeddedFile {
+			name: "ask-devai.devai",
+			content: include_str!("../../_init/agents/ask-devai.devai"),
+		},
+		&EmbeddedFile {
 			name: "proof-read.devai",
 			content: include_str!("../../_init/agents/proof-read.devai"),
 		},
@@ -32,4 +36,17 @@ pub(super) fn get_embedded_new_solo_agent_files() -> &'static [&'static Embedded
 		name: "default.devai",
 		content: include_str!("../../_init/new-solo-agent/default.devai"),
 	}]
+}
+
+pub(super) fn get_embedded_doc_files() -> &'static [&'static EmbeddedFile] {
+	&[
+		&EmbeddedFile {
+			name: "README.md",
+			content: include_str!("../../_init/doc/README.md"),
+		},
+		&EmbeddedFile {
+			name: "lua.md",
+			content: include_str!("../../_init/doc/lua.md"),
+		},
+	]
 }

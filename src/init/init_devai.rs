@@ -1,7 +1,7 @@
 use crate::hub::get_hub;
 use crate::init::embedded_files::{
-	get_embedded_command_agent_files, get_embedded_new_command_agent_files, get_embedded_new_solo_agent_files,
-	EmbeddedFile,
+	get_embedded_command_agent_files, get_embedded_doc_files, get_embedded_new_command_agent_files,
+	get_embedded_new_solo_agent_files, EmbeddedFile,
 };
 use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
 use crate::run::{find_devai_parent_dir, DevaiDir, DirContext};
@@ -16,7 +16,7 @@ use std::path::Path;
 const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_init/config.toml");
 
 // -- Doc Content
-const DEVAI_DOC_LUA_CONTENT: &str = include_str!("../../_init/doc/lua.md");
+// const DEVAI_DOC_LUA_CONTENT: &str = include_str!("../../_init/doc/lua.md");
 
 /// Note: The `show_info_always` will ensure that even if the `.devai/` is found, it will print the message
 ///       This is useful for the `devai init` to always show the status, but not on `devai run`
@@ -124,17 +124,7 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 	.await?;
 
 	// -- Create the documentation
-	ensure_dir(devai_dir.get_doc_dir()?)?;
-	let lua_doc_path = devai_dir.get_doc_lua_path()?;
-	if !lua_doc_path.exists() {
-		write(&lua_doc_path, DEVAI_DOC_LUA_CONTENT)?;
-		hub.publish(format!(
-			"-> {:<18} '{}'",
-			"Create documentation file",
-			lua_doc_path.diff(devai_parent_dir)?
-		))
-		.await;
-	}
+	update_md_files(devai_parent_dir, devai_dir.get_doc_dir()?, get_embedded_doc_files()).await?;
 
 	Ok(())
 }
@@ -148,6 +138,25 @@ async fn update_devai_files(
 ) -> Result<()> {
 	let dir = dir.as_ref();
 	let existing_files = list_files(dir, Some(&["**/*.devai"]), None)?;
+	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
+
+	for e_file in embedded_agent_file {
+		if !existing_names.contains(e_file.name) {
+			let path = SPath::new(dir)?.join(e_file.name)?;
+			write(&path, e_file.content)?;
+			get_hub()
+				.publish(format!("-> {:<18} '{}'", "Create file", path.diff(base_dir)?))
+				.await;
+		}
+	}
+
+	Ok(())
+}
+
+async fn update_md_files(base_dir: &SPath, dir: impl AsRef<Path>, embedded_agent_file: &[&EmbeddedFile]) -> Result<()> {
+	let dir = dir.as_ref();
+	ensure_dir(dir)?;
+	let existing_files = list_files(dir, Some(&["**/*.md"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
 
 	for e_file in embedded_agent_file {

@@ -80,6 +80,20 @@ See [WebResponse](#webresponse), [WebError](#weberror) for return types.
 local content = utils.web.get("https://example.com");   -- WebResponse / WebError
 ```
 
+### utils.md
+
+See [MdBlock](#mdblock)
+
+```lua
+-- Extract the markdown blocks (if no name, all will be extracted)
+local blocks = utils.md.extract_blocks("js")                 -- {MdBlock}
+-- If content start with ```, it will remove first and last ```, and return the content in between
+-- Otherwise, return the original content
+local content = utils.md.outer_block_content_or_raw(content) -- string
+
+```
+
+
 ### utils.json
 
 ```lua
@@ -109,6 +123,9 @@ local cleaned_html = utils.html.prune_to_content(html_content);  -- string
 ## utils.text
 
 ```lua
+local trimmed = utils.text.trim(content);        -- string
+local trimmed = utils.text.trim_start(content);  -- string
+local trimmed = utils.text.trim_end(content);    -- string
 -- Truncate content to a maximum length
 local truncated_content = utils.text.truncate(content, 100, "...");        -- string
 -- Ensure content ends with a single newline
@@ -129,9 +146,10 @@ local updated_content = utils.text.replace_markers(content, new_sections); -- St
 See [CmdResponse](#cmdresponse), [CmdError](#cmderror) for return types.
 
 ```lua
--- Execute a system command
-local result = utils.cmd.exec("echo", "hello world");  -- CmdResponse / CmdError
+-- Execute a system command utils.cmd.exec(cmd_name, cmd_args)
+local result = utils.cmd.exec("ls", {"-ll", "./**/*.md"});  -- CmdResponse / CmdError
 ```
+
 
 ## devai
 
@@ -212,9 +230,20 @@ The `MdSection` is a markdown section with the following representation:
 }
 ```
 
+## MdSection
+
+The `MdSection` is a markdown section with the following representation:
+
+```lua
+{
+  content = "_block_content_",     -- The content of the block
+  lang = "js",                     -- string | nil 
+}
+```
+
 ## CmdResponse
 
-The `CmdResponse` is returned by `utils.cmd.exec(...)`
+The `CmdResponse` is returned by `utils.cmd.exec`
 
 ```lua
 {
@@ -226,7 +255,7 @@ The `CmdResponse` is returned by `utils.cmd.exec(...)`
 
 ## CmdError
 
-When `utils.cmd.exec(...)` fails, here is the type:
+When `utils.cmd.exec` fails, here is the type:
 
 ```lua
 {
