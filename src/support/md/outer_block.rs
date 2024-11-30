@@ -1,7 +1,7 @@
-/// Extracts the content between the first and last triple backticks (```)
-/// in the given input string. If both opening and closing backticks are found,
-/// it returns the enclosed content as a `String`. Otherwise, it returns the
-/// original input content.
+use std::borrow::Cow;
+
+/// Without parsing the markdown, If the string starts with a  ` ``` ` then it will remove that line and
+/// the keep the content only until the last ` ```
 ///
 /// # Arguments
 ///
@@ -10,7 +10,11 @@
 /// # Returns
 ///
 /// A `String` containing the extracted content between the first and last ```
-pub fn outer_block_content_or_raw(content: &str) -> String {
+pub fn outer_block_content_or_raw(content: &str) -> Cow<str> {
+	if !content.starts_with("```") {
+		return content.into();
+	}
+
 	// Split the input content into lines for line-by-line processing.
 	let lines: Vec<&str> = content.lines().collect();
 
@@ -29,12 +33,12 @@ pub fn outer_block_content_or_raw(content: &str) -> String {
 			// Join the extracted lines back into a single string separated by newlines.
 			let mut content = extracted_lines.join("\n");
 			content.push('\n');
-			return content;
+			return content.into();
 		}
 	}
 
 	// If backticks are not properly found, return the original content.
-	content.to_string()
+	content.into()
 }
 
 #[cfg(test)]

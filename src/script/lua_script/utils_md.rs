@@ -39,19 +39,19 @@ fn extract_blocks_with_lang(lua: &Lua, (md_content, lang_name): (String, Option<
 
 /// ## Lua Documentation
 /// ```lua
-/// md.outer_block_content_or_raw(md_content: string) -> string
+/// utils.md.outer_block_content_or_raw(md_content: string) -> string
 /// ```
 ///
-/// Without fully parsing the markdown, this function attempts to extract the content from the first set of triple backticks
-/// to the last set of triple backticks.
-/// If no starting or ending triple backticks are found, it will return the raw content.
+/// Without fully parsing the markdown, this function will remove the first and last
+/// code block (triple back tick), only if the first line is a ` ``` `
+///
+/// If it does not start with a ` ``` ` raw content will be returned.
 ///
 /// > Note: This is useful in the GenAI context because often LLMs return a top block (e.g., markdown, Rust)
-/// >       which might have other ` ``` ` in the middle but should be interpreted as nested.
-/// >       (GenAI does not seem to recognize the use of 6 backticks for top-level blocks)
+/// >       And while it is better to try to handle this with the prompt, gpt-4o-mini or other models still put in markdown block
 fn outer_block_content_or_raw(_lua: &Lua, md_content: String) -> mlua::Result<String> {
 	let res = md::outer_block_content_or_raw(&md_content);
-	Ok(res)
+	Ok(res.into_owned())
 }
 
 // region:    --- Tests

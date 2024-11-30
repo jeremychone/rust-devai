@@ -23,7 +23,7 @@ use crate::script::lua_script::DEFAULT_MARKERS;
 use crate::support::html::decode_html_entities;
 use crate::support::strings::{self, truncate_with_ellipsis};
 use crate::Result;
-use mlua::{Lua, Table, Value};
+use mlua::{Lua, LuaSerdeExt, Table, Value};
 use std::borrow::Cow;
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
@@ -35,6 +35,9 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 	table.set("remove_first_lines", lua.create_function(remove_first_lines)?)?;
 	table.set("remove_last_lines", lua.create_function(remove_last_lines)?)?;
 	table.set("remove_last_line", lua.create_function(remove_last_line)?)?;
+	table.set("trim", lua.create_function(trim)?)?;
+	table.set("trim_start", lua.create_function(trim_start)?)?;
+	table.set("trim_end", lua.create_function(trim_end)?)?;
 	table.set("truncate", lua.create_function(truncate)?)?;
 	table.set(
 		"replace_markers",
@@ -103,6 +106,18 @@ fn ensure_single_ending_newline(_lua: &Lua, content: String) -> mlua::Result<Str
 /// Returns `content` with the first line removed.
 fn remove_first_line(_lua: &Lua, content: String) -> mlua::Result<String> {
 	Ok(remove_first_lines_impl(&content, 1).to_string())
+}
+
+fn trim(lua: &Lua, content: String) -> mlua::Result<Value> {
+	lua.to_value(content.trim())
+}
+
+fn trim_end(lua: &Lua, content: String) -> mlua::Result<Value> {
+	lua.to_value(content.trim_end())
+}
+
+fn trim_start(lua: &Lua, content: String) -> mlua::Result<Value> {
+	lua.to_value(content.trim_start())
 }
 
 ///  ## Lua Documentation
