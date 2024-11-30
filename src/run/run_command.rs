@@ -26,7 +26,7 @@ pub async fn run_command_agent(
 	return_output_values: bool,
 ) -> Result<RunCommandResponse> {
 	let hub = get_hub();
-	let concurrency = agent.config().inputs_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
+	let concurrency = agent.config().input_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);

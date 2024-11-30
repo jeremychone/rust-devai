@@ -8,7 +8,7 @@ This agent is for proofreading general text files, such as markdown files.
 
 ```lua
 -- We can do a git restore of the target file if we have good git commit discipline.
--- NOTE: when doing on multiple files, putting this in the `# Before All` Lua script section will be more optimized.
+-- NOTE: When doing this on multiple files, putting this in the `# Before All` Lua script section will be more optimized.
 -- utils.git.restore(input.path)
 
 -- Notes:
@@ -42,7 +42,7 @@ Your goal is to proofread the English of the document the user is giving you.
 
 local content = ai_response.content
 
--- Note: Also nice to normalize files with a single ending empty line
+-- Note: It is also nice to normalize files with a single ending empty line.
 content = utils.text.ensure_single_ending_newline(content)
 
 -- Example of how to save to the same file

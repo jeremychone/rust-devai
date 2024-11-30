@@ -14,7 +14,7 @@ pub struct AgentConfig {
 	temperature: Option<f64>,
 
 	// Runtime settings
-	inputs_concurrency: Option<usize>,
+	input_concurrency: Option<usize>,
 }
 
 // Getters
@@ -23,8 +23,8 @@ impl AgentConfig {
 		self.model.as_deref()
 	}
 
-	pub fn inputs_concurrency(&self) -> Option<usize> {
-		self.inputs_concurrency
+	pub fn input_concurrency(&self) -> Option<usize> {
+		self.input_concurrency
 	}
 
 	pub fn temperature(&self) -> Option<f64> {
@@ -40,7 +40,7 @@ impl AgentConfig {
 		AgentConfig {
 			model: Some(model_name.into()),
 			temperature: None,
-			inputs_concurrency: None,
+			input_concurrency: None,
 		}
 	}
 
@@ -49,12 +49,12 @@ impl AgentConfig {
 		let model = value.x_get("/genai/model").ok();
 		let temperature: Option<f64> = value.x_get("/genai/temperature").ok();
 
-		let inputs_concurrency = value.x_get("/runtime/inputs_concurrency").ok();
+		let input_concurrency = value.x_get("/runtime/input_concurrency").ok();
 
 		Ok(AgentConfig {
 			model,
 			temperature,
-			inputs_concurrency,
+			input_concurrency,
 		})
 	}
 
@@ -65,7 +65,7 @@ impl AgentConfig {
 		Ok(AgentConfig {
 			model: config_ov.model.or(self.model),
 			temperature: config_ov.temperature.or(self.temperature),
-			inputs_concurrency: config_ov.inputs_concurrency.or(self.inputs_concurrency),
+			input_concurrency: config_ov.input_concurrency.or(self.input_concurrency),
 		})
 	}
 }

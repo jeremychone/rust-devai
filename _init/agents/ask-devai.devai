@@ -3,7 +3,7 @@
 ```toml
 [genai]
 # Here we can override the default model for this agent only 
-# This agent works with with claude sonnet
+# This agent works with Claude Sonnet
 
 # model = "claude-3-5-sonnet-20241022"
 
@@ -18,11 +18,12 @@
 
 -- == Step 1 == Load the doc files
 
--- The `list_load` will list the files from devai parent dir, and load each of them
--- so, each item are FileRecord
-local doc_files = utils.file.list_load({"*.md", ".devai/doc/**/*.md"})
+-- The `list_load` will list the files from the devai parent dir and load each of them
+-- so, each item is a FileRecord
+local doc_files = utils.file.list_load(".devai/doc/**/*.md")
 
 -- == Step 2 == Create/Load the `ask-devai.md`
+
 local ask_file_path = ".devai/tmp/ask-devai.md"
 local placeholder_text = [[
 Placeholder: 
@@ -35,24 +36,23 @@ Placeholder:
 if not utils.path.exists(ask_file_path) then
     utils.file.save(ask_file_path, placeholder_text)
 
-    -- Open it with vscode 
+    -- Open it with VSCode 
     utils.cmd.exec("code", {ask_file_path} )
 end
 
-
--- Load/Split mardown
+-- Load & split_first markdown
 local ask_file_split = utils.file.load_md_split_first(ask_file_path)
+
 -- {before = "", first: MdSection, after: string}
 -- For now, before is always empty, first is the MdSection with .content 
---          and .heading_content, and .heading_raw with (empty string if no heading and heading content with '\n' if heading)
+--          and .heading_content, and .heading_raw (empty string if no heading and heading content with '\n' if heading)
 
--- If it starts with placeholder, then, t
+-- If it starts with placeholder, then we skip
 local str = ask_file_split.first.content;
-str = str:match("^%s*(.-)%s*$") -- Trim leading and trailing spaces
+str = utils.text.trim(str) -- Trim leading and trailing spaces
 if str:sub(1, 11):lower() == "placeholder" then
     return devai.skip("Question is a placeholder, so skipping for now")
 end
-
 
 -- == Step 3 == Return the data
 
@@ -65,11 +65,11 @@ return {
 
 # System
 
-Your goal is to answer **devai** question in a concise and precise matter, with some code example when appropriate. 
+Your goal is to answer **devai** questions in a concise and precise manner, with some code examples when appropriate. 
 
-**devai** is a comman line utilities that allows to write agent in a mardown file, with full control over the prompt, with a multi-stage approach. 
+**devai** is a command line utility that allows you to write agents in a markdown file, with full control over the prompt, using a multi-stage approach. 
 
-Here are some documentations files, separated with `=== file/path/to/document.md` for you to be able to refer in your answer. 
+Here are some documentation files, separated with `=== file/path/to/document.md` for you to refer to in your answer. 
 
 {{#each data.doc_files}}
 
@@ -81,7 +81,7 @@ Here are some documentations files, separated with `=== file/path/to/document.md
 
 # System
 
-- When user ask a question, give back the answer
+- When the user asks a question, provide the answer.
 - Give me the file path of where the answer was found. 
 - Format the answer this way:
 
@@ -89,20 +89,15 @@ Here are some documentations files, separated with `=== file/path/to/document.md
 # QUESTION: _user_question_
 
 _answer_
-
 ```
 
-- For the `_user_question_` text, if question is short, put it there, if it is long or special characters, summarize the question and put it there. 
-- For the `# Instruction` `# System` the content is just normal markdown, not in markdown code block, except when putting some code, where it is good to put them in the appropriate code block. 
-- if it is appropriate, do not hesitate to give bullet points to help clarity and concisness. 
-- When the user ask to generate a stage of a devai file, do not wrap with `lua` code bock, just `# stage_name` and then, put the Lua code in the `lua` code block. 
-- When giving the answer, do not surround it in markdown code block.
-- Remember, a `.devai` file a markdown file, so when given devai example, do not surround the devai stages example with a markdown code block. Just put them in lines.
-- When giving the reference to the doc file, prefix them with `../` and then add the full path with the `file/path/to/document.md`, and put them in a markdown link like `[../../file/path/to/document.md](../../file/path/to/document.md#possible_heading_anchor)`
-
-# Other 
-
-
+- For the `_user_question_` text, if the question is short, put it there; if it is long or contains special characters, summarize the question and put it there. 
+- For the `# Instruction` and `# System`, the content is just normal markdown, not in a markdown code block, except when putting some code, where it is appropriate to put them in the appropriate code block. 
+- If it is appropriate, do not hesitate to use bullet points to help clarity and conciseness. 
+- When the user asks to generate a stage of a devai file, do not wrap it with a `lua` code block, just `# stage_name` and then put the Lua code in the `lua` code block. 
+- When providing the answer, do not surround it in a markdown code block.
+- Remember, a `.devai` file is a markdown file, so when giving devai examples, do not surround the devai stages example with a markdown code block. Just put them in lines.
+- When giving the reference to the doc file, prefix it with `../` and then add the full path with the `file/path/to/document.md`, and put them in a markdown link like `[../../file/path/to/document.md](../../file/path/to/document.md#possible_heading_anchor)`
 
 
 # Instruction
@@ -117,15 +112,16 @@ Here is the user question:
 
 -- Extract content from AI response
 local answer = ai_response.content
--- Sometime, some model, still put the result in a mardown block. 
--- This aleviate some of this issues (when it starts with ```)
+-- Sometimes, some models still put the result in a markdown block. 
+-- This alleviates some of these issues (when it starts with ```)
 local answer = utils.text.trim(answer)
 local answer = utils.md.outer_block_content_or_raw(answer)
+local answer = utils.text.trim(answer)
 
--- build the question content
+-- Build the question content
 local first = data.ask_file_split.first
 local question = first.heading_raw .. first.content
--- make sure it ends with only one newline
+-- Make sure it ends with only one newline
 question = utils.text.ensure_single_ending_newline(question)
 
 -- Concatenate the content from the file

@@ -9,5 +9,6 @@ model = "gpt-4o-mini"
 temperature = 0.0
 
 [runtime]
-# Default to 1 if absent
-inputs_concurrency = 1
+# How many inputs can be processed at the same time
+# (Defaults to 1 if absent)
+input_concurrency = 6

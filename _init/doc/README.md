@@ -237,5 +237,5 @@ model = "gpt-4o-mini"
 
 [runtime]
 # Default to 1 if absent. A great way to increase speed when using remote AI services.
-inputs_concurrency = 1 
+input_concurrency = 1 
 ```

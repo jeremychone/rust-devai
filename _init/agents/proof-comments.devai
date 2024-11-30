@@ -18,7 +18,7 @@ For the following markdown file:
 
 {{data.file.path}}
 
-```
+```{{data.file.ext}}
 {{data.file.content}}
 ```
 
@@ -36,10 +36,10 @@ For the following markdown file:
 --         and last triple backticks or return ai_response if there are no triple backticks.
 --         This might be removed.
 -- Note 2: This could create problems sometimes if the content is markdown, and LLMs do not tend to return the 6 backticks. 
---         In those cases, instructing the LLMs to not put the result in a markdown text can be an option. 
+--         In those cases, instructing the LLMs not to put the result in markdown text can be an option. 
 local content = utils.md.outer_block_content_or_raw(ai_response.content)
 
--- Note: Also nice to normalize files with a single ending empty line
+-- Note: It is also nice to normalize files with a single ending empty line.
 content = text::ensure_single_ending_newline(content)
 
 -- Example of how to save to the same file

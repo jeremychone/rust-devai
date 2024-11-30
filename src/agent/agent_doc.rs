@@ -359,7 +359,7 @@ mod tests {
 
 		// -- Check config
 		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.config().inputs_concurrency(), Some(8), "concurrency");
+		assert_eq!(agent.config().input_concurrency(), Some(8), "concurrency");
 
 		// -- Check Other
 		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
@@ -384,7 +384,7 @@ mod tests {
 
 		// -- Check config
 		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.config().inputs_concurrency(), None);
+		assert_eq!(agent.config().input_concurrency(), None);
 
 		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
 

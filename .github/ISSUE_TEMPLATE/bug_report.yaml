@@ -34,7 +34,7 @@ body:
         
         [runtime]
         # Default to 1 if absent
-        inputs_concurrency = 1 
+        input_concurrency = 1 
       render: toml
   - type: textarea
     attributes:
