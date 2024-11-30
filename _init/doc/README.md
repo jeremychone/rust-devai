@@ -1,20 +1,19 @@
-
 ## KEY CONCEPT - ONE Markdown, ONE Agent, Multi Stages
 
-The main **devai** concept is to minimize the friction of creating and running an agent while giving maximum control over how we want those agents to run, and maximizing iteration speed to mature them quickly.
+The main **devai** concept is to minimize the friction of creating and running an agent while providing maximum control over how we want those agents to run, and maximizing iteration speed to mature them quickly.
 
 - **One Agent** == **One Markdown** 
-    -(i.e., `my-agent.devai`, a `.devai` is a markdown file with multi-stage sections desribed below)
+    - (i.e., `my-agent.devai`, a `.devai` is a markdown file with multi-stage sections described below)
 - **Multi AI Provider / Models** Supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come. 
 - **Lua** for Scripting.
 - **Handlebars** for prompt templating. 
-- **Multi Stage** process, where ALL steps are optionals.
-    - `# Before All` - (Lua) - reshape / generate inputs, and add command global data to sope (the "map" of the map/reduce capability). 
-    - `# Data` - (Lua) - Gather additional data per input, and return `data` for next stages. 
+- **Multi Stage** process, where ALL steps are optional.
+    - `# Before All` - (Lua) - reshape / generate inputs, and add command global data to scope (the "map" of the map/reduce capability). 
+    - `# Data` - (Lua) - Gather additional data per input, and return `data` for the next stages. 
     - `# System`, `# Instruction`, `# Assistant`  - (Handlebars) - Customize prompt with the `data` for the Data stage and `before_all` data. 
-        - Can event have `# Assistant` for "Jedi Mind Trick"
-    - `# Output` - (Lua) Will process the `ai_response` from the LLM. Otherwise, `ai_response.content` will get outputed to terminal
-    - `# After All` - If prefent, get call with `inputs` and `outputs` variables for some post processing after all of the input are completed.
+        - Can even have `# Assistant` for "Jedi Mind Trick"
+    - `# Output` - (Lua) Will process the `ai_response` from the LLM. Otherwise, `ai_response.content` will get output to the terminal.
+    - `# After All` - If present, get a call with `inputs` and `outputs` variables for some post-processing after all of the inputs are completed.
 
 
 ```sh
@@ -32,7 +31,7 @@ devai run ./my-agents/first-agent.devai -f "./README.md"
 -- Input is what was given by the command line (when -f, this will be the file metadata)
 
 return {
-    file: utils.file.load(input.path)
+    file = utils.file.load(input.path)
 }
 ```
 
@@ -76,7 +75,7 @@ return "This will be printed in the terminal if String"
 
 ## More Details
 
-**devai** is built on top of the [genai crate](https://crates.io/crates/genai), and therefore supports all major AI Providers and Models (OpenAi, Anthropic, Gemini, Ollama, Groq, Cohere)
+**devai** is built on top of the [genai crate](https://crates.io/crates/genai), and therefore supports all major AI Providers and Models (OpenAI, Anthropic, Gemini, Ollama, Groq, Cohere)
 
 You can customize the model and concurrency in `.devai/config.toml`.
 
@@ -157,7 +156,7 @@ Usage: `devai run proof-rs-comments -f "./src/main.rs"`
 
 - This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rs-comments.md` (see [.devai/defaults/proof-comments.md`](./_init/agents/proof-comments.devai)) and run it with genai as follows: 
     - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "input" for each file, which can then be accessed in the `# Data` scripting section (each input will be of type [FileRef](lua.md#fileref)).
-    - `# Data`, which contains a ```lua``` block that will get executed with the `input` valvue (the file reference in our example above).
+    - `# Data`, which contains a ```lua``` block that will get executed with the `input` value (the file reference in our example above).
         - With **Lua**, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
     - `# Instruction`, which is a Handlebars template section, has access to `input` as well as the output of the `# Data` section, accessible as the `data` variable. 
         - This will be sent to the AI.
