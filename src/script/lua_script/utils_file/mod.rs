@@ -4,7 +4,7 @@ mod file_common;
 mod file_md;
 
 use crate::run::RuntimeContext;
-use crate::script::lua_script::utils_file::file_common::{file_first, file_list, file_load, file_save};
+use crate::script::lua_script::utils_file::file_common::{file_first, file_list, file_list_load, file_load, file_save};
 use crate::script::lua_script::utils_file::file_md::{file_load_md_sections, file_load_md_split_first};
 use crate::Result;
 use mlua::{Lua, Table, Value};
@@ -27,9 +27,13 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	let ctx = runtime_context.clone();
 	let file_list_fn = lua.create_function(move |lua, (globs,): (Value,)| file_list(lua, &ctx, globs))?;
 
+	// -- list_load
+	let ctx = runtime_context.clone();
+	let file_list_load_fn = lua.create_function(move |lua, (globs,): (Value,)| file_list_load(lua, &ctx, globs))?;
+
 	// -- first
 	let ctx = runtime_context.clone();
-	let file_first_fn = lua.create_function(move |lua, (glob,): (String,)| file_first(lua, &ctx, glob))?;
+	let file_first_fn = lua.create_function(move |lua, (globs,): (Value,)| file_first(lua, &ctx, globs))?;
 
 	// -- load_md_sections
 	let ctx = runtime_context.clone();
@@ -46,6 +50,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	table.set("load", file_load_fn)?;
 	table.set("save", file_save_fn)?;
 	table.set("list", file_list_fn)?;
+	table.set("list_load", file_list_load_fn)?;
 	table.set("first", file_first_fn)?;
 	table.set("load_md_sections", file_load_md_sections_fn)?;
 	table.set("load_md_split_first", file_load_md_split_first_fn)?;

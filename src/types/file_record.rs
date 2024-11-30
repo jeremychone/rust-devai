@@ -21,8 +21,8 @@ pub struct FileRecord {
 
 /// Constructors
 impl FileRecord {
-	pub fn load(base_path: SPath, rel_path: SPath) -> Result<Self> {
-		let full_path = base_path.join(&rel_path)?;
+	pub fn load(base_path: &SPath, rel_path: &SPath) -> Result<Self> {
+		let full_path = base_path.join(rel_path)?;
 		let content = read_to_string(&full_path)?;
 
 		Ok(FileRecord {

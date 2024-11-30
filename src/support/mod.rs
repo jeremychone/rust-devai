@@ -1,7 +1,9 @@
 // region:    --- Modules
 
+mod as_strs_ext;
 mod cow_lines;
 
+pub use as_strs_ext::*;
 pub use cow_lines::*;
 
 pub mod code;

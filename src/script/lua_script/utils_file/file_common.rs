@@ -1,8 +1,9 @@
 use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
 use crate::script::lua_script::helpers::to_vec_of_strings;
+use crate::support::AsStrsExt;
 use crate::types::{FileRecord, FileRef};
-use crate::Error;
+use crate::{Error, Result};
 use mlua::{IntoLua, Lua, Value};
 use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
 use std::fs::write;
@@ -35,7 +36,7 @@ pub(super) fn file_load(lua: &Lua, ctx: &RuntimeContext, rel_path: String) -> ml
 	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
 	let rel_path = SPath::new(rel_path).map_err(Error::from)?;
 
-	let file_record = FileRecord::load(base_path, rel_path)?;
+	let file_record = FileRecord::load(&base_path, &rel_path)?;
 	let res = file_record.into_lua(lua)?;
 
 	Ok(res)
@@ -88,14 +89,11 @@ pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, cont
 /// To get the content of files, needs iterate and load each
 ///
 pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -> mlua::Result<Value> {
-	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
-
-	let include_globs: Vec<String> = to_vec_of_strings(include_globs, "file::file_list globs argument")?;
-	let include_globs = include_globs.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+	let (base_path, include_globs) = base_path_and_globs(ctx, include_globs)?;
 
 	let sfiles = list_files(
 		&base_path,
-		Some(&include_globs),
+		Some(&include_globs.x_as_strs()),
 		Some(ListOptions::from_relative_glob(true)),
 	)
 	.map_err(Error::from)?;
@@ -105,10 +103,34 @@ pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -
 		.into_iter()
 		.map(|f| f.diff(&base_path))
 		.collect::<simple_fs::Result<Vec<SPath>>>()
-		.map_err(|err| crate::Error::cc("Cannot list fiels to base", err))?;
+		.map_err(|err| crate::Error::cc("Cannot list files to base", err))?;
 
 	let file_refs: Vec<FileRef> = sfiles.into_iter().map(FileRef::from).collect();
 	let res = file_refs.into_lua(lua)?;
+
+	Ok(res)
+}
+
+pub(super) fn file_list_load(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -> mlua::Result<Value> {
+	let (base_path, include_globs) = base_path_and_globs(ctx, include_globs)?;
+
+	let sfiles = list_files(
+		&base_path,
+		Some(&include_globs.x_as_strs()),
+		Some(ListOptions::from_relative_glob(true)),
+	)
+	.map_err(Error::from)?;
+
+	let file_records = sfiles
+		.into_iter()
+		.map(|sfile| -> Result<FileRecord> {
+			let rel_path = sfile.diff(&base_path)?;
+			let file_record = FileRecord::load(&base_path, &rel_path)?;
+			Ok(file_record)
+		})
+		.collect::<Result<Vec<_>>>()?;
+
+	let res = file_records.into_lua(lua)?;
 
 	Ok(res)
 }
@@ -139,11 +161,11 @@ pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -
 /// ```lua
 /// let file = utils.file.load(file_ref.path)
 /// ```
-pub(super) fn file_first(lua: &Lua, ctx: &RuntimeContext, include_glob: String) -> mlua::Result<Value> {
-	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
+pub(super) fn file_first(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -> mlua::Result<Value> {
+	let (base_path, include_globs) = base_path_and_globs(ctx, include_globs)?;
 	let mut sfiles = iter_files(
 		&base_path,
-		Some(&[&include_glob]),
+		Some(&include_globs.x_as_strs()),
 		Some(ListOptions::from_relative_glob(true)),
 	)
 	.map_err(Error::from)?;
@@ -160,6 +182,18 @@ pub(super) fn file_first(lua: &Lua, ctx: &RuntimeContext, include_glob: String) 
 
 	Ok(res)
 }
+
+// region:    --- Support
+
+/// return (base_path, globs)
+fn base_path_and_globs(ctx: &RuntimeContext, include_globs: Value) -> Result<(SPath, Vec<String>)> {
+	let base_path = ctx.dir_context().resolve_path("", PathResolver::DevaiParentDir)?;
+	let globs: Vec<String> = to_vec_of_strings(include_globs, "file::file_list globs argument")?;
+
+	Ok((base_path, globs))
+}
+
+// endregion: --- Support
 
 // region:    --- Tests
 
