@@ -66,7 +66,7 @@ A single **devai** file may comprise any of the following stages.
 
 ## [devai doc](_init/doc/README.md)
 
-See the devai doc at **[_init/doc/README.md](_init/doc/README.md)**
+See the devai doc at **[_init/doc/README.md](_init/doc/README.md)** (With [Lua modules doc](_init/doc/lua.md))
 
 You can also run the `ask-devai` agent. 
 
