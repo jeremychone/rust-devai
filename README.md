@@ -8,12 +8,14 @@
 
 # **devai** - **Command Agent File Runner**
 
-**Install** (for now, the simplest way to install is with cargo install)
+#### Install
+
+_For now, the simplest way to install is with `cargo install`._
 
 - Install Rust: https://www.rust-lang.org/tools/install
 - Run `cargo install devai`
 
-**Usage**
+#### Usage
 
 ```sh
 # Init (optional; will be executed on each run as well)
@@ -24,42 +26,41 @@ devai run proof-read -f "./*.md"
 # Can use multiple globs or direct files -f "./*.md" -f "./doc/**/*.md"
 ```
 
-- How it works: 
-  - It will run the installed Command Agent file `.devai/default/proof-read.devai` on all source files matching `./src/*.md` (Here is the source file for the default [proof-read.devai](/_init/agents/proof-read.devai))
-    - Each matching file will become an `input` of type [FileRef](./_init/doc/lua.md#fileref) for the **Lua** and **Handlebars** parts of the agent file. 
-  - An `.devai` Agent file is just a **Markdown File** with some sections for each stage of the agent processing. For example, an Agent file can have 
-    - A `# Data` section with a ` ```lua ` code block to prepare the data, 
-    - A `# Instruction` section that will be rendered with Handlebars templating, with access to `data` and `input`
-    - A `# Output` section with a ` ```lua ` code block that has access to `data`, `input`, and `ai_response` 
-  - Any `.devai` file can be an agent file and run with `devai run ./my-path/to/my-agent.devai`
-    - Agents do not have to take any inputs or can generate their own in the `# Before All` section.
-  - **Multi Stage** process, with the following stage (each stage is **optional**)
+The main **devai** concept is to minimize the friction of creating and running an agent while providing maximum control over how we want those agents to run and maximizing iteration speed to mature them quickly.
+
+**IMPORTANT 1**: Make sure everything is committed before usage (at least while you are learning about devai).
+
+**IMPORTANT 2**: Make sure to have your **`OPENAI_API_KEY`**, or **`ANTHROPIC_API_KEY`**, or the key of your model provider (specified in the `.devai/config.toml` file). [more info on api keys](_init/doc/README.md#api-keys)
+
+#### How it works
+
+- **One Agent** == **One Markdown** 
+    - An `.devai` Agent file is just a **Markdown File** with some sections for each stage of the agent processing.
+    - See below for all the [possible stages](#multi-stage).
+- `devai run proof-read -f "./*.md"` will run the installed Command Agent file `.devai/default/proof-read.devai` on all source files matching `./src/*.md` (Here is the source file for the default [proof-read.devai](/_init/agents/proof-read.devai))
+  - Each matching file will become an `input` of type [FileRef](./_init/doc/lua.md#fileref) for the **Lua** and **Handlebars** parts of the agent file. 
+- **devai** agents are simple `.devai` files that can be placed anywhere on disk.
+  - e.g., `devai run ./my-path/to/my-agent.devai ...`  
+- **Multi AI Provider / Models** - **devai** uses the [genai](https://crates.io/crates/genai) and therefore supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come. 
+- **Lua** is used for all scripting (thanks to the great [mlua](https://crates.io/crates/mlua) crate).
+- **Handlebars** is used for all prompt templating (thanks to the great Rust native [handlebars](https://crates.io/crates/handlebars) crate).     
+
+### Multi Stage
+
+A single **devai** file may comprise any of the following stages. 
 
 | Stage           | Language       | Description                                                                                                |
 |-----------------|----------------|------------------------------------------------------------------------------------------------------------|
-| `# Before All`  | **Lua**        | Reshape/generate inputs, and add command global data to scope (the "map" of the map/reduce capability).    |
-| `# Data`        | **Lua**        | Gather additional data per input, and return it for the next stages.                                       |
+| `# Before All`  | **Lua**        | Reshape/generate inputs and add command global data to scope (the "map" of the map/reduce capability).    |
+| `# Data`        | **Lua**        | Gather additional data per input and return it for the next stages.                                       |
 | `# System`      | **Handlebars** | Customize the prompt with the `data` and `before_all` data.                                                |
 | `# Instruction` | **Handlebars** | Customize the prompt with the `data` and `before_all` data.                                                |
 | `# Assistant`   | **Handlebars** | Optional for special customizations, such as the "Jedi Mind Trick."                                        |
 | `# Output`      | **Lua**        | Processes the `ai_response` from the LLM. Otherwise, `ai_response.content` will be output to the terminal. |
 | `# After All`   | **Lua**        | Called with `inputs` and `outputs` for post-processing after all inputs are completed.                     |
-<style>table td:first-child {white-space: nowrap;}</style>
 
-**IMPORTANT**: Make sure everything is committed before usage.
 
-# Key Concept - **One Agent** == **One Markdown** 
-
-The main **devai** concept is to minimize the friction of creating and running an agent while providing maximum control over how we want those agents to run, and maximizing iteration speed to mature them quickly.
-
-Here are some of the key **devai** characteristics. 
-
-- **One Agent** == **One Markdown** 
-    - (i.e., `my-agent.devai`, a `.devai` file is a markdown file with multi-stage sections described below)
-- **Multi AI Provider / Models** Supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come. 
-- **Lua** for Scripting.
-- **Handlebars** for prompt templating. 
-
+- `# Before All` / `# After All` can be considered as the **map**/**reduce** of the agent, and these will be run before and after the input processing.
 
 [more info on stages](_init/doc/README.md#complete-stages-description)
 
@@ -76,12 +77,9 @@ devai run ask-devai
 # and then open the `.devai/tmp/ask-devai.md`
 ```
 
-[more info on api keys](_init/doc/README.md#api-keys)
-
 ## Thanks
 
 **TOP COLLABORATOR** Big **thanks** to [Stephan Philipakis](https://github.com/sphilipakis), a top **devai** collaborator contributing to the next-generation methodology for production coding with GenAI.
-
 
 ## Future Plan
 

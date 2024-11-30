@@ -8,12 +8,16 @@ The main **devai** concept is to minimize the friction of creating and running a
 - **Lua** for Scripting.
 - **Handlebars** for prompt templating. 
 - **Multi Stage** process, where ALL steps are optional.
-    - `# Before All` - (Lua) - reshape / generate inputs, and add command global data to scope (the "map" of the map/reduce capability). 
-    - `# Data` - (Lua) - Gather additional data per input, and return `data` for the next stages. 
-    - `# System`, `# Instruction`, `# Assistant`  - (Handlebars) - Customize prompt with the `data` for the Data stage and `before_all` data. 
-        - Can even have `# Assistant` for "Jedi Mind Trick"
-    - `# Output` - (Lua) Will process the `ai_response` from the LLM. Otherwise, `ai_response.content` will get output to the terminal.
-    - `# After All` - If present, get a call with `inputs` and `outputs` variables for some post-processing after all of the inputs are completed.
+
+| Stage           | Language       | Description                                                                                                |
+|-----------------|----------------|------------------------------------------------------------------------------------------------------------|
+| `# Before All`  | **Lua**        | Reshape/generate inputs and add command global data to scope (the "map" of the map/reduce capability).     |
+| `# Data`        | **Lua**        | Gather additional data per input and return it for the next stages.                                        |
+| `# System`      | **Handlebars** | Customize the prompt with the `data` and `before_all` data.                                                |
+| `# Instruction` | **Handlebars** | Customize the prompt with the `data` and `before_all` data.                                                |
+| `# Assistant`   | **Handlebars** | Optional for special customizations, such as the "Jedi Mind Trick."                                        |
+| `# Output`      | **Lua**        | Processes the `ai_response` from the LLM. Otherwise, `ai_response.content` will be output to the terminal. |
+| `# After All`   | **Lua**        | Called with `inputs` and `outputs` for post-processing after all inputs are completed.                     |
 
 
 ```sh
