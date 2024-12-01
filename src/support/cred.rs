@@ -50,7 +50,7 @@ fn prompt_and_save(entry: Entry, disp_name: &str) -> Result<String> {
 	let mut input = String::new();
 	println!(
 		r#"'{}' not found in keychain. 
-Please enter value: "#,
+Please enter value (will store key in Mac keychain): "#,
 		disp_name
 	);
 	io::stdout().flush()?;
