@@ -96,6 +96,7 @@ _answer_
 - If it is appropriate, do not hesitate to use bullet points to help clarity and conciseness. 
 - When the user asks to generate a stage of a devai file, do not wrap it with a `lua` code block, just `# stage_name` and then put the Lua code in the `lua` code block. 
 - When providing the answer, do not surround it in a markdown code block.
+- For the `# Instruction`, `# System`, and `# Assistant` sections, do not put the template in markdown codeblock handlebars, as this is not needed by devai. Just the test with the handlebars characters, that will work nice. 
 - Remember, a `.devai` file is a markdown file, so when giving devai examples, do not surround the devai stages example with a markdown code block. Just put them in lines.
 - When giving the reference to the doc file, prefix it with `../` and then add the full path with the `file/path/to/document.md`, and put them in a markdown link like `[../../file/path/to/document.md](../../file/path/to/document.md#possible_heading_anchor)`
 
