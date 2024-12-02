@@ -2,11 +2,12 @@ use crate::agent::Agent;
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::run_input::{run_agent_input, RunAgentInputResponse};
-use crate::run::{RunBaseOptions, Runtime};
+use crate::run::{DirContext, RunBaseOptions, Runtime};
 use crate::script::{DevaiCustom, FromValue};
 use crate::{Error, Result};
 use serde::Serialize;
 use serde_json::Value;
+use simple_fs::SPath;
 use tokio::task::JoinSet;
 use value_ext::JsonValueExt;
 
@@ -16,6 +17,13 @@ const DEFAULT_CONCURRENCY: usize = 1;
 pub struct RunCommandResponse {
 	pub outputs: Option<Vec<Value>>,
 	pub after_all: Option<Value>,
+}
+
+// TODO: To move to support of something.
+fn get_workspace_file_path(file_path: &str, dir_context: &DirContext) -> Result<SPath> {
+	let file_path = SPath::new(file_path)?;
+	let spath = file_path.diff(dir_context.devai_parent_dir())?;
+	Ok(spath)
 }
 
 pub async fn run_command_agent(
@@ -30,10 +38,15 @@ pub async fn run_command_agent(
 
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);
+	// display relative agent path if possible
+	let agent_path = match get_workspace_file_path(agent.file_path(), runtime.dir_context()) {
+		Ok(path) => path.to_string(),
+		Err(_) => agent.file_path().to_string(),
+	};
 	hub.publish(format!(
 		"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
 		agent.name(),
-		agent.file_path(),
+		agent_path,
 		agent.genai_model()
 	))
 	.await;
