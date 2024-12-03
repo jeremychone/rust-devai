@@ -49,8 +49,6 @@ mod tests {
 	fn test_md_outer_block_content_simple() {
 		// -- Fixtures
 		let input = "\
-Here is some text before the code block.
-
 ```
 fn main() {
     println!(\"Hello, world!\");
@@ -71,8 +69,6 @@ Here is some text after the code block.";
 	fn test_md_outer_block_content_with_language() {
 		// -- Fixtures
 		let input = "\
-Start of the text.
-
 ```python
 def hello():
     print(\"Hello, Python!\")
@@ -104,9 +100,7 @@ fn main() {
     println!(\"Second code block\");
 }";
 		let input = format!(
-			"
-First code block:
-
+			"\
 ```javascript
 {fx_content}
 ```
@@ -190,10 +184,11 @@ fn incomplete() {
 	fn test_md_outer_block_content_adjacent_backticks() {
 		// -- Fixtures
 		let input = "\
+```
+```
 Text before.
 
-```
-```
+
 
 Text after.";
 		let expected = "\n";
@@ -232,8 +227,6 @@ Text after.";
 let s = \"Hello, `world`!\";";
 		let input = format!(
 			"\
-Start text.
-
 ```
 {}
 ```
