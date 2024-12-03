@@ -22,12 +22,12 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 /// utils.git.restore("src/main.rs")
 /// ```
 ///
-/// NOTE: The git command will be with the working dir as the devai_parent_dir to be consistent with the other
+/// NOTE: The git command will be with the working dir as the workspace_dir to be consistent with the other
 ///
 ///
 fn git_restore(lua: &Lua, ctx: &RuntimeContext, path: String) -> mlua::Result<Value> {
 	let output = std::process::Command::new("git")
-		.current_dir(ctx.dir_context().devai_parent_dir())
+		.current_dir(ctx.dir_context().workspace_dir())
 		.arg("restore")
 		.arg(&path)
 		.output()

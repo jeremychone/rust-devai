@@ -4,7 +4,7 @@ use crate::init::embedded_files::{
 	get_embedded_new_solo_agent_files, EmbeddedFile,
 };
 use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
-use crate::run::{find_devai_parent_dir, DevaiDir, DirContext};
+use crate::run::{find_workspace_dir, DevaiDir, DirContext};
 use crate::support::files::current_dir;
 use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
@@ -23,17 +23,17 @@ const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_init/config.toml");
 pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> Result<DirContext> {
 	let hub = get_hub();
 
-	let devai_parent_dir = if let Some(dir) = ref_dir {
+	let workspace_dir = if let Some(dir) = ref_dir {
 		SPath::new(dir)?
-	} else if let Some(path) = find_devai_parent_dir(current_dir()?)? {
+	} else if let Some(path) = find_workspace_dir(current_dir()?)? {
 		path
 	} else {
 		current_dir()?
 	};
 
-	let devai_parent_dir = devai_parent_dir.canonicalize()?;
+	let workspace_dir = workspace_dir.canonicalize()?;
 
-	let devai_dir = DevaiDir::from_parent_dir(&devai_parent_dir)?;
+	let devai_dir = DevaiDir::from_parent_dir(&workspace_dir)?;
 
 	// -- Display the heading
 	if devai_dir.exists() {
@@ -41,7 +41,7 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 			hub.publish("==== Initializing .devai/").await;
 			hub.publish(format!(
 				"-- Parent path: '{}'\n   (`.devai/` already exists. Will create missing files)",
-				devai_parent_dir
+				workspace_dir
 			))
 			.await;
 		}
@@ -49,7 +49,7 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 		hub.publish("==== Initializing .devai/").await;
 		hub.publish(format!(
 			"-- Parent path: '{}'\n   (`.devai/` will be created at this path)",
-			devai_parent_dir
+			workspace_dir
 		))
 		.await;
 	}
@@ -69,7 +69,7 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 	let hub = get_hub();
 
-	let devai_parent_dir = devai_dir.parent_dir();
+	let workspace_dir = devai_dir.parent_dir();
 
 	ensure_dir(devai_dir)?;
 
@@ -80,7 +80,7 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 		hub.publish(format!(
 			"-> {:<18} '{}'",
 			"Create config file",
-			config_path.diff(devai_parent_dir)?
+			config_path.diff(workspace_dir)?
 		))
 		.await;
 	}
@@ -97,11 +97,11 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 	}
 
 	// -- migrate_devai_0_1_0_if_needed
-	migrate_devai_0_1_0_if_needed(devai_parent_dir, devai_dir)?;
+	migrate_devai_0_1_0_if_needed(workspace_dir, devai_dir)?;
 
 	// -- Create the default command agents if not present
 	update_devai_files(
-		devai_parent_dir,
+		workspace_dir,
 		devai_dir.get_command_agent_default_dir()?,
 		get_embedded_command_agent_files(),
 	)
@@ -109,7 +109,7 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 
 	// -- Create the new-template command default
 	update_devai_files(
-		devai_parent_dir,
+		workspace_dir,
 		devai_dir.get_new_template_command_default_dir()?,
 		get_embedded_new_command_agent_files(),
 	)
@@ -117,14 +117,14 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 
 	// -- Create the new-template solo default
 	update_devai_files(
-		devai_parent_dir,
+		workspace_dir,
 		devai_dir.get_new_template_solo_default_dir()?,
 		get_embedded_new_solo_agent_files(),
 	)
 	.await?;
 
 	// -- Create the documentation
-	update_md_files(devai_parent_dir, devai_dir.get_doc_dir()?, get_embedded_doc_files()).await?;
+	update_md_files(workspace_dir, devai_dir.get_doc_dir()?, get_embedded_doc_files()).await?;
 
 	Ok(())
 }

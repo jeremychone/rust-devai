@@ -22,8 +22,8 @@ impl Literals {
 		let mut store = Vec::new();
 
 		let agent_path = dir_context.current_dir().join(agent.file_path())?;
-		let agent_path = agent_path.diff(dir_context.devai_parent_dir())?;
-		// Add back the './' prefix to follow convention of being relative to devai_parent_dir
+		let agent_path = agent_path.diff(dir_context.workspace_dir())?;
+		// Add back the './' prefix to follow convention of being relative to workspace_dir
 		let agent_path = SPath::new(format!("./{agent_path}"))?;
 
 		let agent_dir = agent_path
@@ -44,8 +44,8 @@ impl Literals {
 		//          agent_name: `./my-folder/command-agent-jc`
 		// literals.append("AGENT_NAME", ???);
 
-		// The devai_parent_dir should be absolute, and all of the other paths will relative to it.
-		store.push(("DEVAI_PARENT_DIR", dir_context.devai_parent_dir().to_string()));
+		// The workspace_dir should be absolute, and all of the other paths will relative to it.
+		store.push(("WORKSPACE_DIR", dir_context.workspace_dir().to_string()));
 
 		store.push(("DEVAI_DIR", devai_dir.devai_dir().to_string()));
 
@@ -106,7 +106,7 @@ mod tests {
 	async fn test_run_literals_devai_dir() -> Result<()> {
 		let script = r#"
 return {
-	  DEVAI_PARENT_DIR = CTX.DEVAI_PARENT_DIR,
+	  WORKSPACE_DIR = CTX.WORKSPACE_DIR,
 		DEVAI_DIR        = CTX.DEVAI_DIR,
 		AGENT_FILE_NAME  = CTX.AGENT_FILE_NAME,
 		AGENT_FILE_PATH  = CTX.AGENT_FILE_PATH,
@@ -119,15 +119,12 @@ return {
 		let res = run_reflective_agent(script, None).await?;
 
 		// -- Check
-		// devai_parent_dir
-		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		// workspace_dir
+		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
+		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
 		assert!(
-			Path::new(devai_parent_dir).is_absolute(),
-			"devai_parent_dir must be absolute"
-		);
-		assert!(
-			devai_parent_dir.ends_with("tests-data/sandbox-01"),
-			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+			workspace_dir.ends_with("tests-data/sandbox-01"),
+			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
 		);
 
 		// devai dir

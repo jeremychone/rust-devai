@@ -50,27 +50,27 @@ pub struct DevaiDir {
 	/// We might want to deprecate/remove this one.
 	devai_dir: SPath,
 
-	/// The devai_parent_dir.join(".devai")
+	/// The workspace_dir.join(".devai")
 	devai_dir_full_path: SPath,
 
-	/// The path to the parent devai_parent_dir. Can be relative, to working dir for example.
-	devai_parent_dir: SPath,
+	/// The path to the parent workspace_dir. Can be relative, to working dir for example.
+	workspace_dir: SPath,
 }
 
 //
 impl DevaiDir {
 	pub fn from_parent_dir(parent_dir: impl AsRef<Path>) -> Result<Self> {
-		let devai_parent_dir = SPath::from_path(parent_dir)?;
+		let workspace_dir = SPath::from_path(parent_dir)?;
 		// Note: Here we use the `./.devai` which is fixed, and the `./`
-		//       will allow to follow the convention to start from devai_parent_dir
+		//       will allow to follow the convention to start from workspace_dir
 		// Note: We might just want the `.devai`, will see
 		let devai_dir = SPath::try_from(DEVAI_DIR_PATH)?;
 
-		let devai_dir_full_path = devai_parent_dir.join(DEVAI_DIR_NAME)?;
+		let devai_dir_full_path = workspace_dir.join(DEVAI_DIR_NAME)?;
 
 		Ok(Self {
 			devai_dir,
-			devai_parent_dir,
+			workspace_dir,
 			devai_dir_full_path,
 		})
 	}
@@ -100,7 +100,7 @@ impl DevaiDir {
 	}
 
 	pub fn parent_dir(&self) -> &SPath {
-		&self.devai_parent_dir
+		&self.workspace_dir
 	}
 }
 
@@ -173,8 +173,8 @@ impl AsRef<Path> for DevaiDir {
 
 // endregion: --- Froms & AsRefs
 
-/// Return an option of spath tuple as (devai_parent_dir, devai_dir)
-pub fn find_devai_parent_dir(from_dir: impl AsRef<Path>) -> Result<Option<SPath>> {
+/// Return an option of spath tuple as (workspace_dir, devai_dir)
+pub fn find_workspace_dir(from_dir: impl AsRef<Path>) -> Result<Option<SPath>> {
 	let mut tmp_dir: Option<PathBuf> = Some(from_dir.as_ref().to_path_buf());
 
 	while let Some(parent_dir) = tmp_dir {

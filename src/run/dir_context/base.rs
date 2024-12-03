@@ -18,7 +18,7 @@ pub struct DirContext {
 	devai_dir: DevaiDir,
 
 	// Absolute path of the devai
-	devai_parent_dir: SPath,
+	workspace_dir: SPath,
 }
 
 /// Constructor/Loader
@@ -31,12 +31,12 @@ impl DirContext {
 	/// Private to create a new DirContext
 	/// Note: Only the test function will provide a mock current_dir
 	fn from_devai_dir_and_current_dir(devai_dir: DevaiDir, current_dir: SPath) -> Result<Self> {
-		let devai_parent_dir = devai_dir.parent_dir().canonicalize()?;
+		let workspace_dir = devai_dir.parent_dir().canonicalize()?;
 		let current_dir = current_dir.canonicalize()?;
 		Ok(Self {
 			current_dir,
 			devai_dir,
-			devai_parent_dir,
+			workspace_dir,
 		})
 	}
 
@@ -60,8 +60,8 @@ impl DirContext {
 		&self.devai_dir
 	}
 
-	pub fn devai_parent_dir(&self) -> &SPath {
-		&self.devai_parent_dir
+	pub fn workspace_dir(&self) -> &SPath {
+		&self.workspace_dir
 	}
 }
 
@@ -75,7 +75,7 @@ impl DirContext {
 		} else {
 			match mode {
 				PathResolver::CurrentDir => Ok(self.current_dir.join(path)?),
-				PathResolver::DevaiParentDir => Ok(self.devai_parent_dir.join(path)?),
+				PathResolver::DevaiParentDir => Ok(self.workspace_dir.join(path)?),
 			}
 		}
 	}

@@ -172,7 +172,7 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 
 | Key                  | Value                                                     |
 |----------------------|-----------------------------------------------------------|
-| CTX.DEVAI_PARENT_DIR | `/absolute/path/to/devai_parent_dir`                      |
+| CTX.WORKSPACE_DIR | `/absolute/path/to/workspace_dir`                      |
 | CTX.DEVAI_DIR        | `./.devai`                                                |
 | CTX.AGENT_NAME       | `command-ctx-reflect`                                     |
 | CTX.AGENT_FILE_PATH  | `./.devai/custom/command-agent/command-ctx-reflect.devai` |
@@ -180,7 +180,7 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 | CTX.AGENT_FILE_NAME  | `command-ctx-reflect.devai`                               |
 | CTX.AGENT_FILE_STEM  | `command-ctx-reflect`                                     |
 
-- All paths are relative to `DEVAI_PARENT_DIR`
+- All paths are relative to `WORKSPACE_DIR`
 - The `AGENT_NAME` is the name given that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
 - These are available in `devai run ..` as well as `devai solo ...`
 

@@ -9,7 +9,7 @@ use std::path::Path;
 use strsim::levenshtein;
 
 /// - `from_cli` Used to decide which "reference dir" should be used.
-///              If from cli, the current_dir will be used, otherwise, the devai_parent_dir
+///              If from cli, the current_dir will be used, otherwise, the workspace_dir
 pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver) -> Result<Agent> {
 	let base_config = load_base_agent_config(dir_context)?;
 
@@ -273,15 +273,15 @@ mod tests {
 		let res = run_test_agent(&runtime, &agent).await?;
 
 		// -- Check
-		// devai_parent_dir
-		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		// workspace_dir
+		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
 		assert!(
-			Path::new(devai_parent_dir).is_absolute(),
-			"devai_parent_dir must be absolute"
+			Path::new(workspace_dir).is_absolute(),
+			"workspace_dir must be absolute"
 		);
 		assert!(
-			devai_parent_dir.ends_with("tests-data/sandbox-01"),
-			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+			workspace_dir.ends_with("tests-data/sandbox-01"),
+			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
 		);
 
 		// devai dir
@@ -310,15 +310,15 @@ mod tests {
 		let res = run_test_agent(&runtime, &agent).await?;
 
 		// -- Check
-		// devai_parent_dir
-		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		// workspace_dir
+		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
 		assert!(
-			Path::new(devai_parent_dir).is_absolute(),
-			"devai_parent_dir must be absolute"
+			Path::new(workspace_dir).is_absolute(),
+			"workspace_dir must be absolute"
 		);
 		assert!(
-			devai_parent_dir.ends_with("tests-data/sandbox-01"),
-			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+			workspace_dir.ends_with("tests-data/sandbox-01"),
+			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
 		);
 
 		// // devai dir
@@ -346,14 +346,14 @@ mod tests {
 		let res = run_test_agent(&runtime, &agent).await?;
 
 		// -- Check
-		let devai_parent_dir = res.x_get_as::<&str>("DEVAI_PARENT_DIR")?;
+		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
 		assert!(
-			Path::new(devai_parent_dir).is_absolute(),
-			"devai_parent_dir must be absolute"
+			Path::new(workspace_dir).is_absolute(),
+			"workspace_dir must be absolute"
 		);
 		assert!(
-			devai_parent_dir.ends_with("tests-data/sandbox-01"),
-			"DEVAI_PARENT_DIR must end with 'tests-data/sandbox-01'"
+			workspace_dir.ends_with("tests-data/sandbox-01"),
+			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
 		);
 
 		// devai dir

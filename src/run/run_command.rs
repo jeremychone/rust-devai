@@ -22,7 +22,7 @@ pub struct RunCommandResponse {
 // TODO: To move to support of something.
 fn get_workspace_file_path(file_path: &str, dir_context: &DirContext) -> Result<SPath> {
 	let file_path = SPath::new(file_path)?;
-	let spath = file_path.diff(dir_context.devai_parent_dir())?;
+	let spath = file_path.diff(dir_context.workspace_dir())?;
 	Ok(spath)
 }
 
