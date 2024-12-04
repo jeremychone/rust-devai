@@ -79,7 +79,7 @@ devai run ask-devai
 
 ## Thanks
 
-**TOP COLLABORATOR** Big **thanks** to [Stephan Philipakis](https://github.com/sphilipakis), a top **devai** collaborator contributing to the next-generation methodology for production coding with GenAI.
+**TOP COLLABORATOR** Big **thanks** to [Stephane Philipakis](https://github.com/sphilipakis), a top **devai** collaborator contributing to the next-generation methodology for production coding with GenAI.
 
 ## Future Plan
 
