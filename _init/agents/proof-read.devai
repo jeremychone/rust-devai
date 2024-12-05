@@ -16,8 +16,15 @@ This agent is for proofreading general text files, such as markdown files.
 --   - file::load(input.path) will return a FileRecord, including .content for the file's content.
 --   - In Lua, to return a dictionary/object, use the notation `{ name = value, … }`.
 
+local file = utils.file.load(input.path)
+
+-- If the string is only whitespace, then it is empty, so skip.
+if not file.content:find("%S") then
+    return devai.skip("Empty file - skipping for now. Start writing, and do a Redo.")
+end
+
 return {
-    file = utils.file.load(input.path)
+    file = file
 }
 ```
 
