@@ -39,15 +39,21 @@ See [FileRecord](#filerecord), [MdSection](#mdsection) for return types.
 ```lua
 -- Load file text content and return its FileRecord (See below), with `.content`
 local file = utils.file.load("doc/some-file.md");                -- FileRecord
+
 -- Save file content (will create directories as needed)
 utils.file.save("doc/some-file.md", "some new content");         -- void (no return for now)
+
 -- List files matching a glob pattern
 local all_doc_files = utils.file.list("doc/**/*.md");            -- {FileRecord, ...}
+
 -- Get the first file reference matching a glob pattern
 local first_doc_file = utils.file.first("doc/**/*.md");          -- FileRecord | Nil
+
 -- Load markdown sections from a file
+-- If second arg is absent, then, all section will be returned (nested as items as well)
 local sections = utils.file.load_md_sections("doc/readme.md", "# Summary");  
                                                                  -- {MdSection, ...}
+                                                                 
 ```
 
 ### utils.path
@@ -84,8 +90,10 @@ local content = utils.web.get("https://example.com");   -- WebResponse / WebErro
 See [MdBlock](#mdblock)
 
 ```lua
--- Extract the markdown blocks (if no name, all will be extracted)
+-- Extract the markdown blocks (if no name, all blocks will be extracted)
 local blocks = utils.md.extract_blocks("js")                 -- {MdBlock}
+-- returns {} if no block found
+
 -- If content starts with ```, it will remove the first and last ```, and return the content in between
 -- Otherwise, return the original content
 local content = utils.md.outer_block_content_or_raw(content) -- string

@@ -26,14 +26,19 @@ pub(super) fn file_load_md_sections(
 	lua: &Lua,
 	ctx: &RuntimeContext,
 	path: String,
-	headings: Value,
+	headings: Option<Value>,
 ) -> mlua::Result<Value> {
-	let headings: Vec<String> = to_vec_of_strings(headings, "file::load_md_sections headings argument")?;
-	let headings = headings.iter().map(|s| s.as_str()).collect::<Vec<&str>>();
+	let headings = headings
+		.map(|headings| to_vec_of_strings(headings, "file::load_md_sections headings argument"))
+		.transpose()?;
+	let headings: Option<Vec<&str>> = headings.as_deref().map(|vec| {
+		// Create a slice of string references directly from the vector.
+		vec.iter().map(|s| s.as_str()).collect::<Vec<&str>>()
+	});
 
 	let path = ctx.dir_context().resolve_path(path, PathResolver::DevaiParentDir)?;
 
-	let sec_iter = MdSectionIter::from_path(path, Some(&headings))?;
+	let sec_iter = MdSectionIter::from_path(path, headings.as_deref())?;
 	let sections = sec_iter.collect::<Vec<_>>();
 	let res = sections.into_lua(lua)?;
 

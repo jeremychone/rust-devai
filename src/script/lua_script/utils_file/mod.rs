@@ -37,7 +37,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 
 	// -- load_md_sections
 	let ctx = runtime_context.clone();
-	let file_load_md_sections_fn = lua.create_function(move |lua, (path, headings): (String, Value)| {
+	let file_load_md_sections_fn = lua.create_function(move |lua, (path, headings): (String, Option<Value>)| {
 		file_load_md_sections(lua, &ctx, path, headings)
 	})?;
 
