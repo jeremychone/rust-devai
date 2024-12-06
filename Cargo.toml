@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 description = "Command Agent runner to accelerate production coding with genai."
 categories = ["command-line-utilities"]
 keywords = ["generative-ai","openai","genai","ai-coding"]
-homepage = "https://github.com/jeremychone/rust-devai"
+homepage = "https://devai.run"
 repository = "https://github.com/jeremychone/rust-devai"
 
 [lints.rust]
