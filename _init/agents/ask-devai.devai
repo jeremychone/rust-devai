@@ -37,7 +37,9 @@ if not utils.path.exists(ask_file_path) then
     utils.file.save(ask_file_path, placeholder_text)
 
     -- Open it with VSCode 
-    utils.cmd.exec("code", {ask_file_path} )
+    -- Call with pcall to prevent failure if the code is not available
+    -- TODO: Enhance this part (should notify the user)
+    pcall(utils.cmd.exec,"code", {ask_file_path} )
 end
 
 -- Load & split_first markdown
