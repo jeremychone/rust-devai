@@ -17,7 +17,7 @@ pub fn print_bottom_bar() {
 		MoveToColumn(0), // Move the cursor to the beginning (column 0) of the new line
 	);
 
-	term_key_comp(&mut stdout, "r", "Redo");
+	term_key_comp(&mut stdout, "r", "Replay");
 
 	let _ = execute!(stdout, Print("  "),);
 

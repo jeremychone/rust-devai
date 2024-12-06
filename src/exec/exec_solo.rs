@@ -72,7 +72,7 @@ pub async fn exec_solo_redo(solo_ctx: &SoloRedoCtx) -> Option<SoloRedoCtx> {
 			solo_options: solo_options.clone(),
 		}),
 		Err(err) => {
-			hub.publish(Error::cc("Error while redo", err)).await;
+			hub.publish(Error::cc("Error while Replay", err)).await;
 			None
 		}
 	}

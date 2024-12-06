@@ -30,7 +30,7 @@ Placeholder:
    - To ask your question, remove this placeholder section
    - ask your question 
    - and `devai run ask-devai`
-   - or **redo** in the terminal if already running
+   - or **Replay** in the terminal if already running
 ]]
 
 if not utils.path.exists(ask_file_path) then

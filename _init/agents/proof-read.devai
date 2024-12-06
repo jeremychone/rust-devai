@@ -20,7 +20,7 @@ local file = utils.file.load(input.path)
 
 -- If the string is only whitespace, then it is empty, so skip.
 if not file.content:find("%S") then
-    return devai.skip("Empty file - skipping for now. Start writing, and do a Redo.")
+    return devai.skip("Empty file - skipping for now. Start writing, and do a Replay.")
 end
 
 return {
