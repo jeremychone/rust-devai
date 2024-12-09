@@ -12,6 +12,9 @@
 
 - [Full intro video for v0.5](https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj)
 
+- What's new:
+  - 2024-12-08 (v0.5.1) - Added support for **xAI**
+
 #### Install
 
 _For now, the simplest way to install is with `cargo install`._
