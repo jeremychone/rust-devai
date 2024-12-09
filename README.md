@@ -34,7 +34,7 @@ The main **devai** concept is to minimize the friction of creating and running a
 
 **IMPORTANT 1**: Make sure everything is committed before usage (at least while you are learning about devai).
 
-**IMPORTANT 2**: Make sure to have your **`OPENAI_API_KEY`**, or **`ANTHROPIC_API_KEY`**, or the key of your model provider (specified in the `.devai/config.toml` file). [more info on api keys](_init/doc/README.md#api-keys)
+**IMPORTANT 2**: Make sure to have your **`OPENAI_API_KEY`**, **`ANTHROPIC_API_KEY`**, or **`XAI_API_KEY`**, or the key of your model provider (specified in the `.devai/config.toml` file). [more info on api keys](_init/doc/README.md#api-keys)
 
 #### How it works
 

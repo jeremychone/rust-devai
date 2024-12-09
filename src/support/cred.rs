@@ -1,4 +1,7 @@
 use crate::Result;
+use crossterm::cursor::MoveTo;
+use crossterm::terminal::ClearType;
+use crossterm::{execute, terminal};
 use keyring::Entry;
 use std::io::{self, Write};
 
@@ -46,12 +49,16 @@ fn _clear_key(service: &str, name: &str) -> Result<bool> {
 
 // Ask the user for a value and store it in the entry.
 fn prompt_and_save(entry: Entry, disp_name: &str) -> Result<String> {
+	// -- exit of raw mode for now to get the input.
+	terminal::disable_raw_mode().expect("Failed to disable crossterm raw mode");
+
 	// -- Prompt the user
 	let mut input = String::new();
 	println!(
-		r#"'{}' not found in keychain. 
-Please enter value (will store key in Mac keychain): "#,
-		disp_name
+		r#"
+'{}' not found in environment vairable or keychain 
+Please enter value (will store key in Mac keychain, under devai_secrets/{}): "#,
+		disp_name, disp_name
 	);
 	io::stdout().flush()?;
 	io::stdin().read_line(&mut input)?;
@@ -67,7 +74,23 @@ Please enter value (will store key in Mac keychain): "#,
 	// Making sure we get the value from store
 	let val = entry.get_password()?;
 
+	println!("->> val {val}");
+
+	// -- put back in raw mode
+	clear_terminal()?;
+	// sleep 200ms
+	std::thread::sleep(std::time::Duration::from_millis(200));
+	terminal::enable_raw_mode().expect("Failed to enable crossterm raw mode");
+
+	// TODO: We need to have the TUI taking care of the prompt
+
 	Ok(val)
 }
 
+fn clear_terminal() -> Result<()> {
+	let mut stdout = io::stdout();
+	execute!(stdout, terminal::Clear(ClearType::All))?;
+	execute!(stdout, MoveTo(0, 0))?; // Move the cursor to the top-left
+	Ok(())
+}
 // endregion: --- Support
