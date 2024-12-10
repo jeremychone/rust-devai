@@ -160,7 +160,7 @@ Usage: `devai run proof-rs-comments -f "./src/main.rs"`
 (or have any glob like `-f "./src/**/*.rs"`)
 
 - This will initialize the `.devai/defaults` folder with the "Command Agent Markdown" `proof-rs-comments.md` (see [.devai/defaults/proof-comments.md`](./_init/agents/proof-comments.devai)) and run it with genai as follows: 
-    - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "input" for each file, which can then be accessed in the `# Data` scripting section (each input will be of type [FileRef](lua.md#fileref)).
+    - `-f "./src/**/*.rs"`: The `-f` command line argument takes a glob and will create an "input" for each file, which can then be accessed in the `# Data` scripting section (each input will be of type [FileMeta](lua.md#filemeta)).
     - `# Data`, which contains a ```lua``` block that will get executed with the `input` value (the file reference in our example above).
         - With **Lua**, there are some utility functions to list files, load file content, and such that can then be used in the instruction section. 
     - `# Instruction`, which is a Handlebars template section, has access to `input` as well as the output of the `# Data` section, accessible as the `data` variable. 

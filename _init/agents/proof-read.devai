@@ -12,7 +12,7 @@ This agent is for proofreading general text files, such as markdown files.
 -- utils.git.restore(input.path)
 
 -- Notes:
---   - input: This is the FileRef (with .path, .name, .stem, .ext) for each file matching the -f glob.
+--   - input: This is the FileMeta (with .path, .name, .stem, .ext) for each file matching the -f glob.
 --   - file::load(input.path) will return a FileRecord, including .content for the file's content.
 --   - In Lua, to return a dictionary/object, use the notation `{ name = value, … }`.
 

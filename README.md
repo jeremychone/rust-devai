@@ -45,7 +45,7 @@ The main **devai** concept is to minimize the friction of creating and running a
     - An `.devai` Agent file is just a **Markdown File** with some sections for each stage of the agent processing.
     - See below for all the [possible stages](#multi-stage).
 - `devai run proof-read -f "./*.md"` will run the installed Command Agent file `.devai/default/proof-read.devai` on all source files matching `./src/*.md` (Here is the source file for the default [proof-read.devai](/_init/agents/proof-read.devai))
-  - Each matching file will become an `input` of type [FileRef](./_init/doc/lua.md#fileref) for the **Lua** and **Handlebars** parts of the agent file. 
+  - Each matching file will become an `input` of type [FileMeta](./_init/doc/lua.md#filemeta) for the **Lua** and **Handlebars** parts of the agent file. 
 - **devai** agents are simple `.devai` files that can be placed anywhere on disk.
   - e.g., `devai run ./my-path/to/my-agent.devai ...`  
 - **Multi AI Provider / Models** - **devai** uses the [genai](https://crates.io/crates/genai) and therefore supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come. 

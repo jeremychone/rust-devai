@@ -5,7 +5,7 @@ use mlua::{IntoLua, Lua, Value};
 
 /// ## Lua Documentation
 ///
-/// Return the first FileRef or Nil
+/// Return the first FileMeta or Nil
 ///
 /// ```lua
 /// let all_summary_section = utils.file.list("doc/readme.md", "# Summary");

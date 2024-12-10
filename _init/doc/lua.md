@@ -10,12 +10,12 @@
 
 - In the `# Before All` stage
   - `inputs` - The list of inputs given to the run command (in solo mode, only one)
-    - When `-f "**/some/glob*.*"` is used, each input will be the matching `FileRef` object.
+    - When `-f "**/some/glob*.*"` is used, each input will be the matching `FileMeta` object.
 <br/>
 
 - In the `# Data` stage
   - `input` - The individual input given from the devai run
-    - In the case of `-f ...`, it will be the [FileRef](#fileref) structure for each file.
+    - In the case of `-f ...`, it will be the [FileMeta](#filemeta) structure for each file.
 <br/>
 
 - In the `# Output` stage
@@ -202,9 +202,9 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 
 # Common Types
 
-## FileRef
+## FileMeta
 
-The `FileRef` data structure represents the information of a given file without its content.
+The `FileMeta` data structure represents the information of a given file without its content.
 This is what `-f "**/some/glob*.*"` would return for each of the inputs.
 
 ```lua

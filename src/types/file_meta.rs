@@ -3,16 +3,16 @@ use serde::Serialize;
 use simple_fs::{SFile, SPath};
 
 #[derive(Debug, Serialize)]
-pub struct FileRef {
+pub struct FileMeta {
 	name: String,
 	path: String,
 	stem: String,
 	ext: String,
 }
 
-impl From<&SPath> for FileRef {
+impl From<&SPath> for FileMeta {
 	fn from(file: &SPath) -> Self {
-		FileRef {
+		FileMeta {
 			name: file.name().to_string(),
 			path: file.to_string(),
 			stem: file.stem().to_string(),
@@ -21,9 +21,9 @@ impl From<&SPath> for FileRef {
 	}
 }
 
-impl From<SPath> for FileRef {
+impl From<SPath> for FileMeta {
 	fn from(spath: SPath) -> Self {
-		FileRef {
+		FileMeta {
 			name: spath.name().to_string(),
 			path: spath.to_string(),
 			stem: spath.stem().to_string(),
@@ -32,9 +32,9 @@ impl From<SPath> for FileRef {
 	}
 }
 
-impl From<SFile> for FileRef {
+impl From<SFile> for FileMeta {
 	fn from(file: SFile) -> Self {
-		FileRef {
+		FileMeta {
 			name: file.name().to_string(),
 			path: file.to_string(),
 			stem: file.stem().to_string(),
@@ -45,7 +45,7 @@ impl From<SFile> for FileRef {
 
 // region:    --- Lua
 
-impl IntoLua for FileRef {
+impl IntoLua for FileMeta {
 	fn into_lua(self, lua: &Lua) -> mlua::Result<mlua::Value> {
 		let table = lua.create_table()?;
 		table.set("path", self.path)?;

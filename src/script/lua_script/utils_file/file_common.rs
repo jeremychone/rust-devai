@@ -2,7 +2,7 @@ use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
 use crate::script::lua_script::helpers::to_vec_of_strings;
 use crate::support::AsStrsExt;
-use crate::types::{FileRecord, FileRef};
+use crate::types::{FileMeta, FileRecord};
 use crate::{Error, Result};
 use mlua::{IntoLua, Lua, Value};
 use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
@@ -77,7 +77,7 @@ pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, cont
 /// ### Returns
 ///
 /// ```lua
-/// -- An array/table of FileRef
+/// -- An array/table of FileMeta
 /// {
 ///   path    = "doc/README.md",
 ///   name    = "README.md",
@@ -105,8 +105,8 @@ pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -
 		.collect::<simple_fs::Result<Vec<SPath>>>()
 		.map_err(|err| crate::Error::cc("Cannot list files to base", err))?;
 
-	let file_refs: Vec<FileRef> = sfiles.into_iter().map(FileRef::from).collect();
-	let res = file_refs.into_lua(lua)?;
+	let file_metas: Vec<FileMeta> = sfiles.into_iter().map(FileMeta::from).collect();
+	let res = file_metas.into_lua(lua)?;
 
 	Ok(res)
 }
@@ -137,7 +137,7 @@ pub(super) fn file_list_load(lua: &Lua, ctx: &RuntimeContext, include_globs: Val
 
 /// ## Lua Documentation
 ///
-/// Return the first FileRef or Nil
+/// Return the first FileMeta or Nil
 ///
 /// ```lua
 /// let first_doc_file = utils.file.first("doc/**/*.md")
@@ -147,7 +147,7 @@ pub(super) fn file_list_load(lua: &Lua, ctx: &RuntimeContext, include_globs: Val
 /// ### Returns
 ///
 /// ```lua
-/// -- FileRef or Nil
+/// -- FileMeta or Nil
 /// {
 ///   path    = "doc/README.md",
 ///   name    = "README.md",
@@ -159,7 +159,7 @@ pub(super) fn file_list_load(lua: &Lua, ctx: &RuntimeContext, include_globs: Val
 /// To get the file record with .content, do
 ///
 /// ```lua
-/// let file = utils.file.load(file_ref.path)
+/// let file = utils.file.load(file_meta.path)
 /// ```
 pub(super) fn file_first(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -> mlua::Result<Value> {
 	let (base_path, include_globs) = base_path_and_globs(ctx, include_globs)?;
@@ -178,7 +178,7 @@ pub(super) fn file_first(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) 
 		.diff(&base_path)
 		.map_err(|err| Error::cc("Cannot diff with base_path", err))?;
 
-	let res = FileRef::from(sfile).into_lua(lua)?;
+	let res = FileMeta::from(sfile).into_lua(lua)?;
 
 	Ok(res)
 }

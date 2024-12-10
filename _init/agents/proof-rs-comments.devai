@@ -9,7 +9,7 @@ It is slightly more optimized for the Rust version compared to the `proof-commen
 ```lua
 
 -- Notes:
---   - input: This is the FileRef (with .path, .name, .stem, .ext) for each file matching the -f glob.
+--   - input: This is the FileMeta (with .path, .name, .stem, .ext) for each file matching the -f glob.
 --   - file::load(input.path) will return a FileRecord, adding .content for the content of the file.
 --   - In LUA, to return a dictionary/object, use the notation `{ name = value, … }`.
 

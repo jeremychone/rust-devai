@@ -2,7 +2,7 @@ type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tes
 
 use super::*;
 use crate::_test_support::{assert_contains, load_inline_agent, load_test_agent, run_test_agent_with_input};
-use crate::types::FileRef;
+use crate::types::FileMeta;
 use simple_fs::SPath;
 
 #[tokio::test]
@@ -34,7 +34,7 @@ async fn test_run_agent_script_before_all_simple() -> Result<()> {
 
 	// -- Execute
 	let on_path = SPath::new("./some-random/file.txt")?;
-	let path_ref = FileRef::from(on_path);
+	let path_ref = FileMeta::from(on_path);
 	let inputs = vec![serde_json::to_value(path_ref)?];
 
 	let res = run_command_agent(&runtime, &agent, Some(inputs), &RunBaseOptions::default(), true).await?;

@@ -5,7 +5,7 @@ use crate::hub::{get_hub, HubEvent}; // Importing get_hub
 use crate::run::{run_command_agent, PathResolver, Runtime};
 use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
-use crate::types::FileRef;
+use crate::types::FileMeta;
 use crate::{Error, Result};
 use simple_fs::{list_files, watch, SEventKind};
 use std::sync::Arc;
@@ -158,8 +158,8 @@ async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agen
 		Some(into_values(on_inputs)?)
 	} else if let Some(on_file_globs) = run_command_options.on_file_globs() {
 		let files = list_files("./", Some(&on_file_globs), None)?;
-		let file_refs = files.into_iter().map(FileRef::from).collect::<Vec<_>>();
-		Some(into_values(file_refs)?)
+		let file_metas = files.into_iter().map(FileMeta::from).collect::<Vec<_>>();
+		Some(into_values(file_metas)?)
 	} else {
 		None
 	};

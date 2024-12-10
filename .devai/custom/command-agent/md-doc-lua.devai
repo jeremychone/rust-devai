@@ -14,10 +14,10 @@ local rust_lua_concat_file_path = ".tmp/rust-lua-concat-file.md"
 local doc_lua_path = "./_init/doc/lua.md"
 
 if not utils.path.exists(rust_lua_concat_file_path) then
-    local file_refs = utils.file.list("src/script/lua_script/utils_*.rs")
+    local file_metas = utils.file.list("src/script/lua_script/utils_*.rs")
 
     local files = {}
-    for _, file in ipairs(file_refs) do
+    for _, file in ipairs(file_metas) do
         table.insert(files, utils.file.load(file.path))
     end
 
