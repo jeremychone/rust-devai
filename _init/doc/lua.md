@@ -38,20 +38,20 @@ See [FileRecord](#filerecord), [MdSection](#mdsection) for return types.
 
 ```lua
 -- Load file text content and return its FileRecord (See below), with `.content`
-local file = utils.file.load("doc/some-file.md");                -- FileRecord
+local file = utils.file.load("doc/some-file.md")                -- FileRecord
 
 -- Save file content (will create directories as needed)
-utils.file.save("doc/some-file.md", "some new content");         -- void (no return for now)
+utils.file.save("doc/some-file.md", "some new content")         -- void (no return for now)
 
 -- List files matching a glob pattern
-local all_doc_files = utils.file.list("doc/**/*.md");            -- {FileRecord, ...}
+local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileRecord, ...}
 
 -- Get the first file reference matching a glob pattern
-local first_doc_file = utils.file.first("doc/**/*.md");          -- FileRecord | Nil
+local first_doc_file = utils.file.first("doc/**/*.md")          -- FileRecord | Nil
 
 -- Load markdown sections from a file
 -- If second arg is absent, then, all section will be returned (nested as items as well)
-local sections = utils.file.load_md_sections("doc/readme.md", "# Summary");  
+local sections = utils.file.load_md_sections("doc/readme.md", "# Summary")  
                                                                  -- {MdSection, ...}
                                                                  
 ```
@@ -60,20 +60,20 @@ local sections = utils.file.load_md_sections("doc/readme.md", "# Summary");
 
 ```lua
 -- Check if a path exists
-local exists = path.exists("doc/some-file.md");         -- bool
+local exists = path.exists("doc/some-file.md")         -- bool
 -- Check if a path is a file
-local is_file = path.is_file("doc/some-file.md");       -- bool
+local is_file = path.is_file("doc/some-file.md")       -- bool
 -- Check if a path is a directory
-local is_dir = path.is_dir("doc/");                     -- bool
+local is_dir = path.is_dir("doc/")                     -- bool
 -- Get the parent directory of a path
-local parent_dir = path.parent("doc/some-file.md");     -- string
+local parent_dir = path.parent("doc/some-file.md")     -- string
 ```
 
 ### utils.git
 
 ```lua
 -- Restore a file to its last committed state
-utils.git.restore("src/main.rs");                       -- void
+utils.git.restore("src/main.rs")                       -- void
 ```
 
 ### utils.web
@@ -82,7 +82,7 @@ See [WebResponse](#webresponse), [WebError](#weberror) for return types.
 
 ```lua
 -- Fetch content from a URL
-local content = utils.web.get("https://example.com");   -- WebResponse / WebError
+local content = utils.web.get("https://example.com")   -- WebResponse / WebError
 ```
 
 ### utils.md
@@ -105,11 +105,11 @@ local content = utils.md.outer_block_content_or_raw(content) -- string
 
 ```lua
 -- Parse a JSON string into a table
-local obj = utils.json.parse('{"name": "John", "age": 30}');  -- Object (lua table)
+local obj = utils.json.parse('{"name": "John", "age": 30}')  -- Object (lua table)
 -- Stringify a table into a JSON string
-local json_str = utils.json.stringify(obj);                   -- string
+local json_str = utils.json.stringify(obj)                   -- string
 -- Stringify a table into a single-line JSON string
-local json_line_str = utils.json.stringify_to_line(obj);      -- string
+local json_line_str = utils.json.stringify_to_line(obj)      -- string
 ```
 
 ### utils.rust
@@ -117,26 +117,26 @@ local json_line_str = utils.json.stringify_to_line(obj);      -- string
 ```lua
 -- === utils.rust
 -- Prune Rust code to keep only function declarations (removes function bodies)
-local result = utils.rust.prune_to_declarations(code);  -- string
+local result = utils.rust.prune_to_declarations(code)  -- string
 ```
 
 ## utils.html
 
 ```lua
 -- Prune HTML content to remove some empty tags, comments, and such
-local cleaned_html = utils.html.prune_to_content(html_content);  -- string
+local cleaned_html = utils.html.prune_to_content(html_content)  -- string
 ```
 
 ## utils.text
 
 ```lua
-local trimmed = utils.text.trim(content);        -- string
-local trimmed = utils.text.trim_start(content);  -- string
-local trimmed = utils.text.trim_end(content);    -- string
+local trimmed = utils.text.trim(content)        -- string
+local trimmed = utils.text.trim_start(content)  -- string
+local trimmed = utils.text.trim_end(content)    -- string
 
 -- Truncate content to a maximum length
 -- - ellipsis - optional third argument
-local truncated_content = utils.text.truncate(content, 100, "...");        -- string
+local truncated_content = utils.text.truncate(content, 100, "...")        -- string
 
 -- Ensure
 -- - second argument of type `{prefix = string, suffix = string}` both optional
@@ -144,16 +144,16 @@ local truncated_content = utils.text.truncate(content, 100, "...");        -- st
 utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
 
 -- Ensure content ends with a single newline
-local normalized_content = utils.text.ensure_single_ending_newline(content);
+local normalized_content = utils.text.ensure_single_ending_newline(content)
                                                                            -- string
 -- Remove the first line from content
-local content_without_first_line = utils.text.remove_first_line(content);  -- string
+local content_without_first_line = utils.text.remove_first_line(content)  -- string
 -- Remove the last line from content
-local content_without_last_line = utils.text.remove_last_line(content);    -- string
+local content_without_last_line = utils.text.remove_last_line(content)    -- string
 
 -- (Advanced) Replace markers in content with new sections
 --   - Markers for now are in between `<<START>>` and `<<END>>`
-local updated_content = utils.text.replace_markers(content, new_sections); -- String
+local updated_content = utils.text.replace_markers(content, new_sections) -- String
 ```
 
 ## utils.cmd
@@ -162,7 +162,7 @@ See [CmdResponse](#cmdresponse), [CmdError](#cmderror) for return types.
 
 ```lua
 -- Execute a system command utils.cmd.exec(cmd_name, cmd_args)
-local result = utils.cmd.exec("ls", {"-ll", "./**/*.md"});  -- CmdResponse / CmdError
+local result = utils.cmd.exec("ls", {"-ll", "./**/*.md"})  -- CmdResponse / CmdError
 ```
 
 
@@ -175,11 +175,11 @@ devai also provides the `devai` module in the context of all scripts, which allo
 local before_all_response = devai.before_all_response({
     before_all = "Some before all data",
     inputs = {"one", "two", "three", 4, "five"}
-});
+})
 
 -- Skip input cycle with an optional reason
 -- This can be used in the `# Data`, `# Before All`, and `# Output` stages
-local skip_response = devai.skip("File already contains the documentation");
+local skip_response = devai.skip("File already contains the documentation")
 ```
 
 ## CTX
