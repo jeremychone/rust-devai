@@ -21,7 +21,7 @@ use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::to_vec_of_strings;
 use crate::script::lua_script::DEFAULT_MARKERS;
 use crate::support::html::decode_html_entities;
-use crate::support::strings::{self, truncate_with_ellipsis, EnsureOptions};
+use crate::support::text::{self, truncate_with_ellipsis, EnsureOptions};
 use crate::Result;
 use mlua::{FromLua, Lua, LuaSerdeExt, Table, Value};
 use std::borrow::Cow;
@@ -90,7 +90,7 @@ impl FromLua for EnsureOptions {
 /// This function is useful for code normalization.
 fn ensure(lua: &Lua, (content, inst): (String, Value)) -> mlua::Result<String> {
 	let inst = EnsureOptions::from_lua(inst, lua)?;
-	let res = crate::support::strings::ensure(&content, inst);
+	let res = crate::support::text::ensure(&content, inst);
 	let res = res.to_string();
 	Ok(res)
 }
@@ -105,7 +105,7 @@ fn ensure(lua: &Lua, (content, inst): (String, Value)) -> mlua::Result<String> {
 ///
 /// This function is useful for code normalization.
 fn ensure_single_ending_newline(_lua: &Lua, content: String) -> mlua::Result<String> {
-	Ok(crate::support::strings::ensure_single_ending_newline(content))
+	Ok(crate::support::text::ensure_single_ending_newline(content))
 }
 
 // endregion: --- ensure
@@ -122,7 +122,7 @@ fn ensure_single_ending_newline(_lua: &Lua, content: String) -> mlua::Result<Str
 fn replace_markers_with_default_parkers(_lua: &Lua, (content, new_sections): (String, Value)) -> mlua::Result<String> {
 	let sections = to_vec_of_strings(new_sections, "new_sections")?;
 	let sections: Vec<&str> = sections.iter().map(|s| s.as_str()).collect();
-	let new_content = strings::replace_markers(&content, &sections, DEFAULT_MARKERS)?;
+	let new_content = text::replace_markers(&content, &sections, DEFAULT_MARKERS)?;
 	Ok(new_content)
 }
 

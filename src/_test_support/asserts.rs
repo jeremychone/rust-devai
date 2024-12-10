@@ -1,4 +1,4 @@
-use crate::support::strings::truncate_with_ellipsis;
+use crate::support::text::truncate_with_ellipsis;
 use std::convert::Into;
 use std::fmt::Formatter;
 
