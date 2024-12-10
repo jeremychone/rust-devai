@@ -21,9 +21,9 @@ use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::to_vec_of_strings;
 use crate::script::lua_script::DEFAULT_MARKERS;
 use crate::support::html::decode_html_entities;
-use crate::support::strings::{self, truncate_with_ellipsis};
+use crate::support::strings::{self, truncate_with_ellipsis, EnsureOptions};
 use crate::Result;
-use mlua::{Lua, LuaSerdeExt, Table, Value};
+use mlua::{FromLua, Lua, LuaSerdeExt, Table, Value};
 use std::borrow::Cow;
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
@@ -43,6 +43,7 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 		"replace_markers",
 		lua.create_function(replace_markers_with_default_parkers)?,
 	)?;
+	table.set("ensure", lua.create_function(ensure)?)?;
 	table.set(
 		"ensure_single_ending_newline",
 		lua.create_function(ensure_single_ending_newline)?,
@@ -50,6 +51,64 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 
 	Ok(table)
 }
+
+// region:    --- ensure
+
+impl FromLua for EnsureOptions {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+		let table = value.as_table().ok_or_else(|| {
+			mlua::Error::runtime(
+				"Ensure argument needs to be a table with the format {start = string, end = string} (both optional",
+			)
+		})?;
+
+		//
+		let prefix = table.get::<String>("prefix").ok();
+		let suffix = table.get::<String>("suffix").ok();
+
+		for (key, value) in table.pairs::<Value, Value>().flatten() {
+			if let Some(key) = key.as_str() {
+				if key != "prefix" && key != "suffix" {
+					let msg = format!("Ensure argument contains invalid table property `{key}`. Can only contain `prefix` and/or `suffix`");
+					return Err(mlua::Error::RuntimeError(msg));
+				}
+			}
+		}
+
+		//
+		Ok(EnsureOptions { prefix, suffix })
+	}
+}
+
+/// ## Lua Documentation
+/// ```lua
+/// utils.text.ensure(content: string, {prefix? = string, suffix? = string}) -- string
+/// ```
+///
+/// Ensure the content start and/or end with the text given in the second argument dictionary.
+///
+/// This function is useful for code normalization.
+fn ensure(lua: &Lua, (content, inst): (String, Value)) -> mlua::Result<String> {
+	let inst = EnsureOptions::from_lua(inst, lua)?;
+	let res = crate::support::strings::ensure(&content, inst);
+	let res = res.to_string();
+	Ok(res)
+}
+
+/// ## Lua Documentation
+/// ```lua
+/// text.ensure_single_ending_newline(content: string) -> string
+/// ```
+///
+/// Ensures that `content` ends with a single newline character.
+/// If `content` is empty, it returns a newline character.
+///
+/// This function is useful for code normalization.
+fn ensure_single_ending_newline(_lua: &Lua, content: String) -> mlua::Result<String> {
+	Ok(crate::support::strings::ensure_single_ending_newline(content))
+}
+
+// endregion: --- ensure
 
 // region:    --- Strings
 
@@ -83,19 +142,6 @@ fn truncate(_lua: &Lua, (content, max_len, ellipsis): (String, usize, Option<Str
 		Cow::Borrowed(txt) => Ok(txt.to_string()),
 		Cow::Owned(txt) => Ok(txt),
 	}
-}
-
-/// ## Lua Documentation
-/// ```lua
-/// text.ensure_single_ending_newline(content: string) -> string
-/// ```
-///
-/// Ensures that `content` ends with a single newline character.
-/// If `content` is empty, it returns a newline character.
-///
-/// This function is useful for code normalization.
-fn ensure_single_ending_newline(_lua: &Lua, content: String) -> mlua::Result<String> {
-	Ok(crate::support::strings::ensure_single_ending_newline(content))
 }
 
 ///  ## Lua Documentation
@@ -227,3 +273,42 @@ fn escape_decode(_lua: &Lua, content: String) -> mlua::Result<String> {
 }
 
 // endregion: --- Escape Fns
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+
+	use super::*;
+	use crate::_test_support::run_reflective_agent;
+
+	#[tokio::test]
+	async fn test_lua_text_ensure_ok() -> Result<()> {
+		// -- Fixtures
+		let data = [
+			(
+				"some- ! -path",
+				r#"{prefix = "./", suffix = ".md"}"#,
+				"./some- ! -path.md",
+			),
+			("some- ! -path", r#"{suffix = ".md"}"#, "some- ! -path.md"),
+			(" ~ some- ! -path", r#"{prefix = " ~ "}"#, " ~ some- ! -path"),
+			("~ some- ! -path", r#"{prefix = " ~ "}"#, " ~ ~ some- ! -path"),
+		];
+
+		// -- exec
+		for (content, arg, expected) in data {
+			let script = format!("return utils.text.ensure(\"{content}\", {arg})");
+			let res = run_reflective_agent(&script, None).await?;
+
+			assert_eq!(res, expected);
+		}
+
+		// -- check
+
+		Ok(())
+	}
+}
+
+// endregion: --- Tests

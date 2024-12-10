@@ -74,8 +74,6 @@ Please enter value (will store key in Mac keychain, under devai_secrets/{}): "#,
 	// Making sure we get the value from store
 	let val = entry.get_password()?;
 
-	println!("->> val {val}");
-
 	// -- put back in raw mode
 	clear_terminal()?;
 	// sleep 200ms

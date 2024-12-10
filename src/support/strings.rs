@@ -5,6 +5,42 @@ use aho_corasick::AhoCorasick;
 use derive_more::derive::Display;
 use std::borrow::Cow;
 
+// region:    --- Ensure
+
+pub struct EnsureOptions {
+	pub prefix: Option<String>,
+	pub suffix: Option<String>,
+}
+
+pub fn ensure(s: &str, ensure_inst: EnsureOptions) -> Cow<str> {
+	let mut parts: Vec<&str> = Vec::new();
+
+	// Add start prefix if needed
+	if let Some(start) = ensure_inst.prefix.as_deref() {
+		if !s.starts_with(start) {
+			parts.push(start);
+		}
+	}
+
+	// Always include the main string
+	parts.push(s);
+
+	// Add end suffix if needed
+	if let Some(end) = ensure_inst.suffix.as_deref() {
+		if !s.ends_with(end) {
+			parts.push(end);
+		}
+	}
+
+	// If no changes were made, return the original string as borrowed
+	if parts.len() == 1 {
+		Cow::Borrowed(s)
+	} else {
+		Cow::Owned(parts.concat()) // Join parts into a single owned string
+	}
+}
+// endregion: --- Ensure
+
 pub fn truncate_with_ellipsis<'a>(s: &'a str, max_len: usize, ellipsis: &str) -> Cow<'a, str> {
 	if s.len() > max_len {
 		let truncated = &s[..max_len];
@@ -48,6 +84,8 @@ pub fn ensure_single_ending_newline(mut text: String) -> String {
 
 	text
 }
+
+// region:    --- Replace
 
 pub fn replace_markers(content: &str, sections: &[&str], marker_pair: &(&str, &str)) -> Result<String> {
 	let lines = content.lines();
@@ -125,6 +163,8 @@ pub fn replace_all(content: &str, patterns: &[&str], values: &[&str]) -> Result<
 
 	Ok(new_content)
 }
+
+// endregion: --- Replace
 
 // region:    --- Tests
 

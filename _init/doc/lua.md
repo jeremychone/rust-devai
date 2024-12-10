@@ -133,8 +133,16 @@ local cleaned_html = utils.html.prune_to_content(html_content);  -- string
 local trimmed = utils.text.trim(content);        -- string
 local trimmed = utils.text.trim_start(content);  -- string
 local trimmed = utils.text.trim_end(content);    -- string
+
 -- Truncate content to a maximum length
+-- - ellipsis - optional third argument
 local truncated_content = utils.text.truncate(content, 100, "...");        -- string
+
+-- Ensure
+-- - second argument of type `{prefix = string, suffix = string}` both optional
+-- - if define will add prefix and suffix if their are not present
+utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
+
 -- Ensure content ends with a single newline
 local normalized_content = utils.text.ensure_single_ending_newline(content);
                                                                            -- string
