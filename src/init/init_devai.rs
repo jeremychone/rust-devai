@@ -10,6 +10,7 @@ use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
 use std::collections::HashSet;
 use std::fs::write;
+use std::io::BufRead;
 use std::path::Path;
 
 // -- Config Content
@@ -35,6 +36,8 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 
 	let devai_dir = DevaiDir::from_parent_dir(&workspace_dir)?;
 
+	let is_new_version = check_is_new_version(&devai_dir)?;
+
 	// -- Display the heading
 	if devai_dir.exists() {
 		if show_info_always {
@@ -54,7 +57,7 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 		.await;
 	}
 
-	create_or_refresh_devai_files(&devai_dir).await?;
+	create_or_refresh_devai_files(&devai_dir, is_new_version).await?;
 
 	let dir_context = DirContext::new(devai_dir)?;
 
@@ -65,8 +68,46 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 	Ok(dir_context)
 }
 
+/// Check is the `.devai/version.txt` is present,
+/// - read the first line, and compare with current version
+/// - if match current version all good.
+/// - if not recreate file with version,
+fn check_is_new_version(devai_dir: &DevaiDir) -> Result<bool> {
+	let version_path = devai_dir.devai_dir().join("version.txt")?;
+
+	let mut is_new = true;
+
+	// -- If exists, determine if is_new
+	if version_path.exists() {
+		// read efficiently only the first line of  version_path
+		let mut reader = simple_fs::get_buf_reader(&version_path)?;
+		let mut first_line = String::new();
+		if reader.read_line(&mut first_line)? > 0 {
+			let version_in_file = first_line.trim();
+			is_new = version_in_file != crate::VERSION;
+		}
+	}
+
+	// -- If is_new, rereate the file
+	if is_new {
+		let content = format!(
+			r#"{}
+
+DO NOT EDIT.
+
+This file is used to keep track of the version and compare it during each `devai ...` execution.
+If there is no match with the current version, this file will be recreated, and the documentation and other files will be updated.
+		"#,
+			crate::VERSION
+		);
+		write(version_path, content)?;
+	}
+
+	Ok(is_new)
+}
+
 /// Create or refresh missing files in a devai directory
-async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
+async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: bool) -> Result<()> {
 	let hub = get_hub();
 
 	let workspace_dir = devai_dir.parent_dir();
@@ -124,7 +165,13 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir) -> Result<()> {
 	.await?;
 
 	// -- Create the documentation
-	update_md_files(workspace_dir, devai_dir.get_doc_dir()?, get_embedded_doc_files()).await?;
+	update_md_files(
+		workspace_dir,
+		devai_dir.get_doc_dir()?,
+		get_embedded_doc_files(),
+		is_new_version,
+	)
+	.await?;
 
 	Ok(())
 }
@@ -153,14 +200,19 @@ async fn update_devai_files(
 	Ok(())
 }
 
-async fn update_md_files(base_dir: &SPath, dir: impl AsRef<Path>, embedded_agent_file: &[&EmbeddedFile]) -> Result<()> {
+async fn update_md_files(
+	base_dir: &SPath,
+	dir: impl AsRef<Path>,
+	embedded_agent_file: &[&EmbeddedFile],
+	is_new_version: bool,
+) -> Result<()> {
 	let dir = dir.as_ref();
 	ensure_dir(dir)?;
 	let existing_files = list_files(dir, Some(&["**/*.md"]), None)?;
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
 
 	for e_file in embedded_agent_file {
-		if !existing_names.contains(e_file.name) {
+		if is_new_version || !existing_names.contains(e_file.name) {
 			let path = SPath::new(dir)?.join(e_file.name)?;
 			write(&path, e_file.content)?;
 			get_hub()

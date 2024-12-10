@@ -19,9 +19,11 @@ use crate::cli::CliArgs;
 use crate::exec::Executor;
 use crate::hub::{get_hub, HubEvent};
 use crate::tui::TuiApp;
-use clap::Parser;
+use clap::{crate_version, Parser};
 use error::{Error, Result};
 use std::time::Duration;
+
+pub static VERSION: &str = crate_version!();
 
 // endregion: --- Modules
 
