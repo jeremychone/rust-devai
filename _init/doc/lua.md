@@ -34,7 +34,7 @@ The utils top module is comprised of the following submodules.
 
 ### utils.file
 
-See [FileRecord](#filerecord), [MdSection](#mdsection) for return types.
+See [FileRecord](#filerecord), See [FileMeta](#filemeta), [MdSection](#mdsection) for return types.
 
 ```lua
 -- Load file text content and return its FileRecord (See below), with `.content`
@@ -44,16 +44,19 @@ local file = utils.file.load("doc/some-file.md")                -- FileRecord
 utils.file.save("doc/some-file.md", "some new content")         -- void (no return for now)
 
 -- List files matching a glob pattern
-local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileRecord, ...}
+local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileMeta, ...}
 
 -- Get the first file reference matching a glob pattern
-local first_doc_file = utils.file.first("doc/**/*.md")          -- FileRecord | Nil
+local first_doc_file = utils.file.first("doc/**/*.md")          -- FileMeta | Nil
+
+-- Ensure a file exists by creating it if not found
+local file_meta = utils.file.ensure_exists("./some/file.md", "optional content") 
+                                                                -- FileMeta
 
 -- Load markdown sections from a file
--- If second arg is absent, then, all section will be returned (nested as items as well)
+-- If the second argument is absent, then all sections will be returned (nested as items as well)
 local sections = utils.file.load_md_sections("doc/readme.md", "# Summary")  
                                                                  -- {MdSection, ...}
-                                                                 
 ```
 
 ### utils.path
@@ -95,11 +98,10 @@ local blocks = utils.md.extract_blocks("js")                 -- {MdBlock}
 -- returns {} if no block found
 
 -- If content starts with ```, it will remove the first and last ```, and return the content in between
--- Otherwise, return the original content
+-- Otherwise, it returns the original content
 local content = utils.md.outer_block_content_or_raw(content) -- string
 
 ```
-
 
 ### utils.json
 
@@ -140,7 +142,7 @@ local truncated_content = utils.text.truncate(content, 100, "...")        -- str
 
 -- Ensure
 -- - second argument of type `{prefix = string, suffix = string}` both optional
--- - if define will add prefix and suffix if their are not present
+-- - if defined, it will add the prefix and suffix if they are not present
 utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
 
 -- Ensure content ends with a single newline
@@ -153,7 +155,7 @@ local content_without_last_line = utils.text.remove_last_line(content)    -- str
 
 -- (Advanced) Replace markers in content with new sections
 --   - Markers for now are in between `<<START>>` and `<<END>>`
-local updated_content = utils.text.replace_markers(content, new_sections) -- String
+local updated_content = utils.text.replace_markers(content, new_sections) -- string
 ```
 
 ## utils.cmd
@@ -164,7 +166,6 @@ See [CmdResponse](#cmdresponse), [CmdError](#cmderror) for return types.
 -- Execute a system command utils.cmd.exec(cmd_name, cmd_args)
 local result = utils.cmd.exec("ls", {"-ll", "./**/*.md"})  -- CmdResponse / CmdError
 ```
-
 
 ## devai
 
@@ -197,7 +198,7 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 | CTX.AGENT_FILE_STEM  | `command-ctx-reflect`                                     |
 
 - All paths are relative to `WORKSPACE_DIR`
-- The `AGENT_NAME` is the name given that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
+- The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
 - These are available in `devai run ..` as well as `devai solo ...`
 
 # Common Types
@@ -238,10 +239,10 @@ The `MdSection` is a markdown section with the following representation:
 ```lua
 {
   content = "_section_content",     -- after the eventual heading
-  heading_content = "# Summary",    -- can be "" if no heading (top section)
-  heading_name    = "Summary",      -- can be "" if no heading
-  heading_level   = 1,              -- Will be 0 when no heading
-  heading_raw     = "# Summary\n",  -- Will be "" when no heading. Simplifies reconstitution logic     
+  heading_content = "# Summary",    -- can be "" if there is no heading (top section)
+  heading_name    = "Summary",      -- can be "" if there is no heading
+  heading_level   = 1,              -- Will be 0 when there is no heading
+  heading_raw     = "# Summary\n",  -- Will be "" when there is no heading. Simplifies reconstitution logic     
 }
 ```
 

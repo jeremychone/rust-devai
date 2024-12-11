@@ -67,6 +67,37 @@ pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, cont
 
 /// ## Lua Documentation
 ///
+/// Ensure a file exists at the given path, and if not create it with an optional content
+///
+/// ```lua
+/// utils.file.ensure_exists(path, optional_content) -- FileMeta
+/// ```
+///
+/// ### Returns
+///
+/// Does not return anything
+///
+pub(super) fn file_ensure_exists(
+	lua: &Lua,
+	ctx: &RuntimeContext,
+	path: String,
+	content: Option<String>,
+) -> mlua::Result<mlua::Value> {
+	let rel_path = SPath::new(path).map_err(Error::from)?;
+	let full_path = ctx.dir_context().resolve_path(&rel_path, PathResolver::DevaiParentDir)?;
+
+	if !full_path.exists() {
+		let content = content.unwrap_or_default();
+		write(full_path, content)?;
+	}
+
+	let file_meta = FileMeta::from(rel_path);
+
+	file_meta.into_lua(lua)
+}
+
+/// ## Lua Documentation
+///
 /// List a set of file reference (no content) for a given glob
 ///
 /// ```lua
