@@ -1,8 +1,10 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
 
-## 2024-12-10 - `0.5.2`
+## 2024-12-11 - `0.5.2`
 
+- `+` lua - add `utils.file.ensure_exists(path, optional_content)`
+- `+` version - added `.devai/verion.txt` to force update doc on version change.
 - `.` doc - remove ; in lua code
 - `+` lua - add `utils.text.ensure(content, {prefix, suffix})`
 
