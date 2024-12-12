@@ -91,6 +91,7 @@ impl DevaiDir {
 		self.devai_dir_full_path().exists()
 	}
 
+	/// WARNING this always return "./.devai" use devai_dir_full_path() for building path
 	pub fn devai_dir(&self) -> &SPath {
 		&self.devai_dir
 	}

@@ -36,8 +36,6 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 
 	let devai_dir = DevaiDir::from_parent_dir(&workspace_dir)?;
 
-	let is_new_version = check_is_new_version(&devai_dir)?;
-
 	// -- Display the heading
 	if devai_dir.exists() {
 		if show_info_always {
@@ -57,6 +55,8 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 		.await;
 	}
 
+	ensure_dir(&devai_dir)?;
+	let is_new_version = check_is_new_version(&devai_dir).await?;
 	create_or_refresh_devai_files(&devai_dir, is_new_version).await?;
 
 	let dir_context = DirContext::new(devai_dir)?;
@@ -72,8 +72,8 @@ pub async fn init_devai_files(ref_dir: Option<&str>, show_info_always: bool) -> 
 /// - read the first line, and compare with current version
 /// - if match current version all good.
 /// - if not recreate file with version,
-fn check_is_new_version(devai_dir: &DevaiDir) -> Result<bool> {
-	let version_path = devai_dir.devai_dir().join("version.txt")?;
+async fn check_is_new_version(devai_dir: &DevaiDir) -> Result<bool> {
+	let version_path = devai_dir.devai_dir_full_path().join("version.txt")?;
 
 	let mut is_new = true;
 
@@ -100,7 +100,14 @@ If there is no match with the current version, this file will be recreated, and 
 		"#,
 			crate::VERSION
 		);
-		write(version_path, content)?;
+		write(&version_path, content)?;
+		get_hub()
+			.publish(format!(
+				"-> {:<18} '{}'",
+				"Create file",
+				version_path.diff(devai_dir.parent_dir())?
+			))
+			.await;
 	}
 
 	Ok(is_new)
