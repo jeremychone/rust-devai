@@ -19,7 +19,7 @@ impl LuaEngine {
 
 		let globals = lua.globals();
 
-		let utils = LuaEngine::build_utils(&lua, &runtime_context)?;
+		let utils = init_utils(&lua, &runtime_context)?;
 		globals.set("utils", utils)?;
 
 		let devai = utils_devai::init_module(&lua, &runtime_context)?;
@@ -119,29 +119,27 @@ macro_rules! init_and_set {
 }
 
 /// Module builders
-impl LuaEngine {
-	fn build_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
-		let table = lua.create_table()?;
+fn init_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
+	let table = lua.create_table()?;
 
-		init_and_set!(
-			table,
-			lua,
-			runtime_context,
-			// -- The lua module names that refers to utils_...
-			file,
-			git,
-			web,
-			text,
-			rust,
-			path,
-			md,
-			json,
-			html,
-			cmd
-		);
+	init_and_set!(
+		table,
+		lua,
+		runtime_context,
+		// -- The lua module names that refers to utils_...
+		file,
+		git,
+		web,
+		text,
+		rust,
+		path,
+		md,
+		json,
+		html,
+		cmd
+	);
 
-		Ok(table)
-	}
+	Ok(table)
 }
 
 // region:    --- Tests
