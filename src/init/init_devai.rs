@@ -105,7 +105,7 @@ If there is no match with the current version, this file will be recreated, and 
 			.publish(format!(
 				"-> {:<18} '{}'",
 				"Create file",
-				version_path.diff(devai_dir.parent_dir())?
+				version_path.diff(devai_dir.workspace_dir())?
 			))
 			.await;
 	}
@@ -117,7 +117,7 @@ If there is no match with the current version, this file will be recreated, and 
 async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: bool) -> Result<()> {
 	let hub = get_hub();
 
-	let workspace_dir = devai_dir.parent_dir();
+	let workspace_dir = devai_dir.workspace_dir();
 
 	ensure_dir(devai_dir)?;
 

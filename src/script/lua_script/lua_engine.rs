@@ -17,28 +17,16 @@ impl LuaEngine {
 	pub fn new(runtime_context: RuntimeContext) -> Result<Self> {
 		let lua = Lua::new();
 
-		let globals = lua.globals();
-
 		// -- init utils
-		let utils = init_utils(&lua, &runtime_context)?;
-		globals.set("utils", utils)?;
+		init_utils(&lua, &runtime_context)?;
 
 		// -- init devai
-		let devai = utils_devai::init_module(&lua, &runtime_context)?;
-		globals.set("devai", devai)?;
+		utils_devai::init_module(&lua, &runtime_context)?;
 
-		// -- Init the globals package.path
-		let package: Table = globals.get("package")?;
-		// example of a default: "/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;/usr/local/lib/lua/5.4/?.lua;/usr/local/lib/lua/5.4/?/init.lua;./?.lua;./?/init.lua"
-		let path: String = package.get("path")?;
-		// compute the additional path
-		let custom_lua_dir = runtime_context
-			.dir_context()
-			.resolve_path("custom/lua", PathResolver::DevaiDir)?;
-		let custom_lua_path = format!("{custom_lua_dir}/?.lua;{custom_lua_dir}/?/init.lua");
-		let new_path = format!("{custom_lua_path};{path}");
-		package.set("path", new_path)?;
+		// -- Init package.path
+		init_package_path(&lua, &runtime_context)?;
 
+		// -- Build and return
 		let engine = LuaEngine { lua, runtime_context };
 
 		Ok(engine)
@@ -115,6 +103,27 @@ impl LuaEngine {
 	}
 }
 
+// region:    --- init_package_path
+
+fn init_package_path(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
+	let globals = lua.globals();
+
+	let package: Table = globals.get("package")?;
+	// example of a default: "/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;/usr/local/lib/lua/5.4/?.lua;/usr/local/lib/lua/5.4/?/init.lua;./?.lua;./?/init.lua"
+	let path: String = package.get("path")?;
+	// compute the additional path
+	let custom_lua_dir = runtime_context
+		.dir_context()
+		.resolve_path("custom/lua", PathResolver::DevaiDir)?;
+	let custom_lua_path = format!("{custom_lua_dir}/?.lua;{custom_lua_dir}/?/init.lua");
+	let new_path = format!("{custom_lua_path};{path}");
+	package.set("path", new_path)?;
+
+	Ok(())
+}
+
+// endregion: --- init_package_path
+
 // region:    --- init_utils
 
 /// Just a convenient macro to init/set the lua modules
@@ -135,7 +144,7 @@ macro_rules! init_and_set {
 }
 
 /// Module builders
-fn init_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
+fn init_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
 	let table = lua.create_table()?;
 
 	init_and_set!(
@@ -155,7 +164,9 @@ fn init_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
 		cmd
 	);
 
-	Ok(table)
+	let globals = lua.globals();
+	globals.set("utils", table)?;
+	Ok(())
 }
 
 // endregion: --- init_utils

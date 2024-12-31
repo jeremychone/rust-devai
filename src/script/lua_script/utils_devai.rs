@@ -1,8 +1,8 @@
 use crate::run::RuntimeContext;
 use crate::Result;
-use mlua::{Lua, Table, Value};
+use mlua::{Lua, Value};
 
-pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
+pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<()> {
 	let table = lua.create_table()?;
 
 	let before_all_response_fn = lua.create_function(devai_before_all_response)?;
@@ -11,7 +11,10 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 	let skip_fn = lua.create_function(devai_skip)?;
 	table.set("skip", skip_fn)?;
 
-	Ok(table)
+	let globals = lua.globals();
+	globals.set("devai", table)?;
+
+	Ok(())
 }
 
 /// ## Lua Documentation

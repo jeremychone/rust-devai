@@ -100,7 +100,7 @@ impl DevaiDir {
 		&self.devai_dir_full_path
 	}
 
-	pub fn parent_dir(&self) -> &SPath {
+	pub fn workspace_dir(&self) -> &SPath {
 		&self.workspace_dir
 	}
 }

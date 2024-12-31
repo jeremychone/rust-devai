@@ -33,7 +33,7 @@ impl DirContext {
 	/// Private to create a new DirContext
 	/// Note: Only the test function will provide a mock current_dir
 	fn from_devai_dir_and_current_dir(devai_dir: DevaiDir, current_dir: SPath) -> Result<Self> {
-		let workspace_dir = devai_dir.parent_dir().canonicalize()?;
+		let workspace_dir = devai_dir.workspace_dir().canonicalize()?;
 		let current_dir = current_dir.canonicalize()?;
 		Ok(Self {
 			current_dir,
