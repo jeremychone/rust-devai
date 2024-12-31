@@ -55,7 +55,7 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 // region:    --- ensure
 
 impl FromLua for EnsureOptions {
-	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+	fn from_lua(value: Value, _lua: &Lua) -> mlua::Result<Self> {
 		let table = value.as_table().ok_or_else(|| {
 			mlua::Error::runtime(
 				"Ensure argument needs to be a table with the format {start = string, end = string} (both optional",
@@ -66,7 +66,7 @@ impl FromLua for EnsureOptions {
 		let prefix = table.get::<String>("prefix").ok();
 		let suffix = table.get::<String>("suffix").ok();
 
-		for (key, value) in table.pairs::<Value, Value>().flatten() {
+		for (key, _value) in table.pairs::<Value, Value>().flatten() {
 			if let Some(key) = key.as_str() {
 				if key != "prefix" && key != "suffix" {
 					let msg = format!("Ensure argument contains invalid table property `{key}`. Can only contain `prefix` and/or `suffix`");
@@ -280,7 +280,6 @@ fn escape_decode(_lua: &Lua, content: String) -> mlua::Result<String> {
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use super::*;
 	use crate::_test_support::run_reflective_agent;
 
 	#[tokio::test]
