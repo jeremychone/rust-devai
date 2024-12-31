@@ -4,9 +4,11 @@ use crate::Result;
 use simple_fs::SPath;
 use std::path::Path;
 
+#[allow(clippy::enum_variant_names)] // to remove
 pub enum PathResolver {
 	CurrentDir,
 	DevaiParentDir,
+	DevaiDir,
 }
 
 #[derive(Debug, Clone)]
@@ -56,6 +58,7 @@ impl DirContext {
 		&self.current_dir
 	}
 
+	/// Will always be `"./.devai/"`
 	pub fn devai_dir(&self) -> &DevaiDir {
 		&self.devai_dir
 	}
@@ -76,6 +79,7 @@ impl DirContext {
 			match mode {
 				PathResolver::CurrentDir => Ok(self.current_dir.join(path)?),
 				PathResolver::DevaiParentDir => Ok(self.workspace_dir.join(path)?),
+				PathResolver::DevaiDir => Ok(self.devai_dir().devai_dir_full_path().join(path)?),
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-use crate::run::RuntimeContext;
+use crate::run::{PathResolver, RuntimeContext};
 use crate::script::lua_script::{
 	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_md, utils_path, utils_rust,
 	utils_text, utils_web,
@@ -19,11 +19,25 @@ impl LuaEngine {
 
 		let globals = lua.globals();
 
+		// -- init utils
 		let utils = init_utils(&lua, &runtime_context)?;
 		globals.set("utils", utils)?;
 
+		// -- init devai
 		let devai = utils_devai::init_module(&lua, &runtime_context)?;
 		globals.set("devai", devai)?;
+
+		// -- Init the globals package.path
+		let package: Table = globals.get("package")?;
+		// example of a default: "/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;/usr/local/lib/lua/5.4/?.lua;/usr/local/lib/lua/5.4/?/init.lua;./?.lua;./?/init.lua"
+		let path: String = package.get("path")?;
+		// compute the additional path
+		let custom_lua_dir = runtime_context
+			.dir_context()
+			.resolve_path("custom/lua", PathResolver::DevaiDir)?;
+		let custom_lua_path = format!("{custom_lua_dir}/?.lua;{custom_lua_dir}/?/init.lua");
+		let new_path = format!("{custom_lua_path};{path}");
+		package.set("path", new_path)?;
 
 		let engine = LuaEngine { lua, runtime_context };
 
@@ -101,6 +115,8 @@ impl LuaEngine {
 	}
 }
 
+// region:    --- init_utils
+
 /// Just a convenient macro to init/set the lua modules
 /// Will generate the code below for the name 'git'
 /// ```rust
@@ -141,6 +157,8 @@ fn init_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
 
 	Ok(table)
 }
+
+// endregion: --- init_utils
 
 // region:    --- Tests
 
@@ -194,6 +212,28 @@ return "Hello " .. my_name .. " - " .. file.content
 		let res = serde_json::to_value(res)?;
 		let res = res.as_str().ok_or("Should be string")?;
 		assert_eq!(res, "Hello Lua World - hello from the other/hello.txt");
+
+		Ok(())
+	}
+
+	/// Test if the `utils.file.load` works
+	#[tokio::test]
+	async fn test_lua_engine_eval_require_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		let engine = LuaEngine::new(runtime.context().clone())?;
+		let fx_script = r#"
+local demo_one = require("demo_one")
+return "demo_one.name_one is " .. "'" .. demo_one.name_one .. "'"
+		"#;
+
+		// -- Exec
+		let res = engine.eval(fx_script, None)?;
+
+		// -- Check
+		let res = serde_json::to_value(res)?;
+		let res = res.as_str().ok_or("Should be string")?;
+		assert_eq!(res, "demo_one.name_one is 'Demo One'");
 
 		Ok(())
 	}
