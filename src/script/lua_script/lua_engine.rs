@@ -1,3 +1,4 @@
+use crate::hub::{get_hub, HubEvent};
 use crate::run::{PathResolver, RuntimeContext};
 use crate::script::lua_script::{
 	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_md, utils_path, utils_rust,
@@ -25,6 +26,9 @@ impl LuaEngine {
 
 		// -- Init package.path
 		init_package_path(&lua, &runtime_context)?;
+
+		// -- Init print
+		init_print(&lua)?;
 
 		// -- Build and return
 		let engine = LuaEngine { lua, runtime_context };
@@ -103,7 +107,7 @@ impl LuaEngine {
 	}
 }
 
-// region:    --- init_package_path
+// region:    --- Init Globals
 
 fn init_package_path(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
 	let globals = lua.globals();
@@ -122,7 +126,33 @@ fn init_package_path(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> 
 	Ok(())
 }
 
-// endregion: --- init_package_path
+fn init_print(lua: &Lua) -> Result<()> {
+	let globals = lua.globals();
+
+	globals.set(
+		"print",
+		lua.create_function(|_, args: mlua::Variadic<Value>| {
+			let output: Vec<String> = args
+				.iter()
+				.map(|arg| match arg {
+					Value::String(s) => s.to_str().map(|s| s.to_string()).unwrap_or_default(),
+					Value::Number(n) => n.to_string(),
+					Value::Integer(n) => n.to_string(),
+					Value::Boolean(b) => b.to_string(),
+					_ => "<unsupported value for print args>".to_string(),
+				})
+				.collect();
+
+			let text = output.join("\t"); // Mimics Lua's `print` by joining args with tabs
+			get_hub().publish_sync(HubEvent::LuaPrint(text.into()));
+			Ok(())
+		})?,
+	)?;
+
+	Ok(())
+}
+
+// endregion: --- Init Globals
 
 // region:    --- init_utils
 

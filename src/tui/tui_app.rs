@@ -135,6 +135,9 @@ impl TuiApp {
 					HubEvent::Error { error } => {
 						safer_println(&format!("Error: {error}"), interactive);
 					}
+
+					HubEvent::LuaPrint(text) => safer_println(&text, interactive),
+
 					HubEvent::Executor(exec_event) => {
 						if let (ExecEvent::RunEnd, true) = (exec_event, interactive) {
 							// safer_println("\n[ r ]: Redo   |   [ q ]: Quit", interactive);
