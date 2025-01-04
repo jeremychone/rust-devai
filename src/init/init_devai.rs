@@ -3,7 +3,7 @@ use crate::init::embedded_files::{
 	get_embedded_command_agent_files, get_embedded_doc_files, get_embedded_new_command_agent_files,
 	get_embedded_new_solo_agent_files, EmbeddedFile,
 };
-use crate::init::migrate_devai::migrate_devai_0_1_0_if_needed;
+use crate::init::migrate_devai::migrate_devai_0_5_0_if_needed;
 use crate::run::{find_workspace_dir, DevaiDir, DirContext};
 use crate::support::files::current_dir;
 use crate::Result;
@@ -133,10 +133,13 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 		.await;
 	}
 
+	// -- migrate_devai_0_1_0_if_needed
+	migrate_devai_0_5_0_if_needed(devai_dir).await?;
+
 	// -- Create the default agent files
-	let devai_agent_default_dir = devai_dir.get_agent_default_dir()?;
+	let devai_agent_default_dir = devai_dir.get_default_agent_dir()?;
 	ensure_dir(devai_agent_default_dir)?;
-	ensure_dir(devai_dir.get_agent_custom_dir()?)?;
+	ensure_dir(devai_dir.get_custom_agent_dir()?)?;
 	for dir in devai_dir.get_new_template_command_dirs()? {
 		ensure_dir(dir)?;
 	}
@@ -144,13 +147,10 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 		ensure_dir(dir)?;
 	}
 
-	// -- migrate_devai_0_1_0_if_needed
-	migrate_devai_0_1_0_if_needed(workspace_dir, devai_dir)?;
-
 	// -- Create the default command agents if not present
 	update_devai_files(
 		workspace_dir,
-		devai_dir.get_agent_default_dir()?,
+		devai_dir.get_default_agent_dir()?,
 		get_embedded_command_agent_files(),
 	)
 	.await?;
@@ -158,7 +158,7 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 	// -- Create the new-template command default
 	update_devai_files(
 		workspace_dir,
-		devai_dir.get_new_template_command_default_dir()?,
+		devai_dir.get_default_new_template_dir()?,
 		get_embedded_new_command_agent_files(),
 	)
 	.await?;

@@ -1,5 +1,5 @@
 use crate::hub::{get_hub, HubEvent};
-use crate::run::paths::CUSTOM_LUA;
+use crate::run::paths::CUSTOM_LUA_DIR;
 use crate::run::{get_devai_base_dir, RuntimeContext};
 use crate::script::lua_script::{
 	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_md, utils_path, utils_rust,
@@ -126,7 +126,7 @@ fn init_package_path(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> 
 	let mut addl_paths = format!("{custom_lua_dir}/?.lua;{custom_lua_dir}/?/init.lua");
 
 	// The eventual ~/.devai-base/custom/lua
-	if let Some(base_lua_dir) = get_devai_base_dir().and_then(|base_dir| base_dir.join(CUSTOM_LUA).ok()) {
+	if let Some(base_lua_dir) = get_devai_base_dir().and_then(|base_dir| base_dir.join(CUSTOM_LUA_DIR).ok()) {
 		if base_lua_dir.exists() {
 			addl_paths = format!("{addl_paths};{base_lua_dir}/?.lua;{base_lua_dir}/?/init.lua");
 		}

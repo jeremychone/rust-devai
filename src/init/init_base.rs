@@ -1,5 +1,5 @@
 use crate::hub::get_hub;
-use crate::run::paths::{CUSTOM_AGENT, CUSTOM_LUA, DEVAI_BASE};
+use crate::run::paths::{CUSTOM_AGENT_DIR, CUSTOM_LUA_DIR, DEVAI_BASE};
 use crate::Result;
 use home::home_dir;
 use simple_fs::ensure_dir;
@@ -27,7 +27,7 @@ pub async fn init_base() -> Result<()> {
 		.await;
 	}
 
-	let dirs = [CUSTOM_AGENT, CUSTOM_LUA];
+	let dirs = [CUSTOM_AGENT_DIR, CUSTOM_LUA_DIR];
 	for dir_name in dirs {
 		let sub_dir = base_dir.join(dir_name);
 		if ensure_dir(&sub_dir)? {
