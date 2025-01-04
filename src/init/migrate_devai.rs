@@ -36,6 +36,10 @@ async fn migrate_dir(devai_dir: &DevaiDir, from_dir_str: &str, to_dir: &SPath) -
 		return Ok(false);
 	};
 
+	if !from_dir.exists() {
+		return Ok(false);
+	}
+
 	let mut changed = false;
 
 	if !to_dir.exists() {

@@ -41,13 +41,6 @@ IMPORTANT: The path should be at the parent folder of the `.devai/` directory."
 	/// Create a New Command Agent under `.devai/custom/command-agent/`
 	New(NewArgs),
 
-	#[command(
-		name = "new-solo",
-		alias = "ns",
-		about = "Create a new solo command at the <path>. Can be the .devai or the file to create the solo for (will add .devai)"
-	)]
-	NewSolo(NewSoloArgs),
-
 	/// List the available command agents
 	List,
 }
@@ -64,7 +57,6 @@ impl CliCommand {
 			CliCommand::Init(_) => false,
 			CliCommand::InitBase => false,
 			CliCommand::New(_) => false,
-			CliCommand::NewSolo(_) => false,
 			CliCommand::List => false,
 		}
 	}
@@ -148,23 +140,6 @@ pub struct NewArgs {
 	pub open: bool,
 }
 
-/// Arguments for the `new-solo` subcommand
-#[derive(Parser, Debug)]
-pub struct NewSoloArgs {
-	/// The solo agent path (.devai) or the solo target file if it does not end with .devai.
-	/// If target file, then .devai will e added
-	/// e.g., `devai new-solo ./some-dir/some-file.devai`
-	///        will create `./some-dir/some-file.devai`
-	///       `devai new-solo ./some-dir/some-file.md`
-	///       will create `./some-dir/some-file.devai`
-	pub path: String,
-
-	/// Open the .devai file, and the target file if exists.
-	/// Note: For now assume vscode `code ...` is installed
-	#[arg(short = 'o', long = "open")]
-	pub open: bool,
-}
-
 /// Arguments for the `solo` subcommand
 #[derive(Parser, Debug)]
 pub struct InitArgs {
@@ -185,7 +160,6 @@ impl From<CliCommand> for ExecCommand {
 			CliCommand::Run(run_args) => ExecCommand::RunCommandAgent(run_args),
 			CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
 			CliCommand::Solo(solo_args) => ExecCommand::RunSoloAgent(solo_args),
-			CliCommand::NewSolo(new_solo_args) => ExecCommand::NewSoloAgent(new_solo_args),
 			CliCommand::List => ExecCommand::List,
 		}
 	}

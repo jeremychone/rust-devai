@@ -31,12 +31,3 @@ pub const DEVAI_NEW_COMMAND_DIRS: &[&str] = &[
 	DEVAI_NEW_CUSTOM_COMMAND_DIR,
 	DEVAI_NEW_DEFAULT_COMMAND_DIR,
 ];
-
-// -- New Solo Templates
-pub const DEVAI_NEW_CUSTOM_SOLO_DIR: &str = "custom/new-template/solo-agent";
-pub const DEVAI_NEW_DEFAULT_SOLO_DIR: &str = "default/new-template/solo-agent";
-pub const DEVAI_NEW_SOLO_DIRS: &[&str] = &[
-	// by priority
-	DEVAI_NEW_CUSTOM_SOLO_DIR,
-	DEVAI_NEW_DEFAULT_SOLO_DIR,
-];

@@ -31,13 +31,6 @@ pub(super) fn get_embedded_new_command_agent_files() -> &'static [&'static Embed
 	}]
 }
 
-pub(super) fn get_embedded_new_solo_agent_files() -> &'static [&'static EmbeddedFile] {
-	&[&EmbeddedFile {
-		name: "default.devai",
-		content: include_str!("../../_init/new-solo-agent/default.devai"),
-	}]
-}
-
 pub(super) fn get_embedded_doc_files() -> &'static [&'static EmbeddedFile] {
 	&[
 		&EmbeddedFile {

@@ -1,7 +1,6 @@
 use crate::run::paths::{
 	CUSTOM_AGENT_DIR, CUSTOM_LUA_DIR, DEFAULT_AGENT_DIR, DEVAI_BASE, DEVAI_CONFIG_FILE_PATH, DEVAI_DIR_NAME,
 	DEVAI_DIR_PATH, DEVAI_DOC_DIR, DEVAI_NEW_COMMAND_DIRS, DEVAI_NEW_CUSTOM_COMMAND_DIR, DEVAI_NEW_DEFAULT_COMMAND_DIR,
-	DEVAI_NEW_DEFAULT_SOLO_DIR, DEVAI_NEW_SOLO_DIRS,
 };
 use crate::Result;
 use home::home_dir;
@@ -142,20 +141,6 @@ impl DevaiDir {
 
 	pub fn get_new_template_command_dirs(&self) -> Result<Vec<SPath>> {
 		let dirs = DEVAI_NEW_COMMAND_DIRS
-			.iter()
-			.map(|&suffix_dir| self.devai_dir_full_path.join(suffix_dir).map_err(|err| err.into()))
-			.collect::<Result<_>>()?;
-
-		Ok(dirs)
-	}
-
-	pub fn get_new_template_solo_default_dir(&self) -> Result<SPath> {
-		let dir = self.devai_dir_full_path.join(DEVAI_NEW_DEFAULT_SOLO_DIR)?;
-		Ok(dir)
-	}
-
-	pub fn get_new_template_solo_dirs(&self) -> Result<Vec<SPath>> {
-		let dirs = DEVAI_NEW_SOLO_DIRS
 			.iter()
 			.map(|&suffix_dir| self.devai_dir_full_path.join(suffix_dir).map_err(|err| err.into()))
 			.collect::<Result<_>>()?;

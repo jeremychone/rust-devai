@@ -1,7 +1,6 @@
 use crate::hub::get_hub;
 use crate::init::embedded_files::{
-	get_embedded_command_agent_files, get_embedded_doc_files, get_embedded_new_command_agent_files,
-	get_embedded_new_solo_agent_files, EmbeddedFile,
+	get_embedded_command_agent_files, get_embedded_doc_files, get_embedded_new_command_agent_files, EmbeddedFile,
 };
 use crate::init::migrate_devai::migrate_devai_0_5_0_if_needed;
 use crate::run::{find_workspace_dir, DevaiDir, DirContext};
@@ -143,9 +142,10 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 	for dir in devai_dir.get_new_template_command_dirs()? {
 		ensure_dir(dir)?;
 	}
-	for dir in devai_dir.get_new_template_solo_dirs()? {
-		ensure_dir(dir)?;
-	}
+
+	// -- Create the lua
+	let devai_custom_lua_dir = devai_dir.get_lua_custom_dir()?;
+	ensure_dir(devai_custom_lua_dir)?;
 
 	// -- Create the default command agents if not present
 	update_devai_files(
@@ -160,14 +160,6 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 		workspace_dir,
 		devai_dir.get_default_new_template_dir()?,
 		get_embedded_new_command_agent_files(),
-	)
-	.await?;
-
-	// -- Create the new-template solo default
-	update_devai_files(
-		workspace_dir,
-		devai_dir.get_new_template_solo_default_dir()?,
-		get_embedded_new_solo_agent_files(),
 	)
 	.await?;
 

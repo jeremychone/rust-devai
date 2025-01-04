@@ -5,8 +5,7 @@ use crate::agent::Agent;
 use crate::exec::exec_command::ExecCommand;
 use crate::exec::support::open_vscode;
 use crate::exec::{
-	exec_list, exec_new, exec_new_solo, exec_run, exec_run_redo, exec_solo, exec_solo_redo, ExecEvent, RunRedoCtx,
-	SoloRedoCtx,
+	exec_list, exec_new, exec_run, exec_run_redo, exec_solo, exec_solo_redo, ExecEvent, RunRedoCtx, SoloRedoCtx,
 };
 use crate::hub::get_hub;
 use crate::init::{init_base, init_devai_files};
@@ -101,9 +100,6 @@ impl Executor {
 				}
 				ExecCommand::NewCommandAgent(new_args) => {
 					exec_new(new_args, init_devai_files(None, false).await?).await?;
-				}
-				ExecCommand::NewSoloAgent(new_solo_args) => {
-					exec_new_solo(new_solo_args, init_devai_files(None, false).await?).await?;
 				}
 				ExecCommand::List => exec_list(init_devai_files(None, false).await?).await?,
 
