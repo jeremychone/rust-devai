@@ -1,5 +1,6 @@
 use crate::hub::{get_hub, HubEvent};
-use crate::run::{PathResolver, RuntimeContext};
+use crate::run::paths::CUSTOM_LUA;
+use crate::run::{get_devai_base_dir, RuntimeContext};
 use crate::script::lua_script::{
 	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_md, utils_path, utils_rust,
 	utils_text, utils_web,
@@ -115,12 +116,23 @@ fn init_package_path(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> 
 	let package: Table = globals.get("package")?;
 	// example of a default: "/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;/usr/local/lib/lua/5.4/?.lua;/usr/local/lib/lua/5.4/?/init.lua;./?.lua;./?/init.lua"
 	let path: String = package.get("path")?;
-	// compute the additional path
-	let custom_lua_dir = runtime_context
-		.dir_context()
-		.resolve_path("custom/lua", PathResolver::DevaiDir)?;
-	let custom_lua_path = format!("{custom_lua_dir}/?.lua;{custom_lua_dir}/?/init.lua");
-	let new_path = format!("{custom_lua_path};{path}");
+
+	let devai_dir = runtime_context.dir_context().devai_dir();
+
+	// compute the additional paths
+
+	// The .devai/custom/lua
+	let custom_lua_dir = devai_dir.get_lua_custom_dir()?;
+	let mut addl_paths = format!("{custom_lua_dir}/?.lua;{custom_lua_dir}/?/init.lua");
+
+	// The eventual ~/.devai-base/custom/lua
+	if let Some(base_lua_dir) = get_devai_base_dir().and_then(|base_dir| base_dir.join(CUSTOM_LUA).ok()) {
+		if base_lua_dir.exists() {
+			addl_paths = format!("{addl_paths};{base_lua_dir}/?.lua;{base_lua_dir}/?/init.lua");
+		}
+	}
+
+	let new_path = format!("{addl_paths};{path}");
 	package.set("path", new_path)?;
 
 	Ok(())

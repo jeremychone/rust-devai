@@ -134,9 +134,9 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 	}
 
 	// -- Create the default agent files
-	let devai_agent_default_dir = devai_dir.get_command_agent_default_dir()?;
+	let devai_agent_default_dir = devai_dir.get_agent_default_dir()?;
 	ensure_dir(devai_agent_default_dir)?;
-	ensure_dir(devai_dir.get_command_agent_custom_dir()?)?;
+	ensure_dir(devai_dir.get_agent_custom_dir()?)?;
 	for dir in devai_dir.get_new_template_command_dirs()? {
 		ensure_dir(dir)?;
 	}
@@ -150,7 +150,7 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 	// -- Create the default command agents if not present
 	update_devai_files(
 		workspace_dir,
-		devai_dir.get_command_agent_default_dir()?,
+		devai_dir.get_agent_default_dir()?,
 		get_embedded_command_agent_files(),
 	)
 	.await?;

@@ -15,7 +15,7 @@ pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver
 
 	let devai_dir = dir_context.devai_dir();
 
-	// -- For now, if .devai, we try to find direct
+	// -- For now, if end with .devai, we try to find direct
 	let agent_sname = SPath::new(agent_name)?;
 	if agent_sname.ext() == "devai" {
 		let agent_file = dir_context.resolve_path(&agent_sname, mode)?;
@@ -26,7 +26,7 @@ pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver
 	}
 
 	// -- Otherwise, look in the command-agent dirs
-	let dirs = devai_dir.get_command_agent_dirs()?;
+	let dirs = devai_dir.get_agent_dirs()?;
 	let dirs = dirs.iter().map(|dir| dir.path()).collect::<Vec<_>>();
 
 	// Attempt to find the agent in the specified directories
@@ -111,7 +111,7 @@ pub fn get_solo_and_target_path(path: impl AsRef<Path>) -> Result<(SPath, SPath)
 /// Lists all agent files following the precedence rules (customs first, defaults second).
 /// Agent files already present in a higher priority directory are not included.
 pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
-	let dirs = dir_context.devai_dir().get_command_agent_dirs()?;
+	let dirs = dir_context.devai_dir().get_agent_dirs()?;
 	let mut sfiles = Vec::new();
 
 	let mut file_stems: HashSet<String> = HashSet::new();
@@ -275,10 +275,7 @@ mod tests {
 		// -- Check
 		// workspace_dir
 		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(
-			Path::new(workspace_dir).is_absolute(),
-			"workspace_dir must be absolute"
-		);
+		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
 		assert!(
 			workspace_dir.ends_with("tests-data/sandbox-01"),
 			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
@@ -312,10 +309,7 @@ mod tests {
 		// -- Check
 		// workspace_dir
 		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(
-			Path::new(workspace_dir).is_absolute(),
-			"workspace_dir must be absolute"
-		);
+		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
 		assert!(
 			workspace_dir.ends_with("tests-data/sandbox-01"),
 			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
@@ -347,10 +341,7 @@ mod tests {
 
 		// -- Check
 		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(
-			Path::new(workspace_dir).is_absolute(),
-			"workspace_dir must be absolute"
-		);
+		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
 		assert!(
 			workspace_dir.ends_with("tests-data/sandbox-01"),
 			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"

@@ -15,6 +15,9 @@ pub enum CliCommand {
 	/// Initialize the `.devai/` folder with the base setting files. Any file that already exists will not be touched.
 	Init(InitArgs),
 
+	#[command(name = "init-base", about = "Init the ~/.devai-base")]
+	InitBase,
+
 	/// Executes the Command Agent `<name>` based on its name or short name.
 	///
 	/// The `<name>` is relative to the `.devai/[default|custom]/command-agent/<name>.devai`
@@ -59,6 +62,7 @@ impl CliCommand {
 			CliCommand::Run(_) => true,
 			CliCommand::Solo(_) => true,
 			CliCommand::Init(_) => false,
+			CliCommand::InitBase => false,
 			CliCommand::New(_) => false,
 			CliCommand::NewSolo(_) => false,
 			CliCommand::List => false,
@@ -177,6 +181,7 @@ impl From<CliCommand> for ExecCommand {
 	fn from(cli_cmd: CliCommand) -> Self {
 		match cli_cmd {
 			CliCommand::Init(init_args) => ExecCommand::Init(init_args),
+			CliCommand::InitBase => ExecCommand::InitBase,
 			CliCommand::Run(run_args) => ExecCommand::RunCommandAgent(run_args),
 			CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
 			CliCommand::Solo(solo_args) => ExecCommand::RunSoloAgent(solo_args),

@@ -39,6 +39,7 @@ clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 # -- Files
 simple-fs = { version = "0.3.1" }
+home = "0.5.11"
 # -- Web
 reqwest = {version = "0.12", features = ["json"]}
 # -- Others
@@ -48,6 +49,7 @@ keyring = {version = "3", features = ["apple-native"]}
 html-escape = "0.2"
 strsim = "0.11"
 paste = "1.0"
+
 
 
 

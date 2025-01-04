@@ -30,7 +30,7 @@ pub async fn exec_new(new_config: impl Into<NewConfig>, dir_context: DirContext)
 		format!("{}.devai", new_config.agent_path)
 	};
 
-	let dest_file = devai_dir.get_command_agent_custom_dir()?.join(file_path)?;
+	let dest_file = devai_dir.get_agent_custom_dir()?.join(file_path)?;
 
 	if !dest_file.exists() {
 		std::fs::copy(template_file.path(), &dest_file)?;

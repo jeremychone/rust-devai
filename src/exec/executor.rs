@@ -9,7 +9,7 @@ use crate::exec::{
 	SoloRedoCtx,
 };
 use crate::hub::get_hub;
-use crate::init::init_devai_files;
+use crate::init::{init_base, init_devai_files};
 use crate::{Error, Result};
 use derive_more::derive::From;
 use std::sync::Arc;
@@ -95,6 +95,9 @@ impl Executor {
 			match cmd {
 				ExecCommand::Init(init_args) => {
 					init_devai_files(init_args.path.as_deref(), true).await?;
+				}
+				ExecCommand::InitBase => {
+					init_base().await?;
 				}
 				ExecCommand::NewCommandAgent(new_args) => {
 					exec_new(new_args, init_devai_files(None, false).await?).await?;

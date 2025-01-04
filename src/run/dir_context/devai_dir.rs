@@ -1,4 +1,6 @@
+use crate::run::paths::{CUSTOM_AGENT, CUSTOM_LUA, DEVAI_AGENT_CUSTOM_DIR, DEVAI_AGENT_DEFAULT_DIR, DEVAI_BASE};
 use crate::Result;
+use home::home_dir;
 use simple_fs::SPath;
 use std::path::{Path, PathBuf};
 
@@ -11,15 +13,6 @@ const DEVAI_DIR_PATH: &str = "./.devai";
 
 // -- Config
 const DEVAI_CONFIG_FILE_PATH: &str = "config.toml";
-
-// -- Command Agent Dirs
-const DEVAI_AGENT_DEFAULT_DIR: &str = "default/command-agent";
-const DEVAI_AGENT_CUSTOM_DIR: &str = "custom/command-agent";
-const DEVAI_COMMAND_AGENT_DIRS: &[&str] = &[
-	// by priority
-	DEVAI_AGENT_CUSTOM_DIR,
-	DEVAI_AGENT_DEFAULT_DIR,
-];
 
 // -- New Command Templates
 const DEVAI_NEW_CUSTOM_COMMAND_DIR: &str = "custom/new-template/command-agent";
@@ -111,6 +104,61 @@ impl DevaiDir {
 		Ok(path)
 	}
 
+	// region:    --- Agent
+
+	pub fn get_agent_dirs(&self) -> Result<Vec<SPath>> {
+		let mut dirs: Vec<SPath> = Vec::new();
+
+		// First, the .devai/custom/command-agent
+		dirs.push(self.get_agent_custom_dir()?);
+
+		// Second, the eventual ~/.devai-base/custom/agent
+		if let Some(devai_base_custom_agent_dir) =
+			get_devai_base_dir().and_then(|base_dir| base_dir.join(CUSTOM_AGENT).ok())
+		{
+			if devai_base_custom_agent_dir.exists() {
+				dirs.push(devai_base_custom_agent_dir);
+			}
+		}
+
+		// Third, the .devai/default/command-agent
+		dirs.push(self.get_agent_default_dir()?);
+
+		Ok(dirs)
+	}
+
+	pub fn get_agent_default_dir(&self) -> Result<SPath> {
+		let dir = self.devai_dir_full_path.join(DEVAI_AGENT_DEFAULT_DIR)?;
+		Ok(dir)
+	}
+
+	pub fn get_agent_custom_dir(&self) -> Result<SPath> {
+		let dir = self.devai_dir_full_path.join(DEVAI_AGENT_CUSTOM_DIR)?;
+		Ok(dir)
+	}
+
+	// endregion: --- Agent
+
+	// region:    --- Lua
+
+	pub fn get_lua_custom_dir(&self) -> Result<SPath> {
+		let dir = self.devai_dir_full_path.join(CUSTOM_LUA)?;
+		Ok(dir)
+	}
+
+	// endregion: --- Lua
+
+	// region:    --- Doc
+
+	pub fn get_doc_dir(&self) -> Result<SPath> {
+		let dir = self.devai_dir_full_path.join(DEVAI_DOC_DIR)?;
+		Ok(dir)
+	}
+
+	// endregion: --- Doc
+
+	// region:    --- Template
+
 	pub fn get_new_template_command_default_dir(&self) -> Result<SPath> {
 		let dir = self.devai_dir_full_path.join(DEVAI_NEW_DEFAULT_COMMAND_DIR)?;
 		Ok(dir)
@@ -139,29 +187,7 @@ impl DevaiDir {
 		Ok(dirs)
 	}
 
-	pub fn get_command_agent_dirs(&self) -> Result<Vec<SPath>> {
-		let dirs = DEVAI_COMMAND_AGENT_DIRS
-			.iter()
-			.map(|&suffix_dir| self.devai_dir_full_path.join(suffix_dir).map_err(|err| err.into()))
-			.collect::<Result<_>>()?;
-
-		Ok(dirs)
-	}
-
-	pub fn get_command_agent_default_dir(&self) -> Result<SPath> {
-		let dir = self.devai_dir_full_path.join(DEVAI_AGENT_DEFAULT_DIR)?;
-		Ok(dir)
-	}
-
-	pub fn get_command_agent_custom_dir(&self) -> Result<SPath> {
-		let dir = self.devai_dir_full_path.join(DEVAI_AGENT_CUSTOM_DIR)?;
-		Ok(dir)
-	}
-
-	pub fn get_doc_dir(&self) -> Result<SPath> {
-		let dir = self.devai_dir_full_path.join(DEVAI_DOC_DIR)?;
-		Ok(dir)
-	}
+	// endregion: --- Template
 }
 
 // region:    --- Froms & AsRefs
@@ -191,6 +217,20 @@ pub fn find_workspace_dir(from_dir: impl AsRef<Path>) -> Result<Option<SPath>> {
 	Ok(None)
 }
 
+pub fn get_devai_base_dir() -> Option<SPath> {
+	let home_dir = home_dir()?;
+	if !home_dir.exists() {
+		return None;
+	}
+
+	let base_dir = home_dir.join(DEVAI_BASE);
+	if !base_dir.exists() {
+		return None;
+	}
+
+	SPath::from_path_buf_ok(base_dir)
+}
+
 // region:    --- Tests
 
 #[cfg(test)]
@@ -211,7 +251,7 @@ mod tests {
 			"./tests-data/sandbox-01/.devai/config.toml"
 		);
 		assert_eq!(
-			devai_dir.get_command_agent_custom_dir()?.to_str(),
+			devai_dir.get_agent_custom_dir()?.to_str(),
 			"./tests-data/sandbox-01/.devai/custom/command-agent"
 		);
 

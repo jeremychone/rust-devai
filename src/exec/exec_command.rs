@@ -9,6 +9,7 @@ use crate::cli::{InitArgs, NewArgs, NewSoloArgs, RunArgs, SoloArgs};
 #[derive(Debug)]
 pub enum ExecCommand {
 	Init(InitArgs),
+	InitBase,
 	RunCommandAgent(RunArgs),
 	RunSoloAgent(SoloArgs),
 	NewCommandAgent(NewArgs),

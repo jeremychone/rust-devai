@@ -8,6 +8,7 @@ use std::path::Path;
 pub enum PathResolver {
 	CurrentDir,
 	DevaiParentDir,
+	#[allow(unused)]
 	DevaiDir,
 }
 

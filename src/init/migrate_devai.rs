@@ -12,12 +12,12 @@ pub const DEVAI_0_1_0_DEPRECATED_DIR: &str = ".devai/_deprecated_v0_1_0";
 
 pub fn migrate_devai_0_1_0_if_needed(base_dir: &SPath, devai_dir: &DevaiDir) -> Result<bool> {
 	// -- Migrate the default command agents
-	let agent_default_dir = devai_dir.get_command_agent_default_dir()?;
+	let agent_default_dir = devai_dir.get_agent_default_dir()?;
 	let defaults_migrated = migrate_agent_dir(base_dir, DEVAI_0_1_0_AGENT_DEFAULTS_DIR, agent_default_dir)?;
 	archive_agent_dir(base_dir, DEVAI_0_1_0_AGENT_DEFAULTS_DIR)?;
 
 	// -- Migrate the custom command agents
-	let agent_custom_dir = devai_dir.get_command_agent_custom_dir()?;
+	let agent_custom_dir = devai_dir.get_agent_custom_dir()?;
 	let customs_migrated = migrate_agent_dir(base_dir, DEVAI_0_1_0_AGENT_CUSTOMS_DIR, agent_custom_dir)?;
 	archive_agent_dir(base_dir, DEVAI_0_1_0_AGENT_CUSTOMS_DIR)?;
 
