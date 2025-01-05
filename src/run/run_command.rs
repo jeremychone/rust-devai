@@ -19,11 +19,18 @@ pub struct RunCommandResponse {
 	pub after_all: Option<Value>,
 }
 
-// TODO: To move to support of something.
-fn get_workspace_file_path(file_path: &str, dir_context: &DirContext) -> Result<SPath> {
+/// Return the display path
+/// - If .devai/ or relative to workspace, then, relatively to workspace
+/// - If ~/.devai-base/ then, absolute path
+fn get_display_path(file_path: &str, dir_context: &DirContext) -> Result<SPath> {
 	let file_path = SPath::new(file_path)?;
-	let spath = file_path.diff(dir_context.workspace_dir())?;
-	Ok(spath)
+
+	if file_path.to_str().contains(".devai-base") {
+		Ok(file_path)
+	} else {
+		let spath = file_path.diff(dir_context.workspace_dir())?;
+		Ok(spath)
+	}
 }
 
 pub async fn run_command_agent(
@@ -39,7 +46,7 @@ pub async fn run_command_agent(
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);
 	// display relative agent path if possible
-	let agent_path = match get_workspace_file_path(agent.file_path(), runtime.dir_context()) {
+	let agent_path = match get_display_path(agent.file_path(), runtime.dir_context()) {
 		Ok(path) => path.to_string(),
 		Err(_) => agent.file_path().to_string(),
 	};
