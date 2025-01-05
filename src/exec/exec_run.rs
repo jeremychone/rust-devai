@@ -7,7 +7,7 @@ use crate::run::{DirContext, RunCommandOptions};
 use crate::support::jsons::into_values;
 use crate::types::FileMeta;
 use crate::{Error, Result};
-use simple_fs::{list_files, watch, SEventKind};
+use simple_fs::{list_files, watch, SEventKind, SPath};
 use std::sync::Arc;
 
 // region:    --- RunRedoCtx
@@ -157,7 +157,33 @@ async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agen
 	let inputs = if let Some(on_inputs) = run_command_options.on_inputs() {
 		Some(into_values(on_inputs)?)
 	} else if let Some(on_file_globs) = run_command_options.on_file_globs() {
+		// -- First, normalize the globs
+		// Note: here we add the eventual `./` for relative globs so that it works both ways
+		//       when we do a `-f "./src/*.rs"` or `-f "src/*.rs"`
+		let on_file_globs: Vec<String> = on_file_globs
+			.iter()
+			.map(|&glob| {
+				if !glob.starts_with('/') && !glob.starts_with("./") {
+					format!("./{glob}")
+				} else {
+					glob.to_string()
+				}
+			})
+			.collect();
+		let on_file_globs: Vec<&str> = on_file_globs.iter().map(|s| s.as_str()).collect();
 		let files = list_files("./", Some(&on_file_globs), None)?;
+
+		// -- Second, normalize the path relative to workspace_dir
+		let workspace_dir = runtime.dir_context().devai_dir().workspace_dir();
+		let files: Vec<SPath> = files
+			.into_iter()
+			.filter_map(|file| {
+				let absolute_file = file.canonicalize().ok()?;
+				let absolute_file = absolute_file.diff(workspace_dir).ok()?;
+				Some(absolute_file)
+			})
+			.collect();
+
 		let file_metas = files.into_iter().map(FileMeta::from).collect::<Vec<_>>();
 		Some(into_values(file_metas)?)
 	} else {
