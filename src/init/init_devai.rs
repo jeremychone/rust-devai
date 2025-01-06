@@ -139,9 +139,7 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 	let devai_agent_default_dir = devai_dir.get_default_agent_dir()?;
 	ensure_dir(devai_agent_default_dir)?;
 	ensure_dir(devai_dir.get_custom_agent_dir()?)?;
-	for dir in devai_dir.get_new_template_command_dirs()? {
-		ensure_dir(dir)?;
-	}
+	ensure_dir(devai_dir.get_default_new_template_dir()?)?;
 
 	// -- Create the lua
 	let devai_custom_lua_dir = devai_dir.get_lua_custom_dir()?;
