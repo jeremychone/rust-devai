@@ -8,7 +8,7 @@
 --   - In Lua, to return a dictionary/object, use the notation `{ name = value, … }`.
 
 return {
-    file = file::load(input.path)
+    file = utils.file::load(input.path)
 };
 ```
 
@@ -40,7 +40,7 @@ For the following markdown file:
 local content = utils.md.outer_block_content_or_raw(ai_response.content)
 
 -- Note: It is also nice to normalize files with a single ending empty line.
-content = text::ensure_single_ending_newline(content)
+content = utils.text::ensure_single_ending_newline(content)
 
 -- Example of how to save to the same file
 utils.file.save(data.file.path, content)
