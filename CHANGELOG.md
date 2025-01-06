@@ -6,7 +6,6 @@ Thanks to [Kees Jongenburger](https://github.com/keesj) for reporting
 
 - `-` Fix critical bug - [#23 cli issue - devai init fails when the .devai directory does not exits](https://github.com/jeremychone/rust-devai/issues/23)
 
-
 ## 2024-12-11 - `0.5.2`
 
 > NOTE - This version introduced a critical bug (when .devai/ did not exist). 

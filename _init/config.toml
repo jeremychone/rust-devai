@@ -5,6 +5,7 @@
 #          Gemini: "gemini-1.5-pro", "gemini-2.0-flash-exp", "gemini-1.5-flash", "gemini-1.5-flash-8b" 
 #          Ollama: "llama3.3:70b", "llama3.1:8b", "llama3.2:3b" (or any locally installed Ollama)
 #             xAI: "grok-beta"
+#        DeepSeek: "deepseek-chat"
 model = "gpt-4o-mini"
 
 # Temperature (by default unset)
