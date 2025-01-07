@@ -39,6 +39,8 @@ The main **devai** concept is to minimize the friction of creating and running a
 
 **IMPORTANT 2**: Make sure to have your **`OPENAI_API_KEY`**, **`ANTHROPIC_API_KEY`**, **`DEEPSEEK_API_KEY`**, or **`XAI_API_KEY`**, or the key of your model provider [more info on api keys](_init/doc/README.md#api-keys)
 
+**NOTE**: Since `v0.5.4`, the agent folders now have the `command-` prefix under `.devai/` (DevAI will update the folder names when needed).
+
 #### How it works
 
 - **One Agent** == **One Markdown** 

@@ -1,5 +1,25 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
+
+## 2025-01-06 - `0.5.4`
+
+- `+` NEW - ~/.devai-base/ - first pass (supports custom/agent and custom/lua)
+- `+` NEW - lua - first pass at supporting 'require' with the '.devai/custom/lua' path added
+- `!` CHANGE - remove devai new-solo
+- `!` CHANGE - .devai/... name change, rename the  folders to  (for simplification)
+    - e.g., Now `.devai/custom/agent` (before `.devai/custom/command-agent`)
+- `.` init - do not create custom/new-template anymore
+- `.` fix agent proof-comments
+- `^` genai - updated to 0.1.17 with DeepSeek support
+- `.` add in cargo.toml comment gemini-2.0-flash-exp
+- `-` fix glob issue when relatively globs does not start with './'
+- `.` update genai to 0.1.16
+- `^` lua - override global lua print to print correctly
+- `.` minor code refactor
+- `.` lua_engine - minor refactor
+- `.` clippy clean
+
+
 ## 2024-12-12 - `0.5.3`
 
 Thanks to [Kees Jongenburger](https://github.com/keesj) for reporting 

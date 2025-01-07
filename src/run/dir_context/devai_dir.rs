@@ -213,7 +213,7 @@ mod tests {
 		);
 		assert_eq!(
 			devai_dir.get_custom_agent_dir()?.to_str(),
-			"./tests-data/sandbox-01/.devai/custom/command-agent"
+			"./tests-data/sandbox-01/.devai/custom/agent"
 		);
 
 		Ok(())

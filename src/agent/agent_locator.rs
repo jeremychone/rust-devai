@@ -226,6 +226,7 @@ mod tests {
 	use super::*;
 	use crate::_test_support::{run_test_agent, SANDBOX_01_DIR};
 	use crate::run::Runtime;
+	use simple_fs::ensure_dir;
 	use value_ext::JsonValueExt;
 
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
@@ -298,9 +299,10 @@ mod tests {
 		// -- Setup & Fixtures
 		// TODO: Probably need to run the init in sandbox_01
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		ensure_dir("tests-data/sandbox-01/.devai/custom/agent")?;
 		std::fs::copy(
 			Path::new(SANDBOX_01_DIR).join("agent-script/agent-ctx-reflect.devai"),
-			"tests-data/sandbox-01/.devai/custom/command-agent/command-ctx-reflect.devai",
+			"tests-data/sandbox-01/.devai/custom/agent/command-ctx-reflect.devai",
 		)?;
 		// -- Exec
 		let agent = find_agent("command-ctx-reflect", runtime.dir_context(), PathResolver::CurrentDir)?;
@@ -315,14 +317,14 @@ mod tests {
 			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
 		);
 
-		// // devai dir
+		// devai dir
 		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "command-ctx-reflect");
 		assert_eq!(
 			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"./.devai/custom/command-agent/command-ctx-reflect.devai"
+			"./.devai/custom/agent/command-ctx-reflect.devai"
 		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/command-agent");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/agent");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "command-ctx-reflect.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "command-ctx-reflect");
 

@@ -220,7 +220,10 @@ mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	use super::*;
+	use crate::_test_support::SANDBOX_01_DIR;
 	use crate::run::Runtime;
+	use simple_fs::ensure_dir;
+	use std::path::Path;
 
 	/// Test if custom scope and global lua utils `math` work.
 	#[tokio::test]
@@ -274,10 +277,15 @@ return "Hello " .. my_name .. " - " .. file.content
 	async fn test_lua_engine_eval_require_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		ensure_dir("tests-data/sandbox-01/.devai/custom/lua")?;
+		std::fs::copy(
+			Path::new(SANDBOX_01_DIR).join("other/demo.lua"),
+			"tests-data/sandbox-01/.devai/custom/lua/demo.lua",
+		)?;
 		let engine = LuaEngine::new(runtime.context().clone())?;
 		let fx_script = r#"
-local demo_one = require("demo_one")
-return "demo_one.name_one is " .. "'" .. demo_one.name_one .. "'"
+local demo = require("demo")
+return "demo.name_one is " .. "'" .. demo.name_one .. "'"
 		"#;
 
 		// -- Exec
@@ -286,7 +294,7 @@ return "demo_one.name_one is " .. "'" .. demo_one.name_one .. "'"
 		// -- Check
 		let res = serde_json::to_value(res)?;
 		let res = res.as_str().ok_or("Should be string")?;
-		assert_eq!(res, "demo_one.name_one is 'Demo One'");
+		assert_eq!(res, "demo.name_one is 'Demo One'");
 
 		Ok(())
 	}
