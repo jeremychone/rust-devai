@@ -2,7 +2,6 @@ use crate::agent::Agent;
 use crate::run::DirContext;
 use crate::script::LuaEngine;
 use crate::Result;
-use serde_json::{Map, Value};
 use simple_fs::SPath;
 use std::sync::Arc;
 
@@ -74,21 +73,14 @@ impl Literals {
 
 /// Transformers
 impl Literals {
-	pub fn to_ctx_lua_value(&self, lua_engine: &LuaEngine) -> Result<mlua::Value> {
+	/// Generate a Lua Value
+	/// Note: Similar to into_lua but with no
+	pub fn to_lua(&self, lua_engine: &LuaEngine) -> Result<mlua::Value> {
 		let table = lua_engine.create_table()?;
 		for (name, value) in self.as_strs() {
 			table.set(name, value)?;
 		}
 		Ok(mlua::Value::Table(table))
-	}
-
-	#[allow(unused)]
-	pub fn to_ctx_value(&self) -> Value {
-		let mut _ctx = Map::new();
-		for (name, value) in self.as_strs() {
-			_ctx.insert(name.to_string(), value.into());
-		}
-		Value::Object(_ctx)
 	}
 }
 

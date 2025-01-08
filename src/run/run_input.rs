@@ -77,7 +77,7 @@ pub async fn run_agent_input(
 	let lua_scope = lua_engine.create_table()?;
 	lua_scope.set("input", lua_engine.serde_to_lua_value(input.clone())?)?;
 	lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result.clone())?)?;
-	lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
+	lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
 	// -- Execute data
 	let data = if let Some(data_script) = agent.data_script().as_ref() {
@@ -200,7 +200,7 @@ pub async fn run_agent_input(
 		lua_scope.set("data", lua_engine.serde_to_lua_value(data)?)?;
 		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result)?)?;
 		lua_scope.set("ai_response", ai_response)?;
-		lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
+		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
 		let lua_value = lua_engine.eval(output_script, Some(lua_scope))?;
 		let output_response = serde_json::to_value(lua_value)?;

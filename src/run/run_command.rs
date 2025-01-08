@@ -66,7 +66,7 @@ pub async fn run_command_agent(
 		let lua_scope = lua_engine.create_table()?;
 		let lua_inputs = inputs.clone().map(Value::Array).unwrap_or_default();
 		lua_scope.set("inputs", lua_engine.serde_to_lua_value(lua_inputs)?)?;
-		lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
+		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
 		let lua_value = lua_engine.eval(before_all_script, Some(lua_scope))?;
 		let before_all_res = serde_json::to_value(lua_value)?;
@@ -214,7 +214,7 @@ pub async fn run_command_agent(
 		// Will be Value::Null if outputs were not collected
 		lua_scope.set("outputs", lua_engine.serde_to_lua_value(outputs_value)?)?;
 		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all)?)?;
-		lua_scope.set("CTX", literals.to_ctx_lua_value(&lua_engine)?)?;
+		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
 		let lua_value = lua_engine.eval(after_all_script, Some(lua_scope))?;
 		Some(serde_json::to_value(lua_value)?)
