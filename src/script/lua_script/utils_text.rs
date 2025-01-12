@@ -23,7 +23,7 @@ use crate::script::lua_script::DEFAULT_MARKERS;
 use crate::support::html::decode_html_entities;
 use crate::support::text::{self, truncate_with_ellipsis, EnsureOptions};
 use crate::Result;
-use mlua::{FromLua, Lua, LuaSerdeExt, Table, Value};
+use mlua::{FromLua, Lua, LuaSerdeExt, MultiValue, String as LuaString, Table, Value};
 use std::borrow::Cow;
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
@@ -31,6 +31,7 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 
 	table.set("escape_decode", lua.create_function(escape_decode)?)?;
 	table.set("escape_decode_if_needed", lua.create_function(escape_decode_if_needed)?)?;
+	table.set("split_first", lua.create_function(split_first)?)?;
 	table.set("remove_first_line", lua.create_function(remove_first_line)?)?;
 	table.set("remove_first_lines", lua.create_function(remove_first_lines)?)?;
 	table.set("remove_last_lines", lua.create_function(remove_last_lines)?)?;
@@ -110,7 +111,7 @@ fn ensure_single_ending_newline(_lua: &Lua, content: String) -> mlua::Result<Str
 
 // endregion: --- ensure
 
-// region:    --- Strings
+// region:    --- Transform
 
 /// ## Lua Documentation
 /// ```lua
@@ -144,15 +145,45 @@ fn truncate(_lua: &Lua, (content, max_len, ellipsis): (String, usize, Option<Str
 	}
 }
 
-///  ## Lua Documentation
+// endregion: --- Transform
+
+// region:    --- Split
+
+/// ## Luas Documentaiton
 /// ```lua
-/// text.remove_first_line(content: string) -> string
+/// local content = "some first content\n===\nsecond content"
+/// local first, second = utils.text.split_first(content,"===")
+/// -- first  = "some first content\n"
+/// -- second = "\nsecond content"
+/// -- NOTE: When no match, second is nil.
+/// --       If match, but nothing after, second is ""
 /// ```
-///
-/// Returns `content` with the first line removed.
-fn remove_first_line(_lua: &Lua, content: String) -> mlua::Result<String> {
-	Ok(remove_first_lines_impl(&content, 1).to_string())
+/// NOTE: For optimization, this will use LuaString to avoid converting Lua String to Rust String and back
+fn split_first(lua: &Lua, (content, sep): (LuaString, LuaString)) -> mlua::Result<MultiValue> {
+	// Convert LuaStrings to Rust strings
+	let content_str = content.to_str()?;
+	let sep_str = sep.to_str()?;
+
+	// Find the first occurrence of the separator
+	if let Some(index) = content_str.find(&*sep_str) {
+		// Split the content into two parts
+		let first_part = &content_str[..index];
+		let second_part = &content_str[index + sep_str.len()..];
+
+		// Convert parts back to Lua strings and return as MultiValue
+		Ok(MultiValue::from_vec(vec![
+			Value::String(lua.create_string(first_part)?),
+			Value::String(lua.create_string(second_part)?),
+		]))
+	} else {
+		// Return the content as the first value and nil as the second
+		Ok(MultiValue::from_vec(vec![Value::String(content), Value::Nil]))
+	}
 }
+
+// endregion: --- Split
+
+// region:    --- Trim
 
 fn trim(lua: &Lua, content: String) -> mlua::Result<Value> {
 	lua.to_value(content.trim())
@@ -164,6 +195,20 @@ fn trim_end(lua: &Lua, content: String) -> mlua::Result<Value> {
 
 fn trim_start(lua: &Lua, content: String) -> mlua::Result<Value> {
 	lua.to_value(content.trim_start())
+}
+
+// endregion: --- Trim
+
+// region:    --- Remove
+
+///  ## Lua Documentation
+/// ```lua
+/// text.remove_first_line(content: string) -> string
+/// ```
+///
+/// Returns `content` with the first line removed.
+fn remove_first_line(_lua: &Lua, content: String) -> mlua::Result<String> {
+	Ok(remove_first_lines_impl(&content, 1).to_string())
 }
 
 ///  ## Lua Documentation
@@ -238,7 +283,7 @@ fn remove_last_lines_impl(content: &str, num_of_lines: usize) -> &str {
 	&content[..end_idx]
 }
 
-// endregion: --- Strings
+// endregion: --- Remove
 
 // region:    --- Escape Fns
 
@@ -283,6 +328,60 @@ mod tests {
 	use crate::_test_support::run_reflective_agent;
 
 	#[tokio::test]
+	async fn test_lua_text_split_first_ok() -> Result<()> {
+		// -- Fixtures
+		// (content, separator, (first, second))
+		let data = [
+			// with matching
+			(
+				"some first content\n===\nsecond content",
+				"===",
+				("some first content\n", Some("\nsecond content")),
+			),
+			// no matching
+			("some first content\n", "===", ("some first content\n", None)),
+			// no matching
+			("some first content\n===", "===", ("some first content\n", Some(""))),
+		];
+
+		for (content, sep, expected) in data {
+			// -- Exec
+			// Note 1: Here the content is in debug mode, so the \n does not get "rendered" causing a wrong script.
+			// Note 2: Here we get the multi-value result from split_first, but return a table, since the run_command_agent
+			//         underneath requires returning a single value (which is the correct approach).
+			let script = format!(
+				r#"
+			local first, second = utils.text.split_first({content:?}, "{sep}")
+			return {{first, second}}
+			"#
+			);
+			let res = run_reflective_agent(&script, None).await?;
+
+			// -- Check
+			let values = res.as_array().ok_or("Should have returned an array")?;
+
+			// check fist
+			let first = values
+				.first()
+				.ok_or("Should always have at least a first return")?
+				.as_str()
+				.ok_or("First should be string")?;
+			assert_eq!(expected.0, first);
+
+			// check second
+			let second = values.get(1); // might be none, when no sep matches, json array is one item (it's ok)
+			if let Some(exp_second) = expected.1 {
+				let second = second.ok_or("Should have second")?;
+				assert_eq!(exp_second, second)
+			} else {
+				assert!(second.is_none(), "Second should not have been none");
+			}
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
 	async fn test_lua_text_ensure_ok() -> Result<()> {
 		// -- Fixtures
 		let data = [
@@ -296,15 +395,14 @@ mod tests {
 			("~ some- ! -path", r#"{prefix = " ~ "}"#, " ~ ~ some- ! -path"),
 		];
 
-		// -- exec
 		for (content, arg, expected) in data {
+			// -- exec
 			let script = format!("return utils.text.ensure(\"{content}\", {arg})");
 			let res = run_reflective_agent(&script, None).await?;
 
+			// -- Check
 			assert_eq!(res, expected);
 		}
-
-		// -- check
 
 		Ok(())
 	}

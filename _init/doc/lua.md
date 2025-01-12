@@ -148,6 +148,15 @@ utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
 -- Ensure content ends with a single newline
 local normalized_content = utils.text.ensure_single_ending_newline(content)
                                                                            -- string
+
+-- split_first - Split the first occurrence of a spearator
+local content = "some first content\n===\nsecond content"
+local first, second = utils.text.split_first(content,"===")
+-- first  = "some first content\n"
+-- second = "\nsecond content"
+-- NOTE: When no match, second is nil. 
+--       If match, but nothing after, second is ""
+
 -- Remove the first line from content
 local content_without_first_line = utils.text.remove_first_line(content)  -- string
 -- Remove the last line from content
