@@ -50,8 +50,7 @@ end
 
 return {
  message = "this is after all data: inputs: " ,
- inputs = inputs,
- outputs = outputs
+ rexported_inputs = inputs,
 }
 
 ```

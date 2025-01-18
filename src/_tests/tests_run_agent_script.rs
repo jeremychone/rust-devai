@@ -102,7 +102,7 @@ async fn test_run_agent_script_before_all_inputs_gen() -> Result<()> {
 	// lazy checks with the json string
 	let res_pretty = res_value.x_pretty()?.to_string();
 	assert_contains(&res_pretty, r#""data": "Data with input: 'one'""#);
-	assert_contains(&res_pretty, r#""before_all_data_was": null,"#);
+	assert_contains(&res_pretty, r#""rexported_inputs": ["#);
 
 	Ok(())
 }
