@@ -23,7 +23,7 @@ use crate::script::lua_script::DEFAULT_MARKERS;
 use crate::support::html::decode_html_entities;
 use crate::support::text::{self, truncate_with_ellipsis, EnsureOptions};
 use crate::Result;
-use mlua::{FromLua, Lua, LuaSerdeExt, MultiValue, String as LuaString, Table, Value};
+use mlua::{FromLua, Lua, MultiValue, String as LuaString, Table, Value};
 use std::borrow::Cow;
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
@@ -185,16 +185,34 @@ fn split_first(lua: &Lua, (content, sep): (LuaString, LuaString)) -> mlua::Resul
 
 // region:    --- Trim
 
-fn trim(lua: &Lua, content: String) -> mlua::Result<Value> {
-	lua.to_value(content.trim())
+fn trim(lua: &Lua, content: LuaString) -> mlua::Result<Value> {
+	let original_str = content.to_str()?;
+	let trimmed = original_str.trim();
+	if trimmed.len() == original_str.len() {
+		Ok(Value::String(content))
+	} else {
+		lua.create_string(trimmed).map(Value::String)
+	}
 }
 
-fn trim_end(lua: &Lua, content: String) -> mlua::Result<Value> {
-	lua.to_value(content.trim_end())
+fn trim_end(lua: &Lua, content: LuaString) -> mlua::Result<Value> {
+	let original_str = content.to_str()?;
+	let trimmed = original_str.trim_end();
+	if trimmed.len() == original_str.len() {
+		Ok(Value::String(content))
+	} else {
+		lua.create_string(trimmed).map(Value::String)
+	}
 }
 
-fn trim_start(lua: &Lua, content: String) -> mlua::Result<Value> {
-	lua.to_value(content.trim_start())
+fn trim_start(lua: &Lua, content: LuaString) -> mlua::Result<Value> {
+	let original_str = content.to_str()?;
+	let trimmed = original_str.trim_start();
+	if trimmed.len() == original_str.len() {
+		Ok(Value::String(content))
+	} else {
+		lua.create_string(trimmed).map(Value::String)
+	}
 }
 
 // endregion: --- Trim
