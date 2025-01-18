@@ -196,15 +196,15 @@ local skip_response = devai.skip("File already contains the documentation")
 
 All Lua scripts get the `CTX` table in scope to get the path of the runtime and agent.
 
-| Key                  | Value                                                     |
-|----------------------|-----------------------------------------------------------|
-| CTX.WORKSPACE_DIR | `/absolute/path/to/workspace_dir`                      |
-| CTX.DEVAI_DIR        | `./.devai`                                                |
-| CTX.AGENT_NAME       | `command-ctx-reflect`                                     |
-| CTX.AGENT_FILE_PATH  | `./.devai/custom/command-agent/command-ctx-reflect.devai` |
-| CTX.AGENT_FILE_DIR   | `./.devai/custom/command-agent`                           |
-| CTX.AGENT_FILE_NAME  | `command-ctx-reflect.devai`                               |
-| CTX.AGENT_FILE_STEM  | `command-ctx-reflect`                                     |
+| Key                 | Value                                  |
+|---------------------|----------------------------------------|
+| CTX.WORKSPACE_DIR   | `/absolute/path/to/workspace_dir`      |
+| CTX.DEVAI_DIR       | `./.devai`                             |
+| CTX.AGENT_NAME      | `my-agent`                             |
+| CTX.AGENT_FILE_PATH | `./.devai/custom/agent/my-agent.devai` |
+| CTX.AGENT_FILE_DIR  | `./.devai/custom/agent`                |
+| CTX.AGENT_FILE_NAME | `my-agent.devai`                       |
+| CTX.AGENT_FILE_STEM | `my-agent`                             |
 
 - All paths are relative to `WORKSPACE_DIR`
 - The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
