@@ -82,8 +82,16 @@ impl LuaEngine {
 		Ok(res)
 	}
 
+	/// Convert a json value to a lua value.
+	///
+	/// IMPORTANT: Use this to covert JSON Value to Lua Value, as the default mlua to_value,
+	///            converts serde_json::Value::Null to Lua user data, and not mlua::Value::Nil,
+	///            and we want it for devai.
 	pub fn serde_to_lua_value(&self, val: serde_json::Value) -> Result<Value> {
-		let res = self.lua.to_value(&val)?;
+		let res = match val {
+			serde_json::Value::Null => Value::Nil,
+			other => self.lua.to_value(&other)?,
+		};
 		Ok(res)
 	}
 

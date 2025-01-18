@@ -240,6 +240,7 @@ async fn run_command_agent_input(
 
 	// -- prepare the scope_input
 	let input = serde_json::to_value(input)?;
+
 	// get the eventual "._label" property of the input
 	// try to get the path, name
 	let label = get_input_label(&input).unwrap_or_else(|| format!("input index: {input_idx}"));
