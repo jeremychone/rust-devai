@@ -27,7 +27,7 @@ impl DevaiDir {
 		// Note: Here we use the `./.devai` which is fixed, and the `./`
 		//       will allow to follow the convention to start from workspace_dir
 		// Note: We might just want the `.devai`, will see
-		let devai_dir = SPath::try_from(DEVAI_DIR_PATH)?;
+		let devai_dir = SPath::from(DEVAI_DIR_PATH);
 
 		let devai_dir_full_path = workspace_dir.join(DEVAI_DIR_NAME)?;
 

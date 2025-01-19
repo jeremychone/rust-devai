@@ -177,19 +177,28 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 
 async fn update_devai_files(
 	base_dir: &SPath,
-	dir: impl AsRef<Path>,
+	agents_dir: impl AsRef<Path>,
 	embedded_agent_file: &[&EmbeddedFile],
 ) -> Result<()> {
-	let dir = dir.as_ref();
-	let existing_files = list_files(dir, Some(&["**/*.devai"]), None)?;
-	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
+	let agents_dir = agents_dir.as_ref();
+	let existing_files = list_files(agents_dir, Some(&["**/*.devai"]), None)?;
+	let existing_names: HashSet<String> = existing_files
+		.iter()
+		.filter_map(|f| f.diff(agents_dir).ok().map(|p| p.to_string()))
+		.collect();
 
 	for e_file in embedded_agent_file {
-		if !existing_names.contains(e_file.name) {
-			let path = SPath::new(dir)?.join(e_file.name)?;
-			write(&path, e_file.content)?;
+		let dest_rel_path = SPath::from(e_file.rel_path);
+		if !existing_names.contains(dest_rel_path.to_str()) {
+			let dest_path = SPath::new(agents_dir)?.join_str(dest_rel_path.to_str());
+			// if the rel_path had a parent
+			if let Some(parent_dir) = dest_rel_path.parent() {
+				let parent_dir = agents_dir.join(parent_dir);
+				ensure_dir(parent_dir)?;
+			}
+			write(&dest_path, e_file.content)?;
 			get_hub()
-				.publish(format!("-> {:<18} '{}'", "Create file", path.diff(base_dir)?))
+				.publish(format!("-> {:<18} '{}'", "Create file", dest_path.diff(base_dir)?))
 				.await;
 		}
 	}
@@ -209,8 +218,8 @@ async fn update_md_files(
 	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
 
 	for e_file in embedded_agent_file {
-		if is_new_version || !existing_names.contains(e_file.name) {
-			let path = SPath::new(dir)?.join(e_file.name)?;
+		if is_new_version || !existing_names.contains(e_file.rel_path) {
+			let path = SPath::new(dir)?.join(e_file.rel_path)?;
 			write(&path, e_file.content)?;
 			get_hub()
 				.publish(format!("-> {:<18} '{}'", "Create file", path.diff(base_dir)?))

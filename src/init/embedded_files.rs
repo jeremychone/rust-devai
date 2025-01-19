@@ -1,32 +1,45 @@
 pub(super) struct EmbeddedFile {
-	pub name: &'static str,
+	/// Relative path to the agent dir
+	pub rel_path: &'static str,
 	pub content: &'static str,
 }
 
 pub(super) fn get_embedded_command_agent_files() -> &'static [&'static EmbeddedFile] {
 	&[
 		&EmbeddedFile {
-			name: "ask-devai.devai",
+			rel_path: "ask-devai.devai",
 			content: include_str!("../../_init/agents/ask-devai.devai"),
 		},
 		&EmbeddedFile {
-			name: "proof-read.devai",
+			rel_path: "proof-read.devai",
 			content: include_str!("../../_init/agents/proof-read.devai"),
 		},
 		&EmbeddedFile {
-			name: "proof-comments.devai",
+			rel_path: "proof-comments.devai",
 			content: include_str!("../../_init/agents/proof-comments.devai"),
 		},
 		&EmbeddedFile {
-			name: "proof-rs-comments.devai",
+			rel_path: "proof-rs-comments.devai",
 			content: include_str!("../../_init/agents/proof-rs-comments.devai"),
+		},
+		&EmbeddedFile {
+			rel_path: "craft/code.devai",
+			content: include_str!("../../_init/agents/craft/code.devai"),
+		},
+		&EmbeddedFile {
+			rel_path: "craft/text.devai",
+			content: include_str!("../../_init/agents/craft/text.devai"),
+		},
+		&EmbeddedFile {
+			rel_path: "craft/lua/craft.lua",
+			content: include_str!("../../_init/agents/craft/lua/craft.lua"),
 		},
 	]
 }
 
 pub(super) fn get_embedded_new_command_agent_files() -> &'static [&'static EmbeddedFile] {
 	&[&EmbeddedFile {
-		name: "default.devai",
+		rel_path: "default.devai",
 		content: include_str!("../../_init/new-command-agent/default.devai"),
 	}]
 }
@@ -34,11 +47,11 @@ pub(super) fn get_embedded_new_command_agent_files() -> &'static [&'static Embed
 pub(super) fn get_embedded_doc_files() -> &'static [&'static EmbeddedFile] {
 	&[
 		&EmbeddedFile {
-			name: "README.md",
+			rel_path: "README.md",
 			content: include_str!("../../_init/doc/README.md"),
 		},
 		&EmbeddedFile {
-			name: "lua.md",
+			rel_path: "lua.md",
 			content: include_str!("../../_init/doc/lua.md"),
 		},
 	]

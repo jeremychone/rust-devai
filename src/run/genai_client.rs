@@ -21,10 +21,18 @@ pub fn get_genai_client() -> Result<genai::Client> {
 			}
 			// -- Otherwise, get it with keyring
 			else {
-				// TODO: need to pass the model
-				let key =
-					get_or_prompt_api_key(key_name).map_err(|err| genai::resolver::Error::Custom(err.to_string()))?;
-				Ok(Some(AuthData::from_single(key)))
+				#[cfg(target_os = "macos")]
+				{
+					// TODO: need to pass the model
+					let key = get_or_prompt_api_key(key_name)
+						.map_err(|err| genai::resolver::Error::Custom(err.to_string()))?;
+					Ok(Some(AuthData::from_single(key)))
+				}
+				#[cfg(not(target_os = "macos"))]
+				{
+					let msg = println!("Environment variable '{key_name}' make sure to set it for this terminal.");
+					Err(genai::resolver::Error::Custom(msg))
+				}
 			}
 		})
 		.build();

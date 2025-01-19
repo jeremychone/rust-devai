@@ -56,7 +56,7 @@ fn prompt_and_save(entry: Entry, disp_name: &str) -> Result<String> {
 	let mut input = String::new();
 	println!(
 		r#"
-'{}' not found in environment vairable or keychain 
+API KEY for '{}' not found in environment vairable or keychain 
 Please enter value (will store key in Mac keychain, under devai_secrets/{}): "#,
 		disp_name, disp_name
 	);

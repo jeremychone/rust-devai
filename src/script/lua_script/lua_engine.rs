@@ -55,22 +55,21 @@ impl LuaEngine {
 		let res = chunck.eval::<Value>();
 		let res = res?;
 		let res = match res {
-			// Need to make sure we handle when we call with pcall(...), see test_lua_json_parse_invalid
+			// This is when we d with pcall(...), see test_lua_json_parse_invalid
 			Value::Error(err) => {
 				// for now we take the last
 				// TODO: We need to handle those error better.
-				let mut str_buf: Vec<String> = Vec::new();
-				for err_item in err.chain() {
-					if let Some(crate_error) = err_item.downcast_ref::<Error>() {
-						str_buf.push(crate_error.to_string())
+				if let Some(last) = err.chain().last() {
+					// for now, sending back the same
+					if let Some(crate_error) = last.downcast_ref::<Error>() {
+						return Err(Error::custom(crate_error.to_string()));
 					} else {
-						str_buf.push(err_item.to_string())
+						// the TableError falls here
+						return Err(Error::custom(last.to_string()));
 					}
+				} else {
+					return Err(Error::cc("Lua error chain - ", err));
 				}
-				if str_buf.is_empty() {
-					str_buf.push(err.to_string());
-				}
-				return Err(Error::cc("Error when lua eval\n{}", str_buf.join("\n")));
 			}
 			res => res,
 		};
