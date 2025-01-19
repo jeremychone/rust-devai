@@ -1,0 +1,100 @@
+# Config
+
+```toml
+[genai]
+# Here we can override the default model for this agent only 
+# This agent works with Claude Sonnet
+
+# model = "claude-3-5-sonnet-20241022"
+
+# e.g.,    OpenAI: "gpt-4o-mini", "gpt-4o", "o1-mini", "o1-preview"
+#       Anthropic: "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-haiku-20240307"
+#          Ollama: "llama3.1:70b" (or any locally installed Ollama)
+```
+
+
+# Description
+
+This agent is for proofreading general text files, such as markdown files.
+
+- if `input` is FileMeta with `-f` then will be the files
+- if `input` is string `-i some-string`, then create the fileif not exist (ensure .md)
+
+# Data
+
+```lua
+
+local craft = require("craft")
+
+local file = craft.prep_input_file(input, {
+    default_name = "_craft-text",
+    placeholder_suffix = [[
+
+Enter your text to be proofread. 
+Alternatively, add a ==== line separator to provide instructions before the separator and the content to apply the instructions after the ====.
+    ]]
+
+})
+
+local content = file.content
+
+local should_skip = craft.should_skip(content)
+if should_skip ~= nil then
+    return should_skip
+end
+
+-- split the content 
+local inst, content = craft.prep_inst_and_content(content, "====", true)
+
+
+return {
+    path      = file.path,
+    content   = content,
+    content_inst = inst,
+}
+```
+
+# System
+
+Your goal is to proofread the English of the document the user is giving you. 
+
+- Do not change the HTML code, or other code, layout, or any structural aspect of the doc.
+- Only correct the grammar and the way the sentences are phrased, when needed.
+- When you give the answer, do not wrap them in a markdown code block, or give an explanation.
+- The user might give some some instruction as well, they will be marked with `== Start User Instructions` ... `== End User Instruction`
+
+{{#if data.content_inst}}
+Here is the additional user instructions
+== Start User Instructions
+{{data.content_inst}}}
+== End User Instructions
+{{/if}}
+
+# Instruction
+
+{{data.content}}
+
+# Output
+
+```lua
+
+local preamble = "" -- This will be the eventual instruction with separator
+local ai_content = ai_response.content
+
+if data.content_inst then
+    local content_inst = utils.text.trim_end(data.content_inst)
+
+    preamble = content_inst .. "\n\n====\n\n"
+    
+    ai_content = utils.text.trim_start(ai_content)
+end
+
+
+local content = preamble .. ai_content
+
+-- -- Example of how to save to the same file
+utils.file.save(data.path, content);
+
+-- -- This will be printed by devai if it is a string
+return "File crafted: " .. data.path
+```
