@@ -42,18 +42,18 @@ pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver
 			agent_name,
 			similar_paths
 				.iter()
-				.map(agent_sfile_as_bullet)
+				.map(agent_agent_rel_as_bullet)
 				.collect::<Vec<String>>()
 				.join("\n")
 		)
 	} else {
-		let agent_files = list_all_agent_files(dir_context)?;
+		let agent_rels = list_all_agent_rels(dir_context)?;
 		format!(
 			"Agent '{}' not found.\nHere is the list of available command agents:\n{}",
 			agent_name,
-			agent_files
+			agent_rels
 				.iter()
-				.map(agent_sfile_as_bullet)
+				.map(agent_agent_rel_as_bullet)
 				.collect::<Vec<String>>()
 				.join("\n")
 		)
@@ -110,33 +110,37 @@ pub fn get_solo_and_target_path(path: impl AsRef<Path>) -> Result<(SPath, SPath)
 
 /// Lists all agent files following the precedence rules (customs first, defaults second).
 /// Agent files already present in a higher priority directory are not included.
-pub fn list_all_agent_files(dir_context: &DirContext) -> Result<Vec<SFile>> {
+pub fn list_all_agent_rels(dir_context: &DirContext) -> Result<Vec<AgentRel>> {
 	let dirs = dir_context.devai_dir().get_agent_dirs()?;
-	let mut sfiles = Vec::new();
+	let mut agent_rels = Vec::new();
 
 	let mut file_stems: HashSet<String> = HashSet::new();
 
 	for dir in dirs {
-		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
+		let files = list_files(&dir, Some(&["**/*.devai"]), None)?;
 		for file in files.into_iter() {
-			let stem = file.stem().to_string();
-			if file_stems.contains(&stem) {
+			let Some(agent_rel) = AgentRel::new(&dir, &file) else {
+				continue;
+			};
+
+			let rel_stem = agent_rel.rel_path_stem().to_string();
+			if file_stems.contains(&rel_stem) {
 				continue;
 			}
-			sfiles.push(file);
-			file_stems.insert(stem);
+			agent_rels.push(agent_rel);
+			file_stems.insert(rel_stem);
 		}
 	}
 
-	Ok(sfiles)
+	Ok(agent_rels)
 }
 
 /// Note: For now, needs to be public because of `exec_list`
-pub fn agent_sfile_as_bullet(sfile: &SFile) -> String {
-	let stem = sfile.stem();
-	let initials = get_initials(stem);
-	let path = sfile.to_str();
-	let msg = format!("- {stem} ({initials})");
+pub fn agent_agent_rel_as_bullet(agent_rel: &AgentRel) -> String {
+	let rel_stem = agent_rel.rel_path_stem();
+	let initials = agent_rel.initials();
+	let path = agent_rel.sfile.to_str();
+	let msg = format!("- {rel_stem} ({initials})");
 	let msg = format!("{msg:<37} - for '{path}'");
 
 	msg
@@ -145,9 +149,10 @@ pub fn agent_sfile_as_bullet(sfile: &SFile) -> String {
 // region:    --- Support
 /// Finds the first matching AgentDoc in the provided directories.
 fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>> {
-	for dir in dirs {
+	for &dir in dirs {
 		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
-		if let Some(found_file) = files.into_iter().find(|f| match_agent(name, f)) {
+
+		if let Some(found_file) = files.into_iter().find(|f| match_agent(dir, name, f)) {
 			// NOTE: Because the dirs are form the DevaiDir and might not be absolute, and relative to working dir
 			//       But later, need to remove from the current_dir of the DirContext, so, needs full path
 			let found_file = found_file.canonicalize()?;
@@ -158,43 +163,86 @@ fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>>
 	Ok(None)
 }
 
-fn match_agent(name: &str, sfile: &SFile) -> bool {
-	let file_stem = sfile.stem();
-	let file_stem_initials = get_initials(file_stem);
+fn match_agent(base_dir: &Path, name: &str, sfile: &SFile) -> bool {
+	let Some(agent_rel) = AgentRel::new(base_dir, sfile) else {
+		return false;
+	};
 
-	name == file_stem || name == file_stem_initials
+	name == agent_rel.rel_path_stem() || name == agent_rel.initials()
+}
+
+/// The structure that reprente and agent
+pub struct AgentRel {
+	sfile: SFile,
+	rel_path: SPath,
+}
+
+impl AgentRel {
+	fn new(base_dir: impl AsRef<Path>, sfile: &SFile) -> Option<Self> {
+		let rel_path = sfile.diff(base_dir).ok()?;
+		Some(AgentRel {
+			rel_path,
+			sfile: sfile.clone(),
+		})
+	}
+
+	/// Return the rel_path (with `.devai` extension) as str
+	fn to_str(&self) -> &str {
+		self.rel_path.to_str()
+	}
+
+	/// Remove the `.devai` suffix
+	fn rel_path_stem(&self) -> &str {
+		let rel_path_str = self.to_str();
+		rel_path_str.strip_suffix(".devai").unwrap_or(rel_path_str)
+	}
+
+	fn initials(&self) -> String {
+		get_initials(self.to_str())
+	}
 }
 
 fn get_initials(input: &str) -> String {
 	input
-		.split('-') // Split by '-'
-		.map(|part| part.trim_start_matches('_')) // Remove leading underscores
-		.filter_map(|part| part.chars().next()) // Get the first character of each part
-		.collect() // Collect into a String
+		.split('/') // Split by '/'
+		.map(|segment| {
+			segment
+				.split('-') // Split by '-'
+				.filter_map(|part| {
+					let part = part.strip_prefix("_").unwrap_or(part);
+					part.chars().next()
+				}) // Get the first character of each part
+				.collect::<String>() // Collect into a String
+		})
+		.collect::<Vec<String>>() // Collect segments into a Vec
+		.join("/") // Join segments with '/'
 }
 
 /// Finds the top 3 most similar agent file paths based on Levenshtein distance.
-fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<SFile>> {
+fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<AgentRel>> {
 	let mut candidates = Vec::new();
 
 	for dir in dirs {
 		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
 		for file in files {
-			candidates.push(file);
+			if let Some(agent_rel) = AgentRel::new(dir, &file) {
+				candidates.push(agent_rel);
+			};
 		}
 	}
 
-	let mut scored_candidates: Vec<(SFile, usize)> = candidates
+	let mut scored_candidates: Vec<(AgentRel, usize)> = candidates
 		.into_iter()
-		.filter_map(|sfile| {
-			let file_stem = sfile.stem();
-			let distance = levenshtein(name, file_stem);
+		.filter_map(|agent_rel| {
+			let agent_rel_stem = agent_rel.rel_path_stem();
+			let distance = levenshtein(name, agent_rel_stem);
+
 			// note might need to change this one, seems to work ok
 			const MAX_DISTANCE: usize = 5;
 			if distance > MAX_DISTANCE {
 				None
 			} else {
-				Some((sfile, distance))
+				Some((agent_rel, distance))
 			}
 		})
 		.collect();
@@ -233,13 +281,23 @@ mod tests {
 
 	#[test]
 	fn test_get_initials() -> Result<()> {
-		assert_eq!(get_initials("proof-read"), "pr");
-		assert_eq!(get_initials("proof-comment"), "pc");
-		assert_eq!(get_initials("proof"), "p");
-		assert_eq!(get_initials("_proof-comment"), "pc"); // Now this returns "pc"
-		assert_eq!(get_initials("proof-_comment-read"), "pcr");
-		assert_eq!(get_initials("_proof-_comment-_read"), "pcr");
-		assert_eq!(get_initials("a-b-c"), "abc");
+		let test_cases: &[(&str, &str)] = &[
+			("proof-read", "pr"),
+			("proof-comment", "pc"),
+			("proof", "p"),
+			("_proof-comment", "pc"),
+			("proof-_comment-read", "pcr"),
+			("_proof-_comment-_read", "pcr"),
+			("a-b-c", "abc"),
+			("hello/world", "h/w"),
+			("hello/big-world", "h/bw"),
+			("nice-hello/big-world", "nh/bw"),
+			("nice-hello/_big-world", "nh/bw"),
+		];
+
+		for &(content, expected) in test_cases {
+			assert_eq!(get_initials(content), expected);
+		}
 
 		Ok(())
 	}
@@ -327,6 +385,43 @@ mod tests {
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/agent");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "command-ctx-reflect.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "command-ctx-reflect");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_find_command_agent_nested_ctx() -> Result<()> {
+		// -- Setup & Fixtures
+		// TODO: Probably need to run the init in sandbox_01
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		ensure_dir("tests-data/sandbox-01/.devai/custom/agent/sub-dir/")?;
+		std::fs::copy(
+			Path::new(SANDBOX_01_DIR).join("agent-script/agent-ctx-reflect.devai"),
+			"tests-data/sandbox-01/.devai/custom/agent/sub-dir/sub-agent.devai",
+		)?;
+		// -- Exec
+		let agent = find_agent("sub-dir/sub-agent", runtime.dir_context(), PathResolver::CurrentDir)?;
+		let res = run_test_agent(&runtime, &agent).await?;
+
+		// -- Check
+		// workspace_dir
+		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
+		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
+		assert!(
+			workspace_dir.ends_with("tests-data/sandbox-01"),
+			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
+		);
+
+		// devai dir
+		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "sub-dir/sub-agent");
+		assert_eq!(
+			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
+			"./.devai/custom/agent/sub-dir/sub-agent.devai"
+		);
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/agent/sub-dir");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "sub-agent.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "sub-agent");
 
 		Ok(())
 	}

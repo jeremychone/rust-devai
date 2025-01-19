@@ -68,7 +68,7 @@ pub async fn run_command_agent(
 		lua_scope.set("inputs", lua_engine.serde_to_lua_value(lua_inputs)?)?;
 		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
-		let lua_value = lua_engine.eval(before_all_script, Some(lua_scope))?;
+		let lua_value = lua_engine.eval(before_all_script, Some(lua_scope), Some(&[agent.file_dir()?.to_str()]))?;
 		let before_all_res = serde_json::to_value(lua_value)?;
 
 		match DevaiCustom::from_value(before_all_res)? {
@@ -216,7 +216,7 @@ pub async fn run_command_agent(
 		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all)?)?;
 		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
-		let lua_value = lua_engine.eval(after_all_script, Some(lua_scope))?;
+		let lua_value = lua_engine.eval(after_all_script, Some(lua_scope), Some(&[agent.file_dir()?.to_str()]))?;
 		Some(serde_json::to_value(lua_value)?)
 	} else {
 		None

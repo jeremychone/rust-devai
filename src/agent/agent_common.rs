@@ -3,6 +3,7 @@ use crate::agent::PromptPart;
 use crate::{Error, Result};
 use genai::chat::ChatOptions;
 use genai::ModelName;
+use simple_fs::SPath;
 use std::sync::Arc;
 
 /// A sync efficient & friendly Agent containing the AgentInner
@@ -60,6 +61,12 @@ impl Agent {
 
 	pub fn file_path(&self) -> &str {
 		&self.inner.file_path
+	}
+
+	pub fn file_dir(&self) -> Result<SPath> {
+		Ok(SPath::new(&self.inner.file_path)?
+			.parent()
+			.ok_or("Agent does not have a parent dir")?)
 	}
 
 	pub fn before_all_script(&self) -> Option<&str> {

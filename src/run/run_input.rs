@@ -79,9 +79,12 @@ pub async fn run_agent_input(
 	lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result.clone())?)?;
 	lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
+	let agent_dir = agent.file_dir()?;
+	let agent_dir_str = agent_dir.to_str();
+
 	// -- Execute data
 	let data = if let Some(data_script) = agent.data_script().as_ref() {
-		let lua_value = lua_engine.eval(data_script, Some(lua_scope))?;
+		let lua_value = lua_engine.eval(data_script, Some(lua_scope), Some(&[agent_dir_str]))?;
 		serde_json::to_value(lua_value)?
 	} else {
 		Value::Null
@@ -202,7 +205,7 @@ pub async fn run_agent_input(
 		lua_scope.set("ai_response", ai_response)?;
 		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
 
-		let lua_value = lua_engine.eval(output_script, Some(lua_scope))?;
+		let lua_value = lua_engine.eval(output_script, Some(lua_scope), Some(&[agent_dir_str]))?;
 		let output_response = serde_json::to_value(lua_value)?;
 
 		Some(RunAgentInputResponse::OutputResponse(output_response))

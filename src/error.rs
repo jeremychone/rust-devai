@@ -5,7 +5,7 @@ use tokio::runtime::TryCurrentError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(Debug, From, Display)]
+#[derive(From, Display)]
 pub enum Error {
 	// -- Cli Command
 	#[display("Command Agent not found at: {_0}")]
@@ -53,6 +53,17 @@ pub enum Error {
 
 	#[display("Error: {_0}  Cause: {_1}")]
 	CustomAndCause(String, String),
+}
+
+/// Custom debug to pretty print the Custom message (mostly for testing).
+/// Note: Will need to reassess over time.
+impl std::fmt::Debug for Error {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Error::Custom(msg) => write!(f, "--- Error::Custom message:\n{msg}\n--- End Error Message"),
+			other => write!(f, "{:?}", other),
+		}
+	}
 }
 
 // region:    --- Froms

@@ -40,13 +40,13 @@ impl LuaEngine {
 
 /// Public Function
 impl LuaEngine {
-	pub fn eval(&self, script: &str, scope: Option<Table>) -> Result<Value> {
+	pub fn eval(&self, script: &str, scope: Option<Table>, addl_lua_paths: Option<&[&str]>) -> Result<Value> {
 		let lua = &self.lua;
 
 		let chunck = lua.load(script);
 
 		let chunck = if let Some(scope) = scope {
-			let env = self.upgrade_scope(scope)?;
+			let env = self.upgrade_scope(scope, addl_lua_paths)?;
 			chunck.set_environment(env)
 		} else {
 			chunck
@@ -55,21 +55,22 @@ impl LuaEngine {
 		let res = chunck.eval::<Value>();
 		let res = res?;
 		let res = match res {
-			// This is when we d with pcall(...), see test_lua_json_parse_invalid
+			// Need to make sure we handle when we call with pcall(...), see test_lua_json_parse_invalid
 			Value::Error(err) => {
 				// for now we take the last
 				// TODO: We need to handle those error better.
-				if let Some(last) = err.chain().last() {
-					// for now, sending back the same
-					if let Some(crate_error) = last.downcast_ref::<Error>() {
-						return Err(Error::custom(crate_error.to_string()));
+				let mut str_buf: Vec<String> = Vec::new();
+				for err_item in err.chain() {
+					if let Some(crate_error) = err_item.downcast_ref::<Error>() {
+						str_buf.push(crate_error.to_string())
 					} else {
-						// the TableError falls here
-						return Err(Error::custom(last.to_string()));
+						str_buf.push(err_item.to_string())
 					}
-				} else {
-					return Err(Error::cc("Lua error chain - ", err));
 				}
+				if str_buf.is_empty() {
+					str_buf.push(err.to_string());
+				}
+				return Err(Error::cc("Error when lua eval\n{}", str_buf.join("\n")));
 			}
 			res => res,
 		};
@@ -95,13 +96,10 @@ impl LuaEngine {
 		Ok(res)
 	}
 
-	// pub fn to_lua_value(&self, val: impl IntoLua) -> Result<Value> {
-	// 	let res = val.into_lua(&self.lua)?;
-	// 	Ok(res)
-	// }
-
 	/// Upgrade a custom scope to full scope with all of the globals added.
-	fn upgrade_scope(&self, scope: Table) -> Result<Table> {
+	/// NOTE: A `base_lua_path` is the container of the `lua/` dir. So
+	///       `base_lua_path = /some/dir`, the path added to lua package path will be `/some/dir/lua/?.lua,/some/dir/lua/?/init.lua`
+	fn upgrade_scope(&self, scope: Table, addl_base_lua_paths: Option<&[&str]>) -> Result<Table> {
 		// Get the globals table
 		let globals = self.lua.globals();
 
@@ -109,6 +107,19 @@ impl LuaEngine {
 		for pair in globals.pairs::<Value, Value>() {
 			let (key, value) = pair?;
 			scope.set(key, value)?; // Add each global to the scope table
+		}
+
+		// -- Prepend the additional lua path
+		if let Some(addl_lua_paths) = addl_base_lua_paths {
+			let mut paths: Vec<String> = Vec::new();
+			for path in addl_lua_paths {
+				paths.push(format!("{path}/lua/?.lua;{path}/lua/?/init.lua"));
+			}
+			if let Ok(lua_package) = globals.get::<Table>("package") {
+				let path: String = lua_package.get("path")?;
+				let new_path = format!("{};{path}", paths.join(";"));
+				lua_package.set("path", new_path)?;
+			}
 		}
 
 		// Return the updated scope table
@@ -247,7 +258,7 @@ return "Hello " .. my_name .. " - " .. square_root
 		// -- Exec
 		let scope = engine.create_table()?;
 		scope.set("my_name", "Lua World")?;
-		let res = engine.eval(fx_script, Some(scope))?;
+		let res = engine.eval(fx_script, Some(scope), None)?;
 
 		// -- Check
 		let res = serde_json::to_value(res)?;
@@ -270,7 +281,7 @@ return "Hello " .. my_name .. " - " .. file.content
 		// -- Exec
 		let scope = engine.create_table()?;
 		scope.set("my_name", "Lua World")?;
-		let res = engine.eval(fx_script, Some(scope))?;
+		let res = engine.eval(fx_script, Some(scope), None)?;
 
 		// -- Check
 		let res = serde_json::to_value(res)?;
@@ -297,7 +308,7 @@ return "demo.name_one is " .. "'" .. demo.name_one .. "'"
 		"#;
 
 		// -- Exec
-		let res = engine.eval(fx_script, None)?;
+		let res = engine.eval(fx_script, None, None)?;
 
 		// -- Check
 		let res = serde_json::to_value(res)?;

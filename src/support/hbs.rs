@@ -51,7 +51,7 @@ The files are:
 
 		// -- Exec
 		let lua_engine = runtime.new_lua_engine()?;
-		let data = lua_engine.eval(script, None)?;
+		let data = lua_engine.eval(script, None, None)?;
 		let data = serde_json::to_value(data)?;
 		// Execute the template
 		let data = HashMap::from([("data".to_string(), data)]);
