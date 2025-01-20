@@ -3,7 +3,8 @@
 This agent is responsible for crafting programming code.
 
 - The input can be a string (with `-i quick-code`) or a file path (`-f some/path.md`).
-    - When the input is a string, it will add a `./` prefix and a `.md` suffix if not present.
+    - When the input is a string, it will add a `./` prefix and a `.md` suffix if they are not present.
+    - If no input is given, the file `./_craft-code.md` will be used. 
     - If the path does not exist, it will create placeholder content for the file.
 - If the file content is empty, it skips processing with a message.
 - If the file has a `====` separator:
@@ -27,16 +28,13 @@ And (optionally) add the code below the `====` as a starting point
 
 })
 
-local content = file.content
+-- Split the content 
+local inst, content = craft.prep_inst_and_content(file.content, "====", false)
 
-local should_skip = craft.should_skip(content)
+local should_skip = craft.should_skip(inst, content)
 if should_skip ~= nil then
     return should_skip
 end
-
--- split the content 
-local inst, content = craft.prep_inst_and_content(content, "====", false)
-
 
 -- Return the processed data
 return {
@@ -67,13 +65,12 @@ Here are the additional user instructions
 {{/if}}
 
 {{#if data.content_code}}
-Here is the content to apply the user instructions to: 
+Here is the content to which you should apply the user instructions: 
 
 == Start Content
 {{data.content_code}}
 == End Content
 {{/if}}
-
 
 # Output
 
@@ -90,12 +87,11 @@ if data.content_inst then
     ai_content = utils.text.trim_start(ai_content)
 end
 
-
 local content = preamble .. ai_content
 
--- -- Example of how to save to the same file
+-- Example of how to save to the same file
 utils.file.save(data.path, content);
 
--- -- This will be printed by devai if it is a string
+-- This will be printed by devai if it is a string
 return "File craft: " .. data.path
 ```

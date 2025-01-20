@@ -35,17 +35,19 @@ end
 
 -- Will return a string if this task should be skipped
 -- Returns the message to display to the user
-function should_skip(content) 
-  local str = utils.text.trim(content) -- Trim leading and trailing spaces
+function should_skip(inst, content) 
+  inst = inst and utils.text.trim(inst) or ""
+  content = content and utils.text.trim(content) or ""
 
-  -- If there is no non-whitespace, then it is empty, so skip.
-  -- if not content:find("%S") then
-  if str == "" then
-      return devai.skip("Empty file - skipping for now. Start writing, and do a Redo.")
+
+  if inst == "" and content == "" then
+    return devai.skip("Empty content and instructions - Start writing, and do a Redo.")
   end
 
+  local first_part = (inst ~= "" and inst) or content
+
   -- if starts with placeholder
-  if str:sub(1, 11):lower() == "placeholder" then
+  if first_part:sub(1, 11):lower() == "placeholder" then
       return devai.skip("Content is a placeholder, so skipping for now")
   end 
 

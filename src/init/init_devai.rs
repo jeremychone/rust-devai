@@ -181,7 +181,7 @@ async fn update_devai_files(
 	embedded_agent_file: &[&EmbeddedFile],
 ) -> Result<()> {
 	let agents_dir = agents_dir.as_ref();
-	let existing_files = list_files(agents_dir, Some(&["**/*.devai"]), None)?;
+	let existing_files = list_files(agents_dir, Some(&["**/*.devai", "**/*.lua"]), None)?;
 	let existing_names: HashSet<String> = existing_files
 		.iter()
 		.filter_map(|f| f.diff(agents_dir).ok().map(|p| p.to_string()))

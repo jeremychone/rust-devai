@@ -1,24 +1,16 @@
-# Config
-
-```toml
-[genai]
-# Here we can override the default model for this agent only 
-# This agent works with Claude Sonnet
-
-# model = "claude-3-5-sonnet-20241022"
-
-# e.g.,    OpenAI: "gpt-4o-mini", "gpt-4o", "o1-mini", "o1-preview"
-#       Anthropic: "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-haiku-20240307"
-#          Ollama: "llama3.1:70b" (or any locally installed Ollama)
-```
-
-
 # Description
 
-This agent is for proofreading general text files, such as markdown files.
+This agent is for crafting general text, such as emails, documents, or any text.
 
-- If `input` is FileMeta with `-f`, then these will be the files.
-- If `input` is a string `-i some-string`, then create the file if it does not exist (ensure .md).
+- The input can be a string (with `-i quick-text`) or an existing file (`-f some/some-text.md`).
+    - When the input is a string, it will add a `./` prefix and a `.md` suffix if they are not present.
+    - If no input is given, the file `./_craft-text.md` will be used. 
+    - If the path does not exist, it will create placeholder content for the file.
+- If the file content is empty, it skips processing with a message.
+- If the file has a `====` separator:
+    - The first part is the instruction.
+    - The second part is the content/code to which the instruction is applied.
+- If the file content has no `====`, the content is what needs to be proofread.
 
 # Data
 
@@ -31,7 +23,7 @@ local file = craft.prep_input_file(input, {
     placeholder_suffix = [[
 
 Enter your text to be proofread. 
-Alternatively, add a ==== line separator to provide instructions before the separator and the content to apply the instructions after the ====.
+Alternatively, add a `====` line separator to provide instructions before the separator and the content to apply the instructions after the `====`.
     ]]
 
 })
@@ -46,7 +38,6 @@ end
 -- split the content 
 local inst, content = craft.prep_inst_and_content(content, "====", true)
 
-
 return {
     path      = file.path,
     content   = content,
@@ -58,10 +49,10 @@ return {
 
 Your goal is to proofread the English of the document the user is giving you. 
 
-- Do not change the HTML code, or other code, layout, or any structural aspect of the document.
-- Only correct the grammar and the way the sentences are phrased when needed.
-- When you give the answer, do not wrap it in a markdown code block, or give an explanation.
-- The user might give some instructions as well; they will be marked with `== Start User Instructions` ... `== End User Instruction`
+- Do not change the HTML code or other code, layout, or any structural aspect of the document.
+- Only correct the grammar and the phrasing of the sentences when needed.
+- When you provide the answer, do not wrap it in a markdown code block or give an explanation.
+- The user might give some instructions as well; these will be marked with `== Start User Instructions` ... `== End User Instruction`
 
 {{#if data.content_inst}}
 Here are the additional user instructions
@@ -89,12 +80,11 @@ if data.content_inst then
     ai_content = utils.text.trim_start(ai_content)
 end
 
-
 local content = preamble .. ai_content
 
--- -- Example of how to save to the same file
+-- Example of how to save to the same file
 utils.file.save(data.path, content);
 
--- -- This will be printed by devai if it is a string
+-- This will be printed by devai if it is a string
 return "File crafted: " .. data.path
 ```
