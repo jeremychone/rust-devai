@@ -1,5 +1,16 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
+## 2025-01-20 -  [v0.5.5](https://github.com/jeremychone/rust-devai/compare/v0.5.4...v0.5.5)
+
+- `+` NEW - agent - added the craft/[text,code] in default agents
+- `+` NEW - agent module - added first support of `my_dir/my_agent.devai` support, `devai run my_dir/my_agent`
+- `^` BIG - lua - big error reporting update (inline code line with issue)
+- `-` FIX - init - fix to avoid recreating default .lua file on each init (when exists)
+- `-` FIX - auth - made keyring only for mac (as it is supposed to be for now)
+- `+` NEW - lua - add utils.text.split_first(content, sep)
+- `-` lua - fix input not being 'nil' when it is not specified (now it is nil)
+- `^` lua - functions optimization and fixes.
+- `.` doc - fix doc/lua for CTX
 
 ## 2025-01-06 - `0.5.4`
 

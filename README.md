@@ -12,7 +12,9 @@
 
 - [Full intro video for v0.5](https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj)
 
-- What's new:
+- What's hot and new:
+  - 2025-01-20 (v0.5.5) - `devai run craft/text` or `devai run craft/code` (example of cool new agent module support)
+  - 2025-01-06 (v0.5.4) - DeepSeek `deepseek-chat` support
   - 2024-12-08 (v0.5.1) - Added support for **xAI**
 
 #### Install
