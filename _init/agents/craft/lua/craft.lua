@@ -1,10 +1,10 @@
 
-
 -- Returns FileRecord
 function prep_input_file(input, options) 
   options = options or {}
   local default_name = options.default_name or "_craft"
   local placeholder_suffix = options.placeholder_suffix or "Write your content"
+  local add_separator = options.add_separator ~= nil and options.add_separator or false 
 
   -- Enter default file_stem
   if input == nil then
@@ -22,7 +22,9 @@ function prep_input_file(input, options)
   -- create if needed
   local first_time = utils.path.exists(path) ~= true
   local placeholder_content = "placeholder - " .. placeholder_suffix
-  placeholder_content = placeholder_content .. " \n\n====\n\n"
+  if add_separator then
+    placeholder_content = placeholder_content .. " \n\n====\n\n"
+  end
   utils.file.ensure_exists(path,placeholder_content)  
 
   -- open if first time

@@ -24,7 +24,8 @@ local file = craft.prep_input_file(input, {
 
 Ask your coding question to generate code below the `====`
 And (optionally) add the code below the `====` as a starting point
-    ]]
+    ]],
+    add_separator = true
 
 })
 

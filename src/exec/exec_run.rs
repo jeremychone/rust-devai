@@ -40,6 +40,10 @@ impl RunRedoCtx {
 /// Exec for the Run command
 /// Might do a single run or a watch
 pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<Arc<RunRedoCtx>> {
+	// NOTE - This is important to avoid hanging when performing a run that requires a .devai initialization
+	// TODO - Might need to find a better place to put this, or change the way the initialization and run are orchestrated
+	tokio::task::yield_now().await;
+
 	// -- First exec
 	let redo_ctx: Arc<RunRedoCtx> = exec_run_first(run_args, dir_context).await?.into();
 

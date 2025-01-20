@@ -1,6 +1,12 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
-## 2025-01-20 -  [v0.5.5](https://github.com/jeremychone/rust-devai/compare/v0.5.4...v0.5.5)
+## 2025-01-20 -  [v0.5.6](https://github.com/jeremychone/rust-devai/compare/v0.5.4...v0.5.6)
+
+**v0.5.6**
+
+- `-` init - fix issue when running without an devai (was hanging)
+
+**v0.5.4**
 
 - `+` NEW - agent - added the craft/[text,code] in default agents
 - `+` NEW - agent module - added first support of `my_dir/my_agent.devai` support, `devai run my_dir/my_agent`
