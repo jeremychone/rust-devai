@@ -17,8 +17,8 @@
 
 This agent is for proofreading general text files, such as markdown files.
 
-- if `input` is FileMeta with `-f` then will be the files
-- if `input` is string `-i some-string`, then create the fileif not exist (ensure .md)
+- If `input` is FileMeta with `-f`, then these will be the files.
+- If `input` is a string `-i some-string`, then create the file if it does not exist (ensure .md).
 
 # Data
 
@@ -58,13 +58,13 @@ return {
 
 Your goal is to proofread the English of the document the user is giving you. 
 
-- Do not change the HTML code, or other code, layout, or any structural aspect of the doc.
-- Only correct the grammar and the way the sentences are phrased, when needed.
-- When you give the answer, do not wrap them in a markdown code block, or give an explanation.
-- The user might give some some instruction as well, they will be marked with `== Start User Instructions` ... `== End User Instruction`
+- Do not change the HTML code, or other code, layout, or any structural aspect of the document.
+- Only correct the grammar and the way the sentences are phrased when needed.
+- When you give the answer, do not wrap it in a markdown code block, or give an explanation.
+- The user might give some instructions as well; they will be marked with `== Start User Instructions` ... `== End User Instruction`
 
 {{#if data.content_inst}}
-Here is the additional user instructions
+Here are the additional user instructions
 == Start User Instructions
 {{data.content_inst}}}
 == End User Instructions
@@ -78,7 +78,7 @@ Here is the additional user instructions
 
 ```lua
 
-local preamble = "" -- This will be the eventual instruction with separator
+local preamble = "" -- This will be the eventual instruction with a separator
 local ai_content = ai_response.content
 
 if data.content_inst then

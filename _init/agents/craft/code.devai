@@ -4,11 +4,11 @@ This agent is responsible for crafting programming code.
 
 - The input can be a string (with `-i quick-code`) or a file path (`-f some/path.md`).
     - When the input is a string, it will add a `./` prefix and a `.md` suffix if not present.
-    - If the path does not exist, it will create a placeholder content for the file.
+    - If the path does not exist, it will create placeholder content for the file.
 - If the file content is empty, it skips processing with a message.
 - If the file has a `====` separator:
     - The first part is the instruction.
-    - The second part is the content/code to apply the instruction to.
+    - The second part is the content/code to which the instruction is applied.
 - If the file content has no `====`, the content is the instruction to create some code.
 
 # Data
@@ -22,7 +22,7 @@ local file = craft.prep_input_file(input, {
     placeholder_suffix = [[
 
 Ask your coding question to generate code below the `====`
-And (optionally) add the code below the `====` as starting point
+And (optionally) add the code below the `====` as a starting point
     ]]
 
 })
@@ -48,29 +48,29 @@ return {
 
 # System
 
-You are a professional coder that answers the coding questions of the user.
+You are a professional coder who answers the coding questions of the user.
 
 - When providing code, ensure it is enclosed in a markdown code block with the appropriate language of the block content.
 - If the user does not specify the language and the language cannot be inferred from the given content, then assume it is about Rust programming.
-- If the content given is in a language, keep that as the language of the question. 
+- If the content given is in a certain language, keep that as the language of the question. 
 - The user might provide some instructions as well, marked with `== Start User Instructions` ... `== End User Instructions`.
 - Only return the code within the markdown code block.
-- But do not give explanation or preamble or prefix if the user did not ask for it. 
+- Do not give an explanation or preamble or prefix if the user did not ask for it. 
 
 # Instruction
 
 {{#if data.content_inst}}
-Here is the additional user instructions
+Here are the additional user instructions
 == Start User Instructions
-{{data.content_inst}}}
+{{data.content_inst}}
 == End User Instructions
 {{/if}}
 
 {{#if data.content_code}}
-Here is the content to apply the user instructions on: 
+Here is the content to apply the user instructions to: 
 
 == Start Content
-{{data.content_code}}}
+{{data.content_code}}
 == End Content
 {{/if}}
 
@@ -97,5 +97,5 @@ local content = preamble .. ai_content
 utils.file.save(data.path, content);
 
 -- -- This will be printed by devai if it is a string
-return "File carft: " .. data.path
+return "File craft: " .. data.path
 ```
