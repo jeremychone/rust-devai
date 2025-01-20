@@ -53,23 +53,18 @@ impl LuaEngine {
 		};
 
 		let res = chunck.eval::<Value>();
-		let res = res?;
+		// let res = res?;
+
+		let res = match res {
+			Ok(res) => res,
+			Err(err) => return Err(Error::from_error_with_script(&err, script)),
+		};
+
 		let res = match res {
 			// This is when we d with pcall(...), see test_lua_json_parse_invalid
 			Value::Error(err) => {
-				// for now we take the last
-				// TODO: We need to handle those error better.
-				if let Some(last) = err.chain().last() {
-					// for now, sending back the same
-					if let Some(crate_error) = last.downcast_ref::<Error>() {
-						return Err(Error::custom(crate_error.to_string()));
-					} else {
-						// the TableError falls here
-						return Err(Error::custom(last.to_string()));
-					}
-				} else {
-					return Err(Error::cc("Lua error chain - ", err));
-				}
+				return Err(Error::from_error_with_script(&err, script));
+				// return Err(Error::from(&*err));
 			}
 			res => res,
 		};

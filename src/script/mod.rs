@@ -7,6 +7,7 @@
 // region:    --- Modules
 
 mod devai_custom;
+mod error_lua_support;
 mod lua_script;
 
 pub use devai_custom::*;

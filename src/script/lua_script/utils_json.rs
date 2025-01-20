@@ -192,10 +192,10 @@ mod tests {
 			return Err("Should have been an Error".into());
 		};
 
-		let err = format!("{err:?}");
+		let err = format!("{err}");
 		assert!(
-			err.contains("json.parse failed "),
-			"err should contain json.parse failed "
+			err.contains("json.parse failed"),
+			"err should contain json.parse failed"
 		);
 
 		Ok(())

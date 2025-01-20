@@ -1,11 +1,10 @@
 use derive_more::derive::Display;
 use derive_more::From;
-use std::sync::Arc;
 use tokio::runtime::TryCurrentError;
 
 pub type Result<T> = core::result::Result<T, Error>;
 
-#[derive(From, Display)]
+#[derive(Debug, From, Display)]
 pub enum Error {
 	// -- Cli Command
 	#[display("Command Agent not found at: {_0}")]
@@ -48,40 +47,13 @@ pub enum Error {
 	Io(std::io::Error),
 
 	// -- Custom
+	#[display("Error::Custom\n{_0}")]
 	#[from]
 	Custom(String),
 
-	#[display("Error: {_0}  Cause: {_1}")]
+	#[display("Error: {_0}\n\tCause: {_1}")]
 	CustomAndCause(String, String),
 }
-
-/// Custom debug to pretty print the Custom message (mostly for testing).
-/// Note: Will need to reassess over time.
-impl std::fmt::Debug for Error {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Error::Custom(msg) => write!(f, "--- Error::Custom message:\n{msg}\n--- End Error Message"),
-			other => write!(f, "{:?}", other),
-		}
-	}
-}
-
-// region:    --- Froms
-
-// For now, we serialize as string for sync/send
-impl From<mlua::Error> for Error {
-	fn from(val: mlua::Error) -> Self {
-		Self::Lua(val.to_string())
-	}
-}
-
-impl From<Error> for mlua::Error {
-	fn from(value: Error) -> Self {
-		mlua::Error::ExternalError(Arc::new(value))
-	}
-}
-
-// endregion: --- Froms
 
 // region:    --- Custom
 
