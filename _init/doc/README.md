@@ -100,7 +100,6 @@ Here are the environment variable names used:
 ```
 OPENAI_API_KEY
 ANTHROPIC_API_KEY
-MODEL_GEMINI
 GEMINI_API_KEY
 XAI_API_KEY
 DEEPSEEK_API_KEY
