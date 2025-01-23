@@ -1,6 +1,12 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
+## 2025-01-23 - [v0.5.7](https://github.com/jeremychone/rust-devai/compare/v0.5.6...v0.5.7)
+
+- `-` (#24) fix - Compile - does not compile in non macos
+
 ## 2025-01-20 -  [v0.5.6](https://github.com/jeremychone/rust-devai/compare/v0.5.4...v0.5.6)
+
+IMPORTANT: Can't compile on non-Mac. See v0.5.7 for fix. 
 
 **v0.5.6**
 
