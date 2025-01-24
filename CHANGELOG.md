@@ -1,5 +1,9 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
+## 2025-01-23 - [v0.5.8](https://github.com/jeremychone/rust-devai/compare/v0.5.7...v0.5.8)
+
+- `^` genai - use genai v0.1.18 for local and remote deepseek support
+
 ## 2025-01-23 - [v0.5.7](https://github.com/jeremychone/rust-devai/compare/v0.5.6...v0.5.7)
 
 - `-` (#24) fix - Compile - does not compile in non macos
