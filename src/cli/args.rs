@@ -53,10 +53,10 @@ impl CliCommand {
 	pub fn is_interactive(&self) -> bool {
 		match self {
 			CliCommand::Run(_) => if let CliCommand::Run(run_args) = self {
-                run_args.watch
-            } else {
-                false
-            },
+				run_args.watch
+			} else {
+				false
+			},
 			CliCommand::Solo(_) => true,
 			CliCommand::Init(_) => false,
 			CliCommand::InitBase => false,
