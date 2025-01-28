@@ -19,7 +19,7 @@ unsafe_code = "forbid"
 tokio = { version = "1", features = ["full"] }
 flume = "0.11.1"
 # -- AI
-genai = "0.1.18"
+genai = "0.1.19"
 # -- Json & Data Files
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
