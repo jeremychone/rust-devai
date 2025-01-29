@@ -126,9 +126,12 @@ local updated_content = utils.text.replace_markers(content, new_sections) -- str
 See [MdBlock](#mdblock)
 
 ```lua
--- Extract the markdown blocks (if no name, all blocks will be extracted)
-local blocks = utils.md.extract_blocks("js")                 -- {MdBlock}
--- returns {} if no block found
+-- Extract all blocks
+utils.md.extract_blocks(md_content: string) -> Vec<MdBlock>
+-- Extract blocks for the language 'lang'
+utils.md.extract_blocks(md_content: string, lang: string) -> Vec<MdBlock>
+-- Extract blocks (with or without language, and extrude: content, which the remaining content)
+utils.md.extract_blocks(md_content: String, {lang: string, extrude: "content"})
 
 -- If content starts with ```, it will remove the first and last ```, and return the content in between
 -- Otherwise, it returns the original content

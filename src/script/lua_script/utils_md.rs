@@ -9,18 +9,18 @@
 //! * `md.outer_block_content_or_raw(md_content: string) -> string`
 
 use crate::run::RuntimeContext;
-use crate::support::md;
+use crate::support::md::{self, Extrude};
 use crate::types::MdBlock;
 use crate::Result;
-use mlua::{IntoLua, Lua, Table, Value};
+use mlua::{IntoLua, Lua, MultiValue, Table, Value};
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
 
-	let extract_blocks_with_lang_fn = lua.create_function(extract_blocks_with_lang)?;
+	let extract_blocks_fn = lua.create_function(extract_blocks)?;
 	let outer_block_content_or_raw_fn = lua.create_function(outer_block_content_or_raw)?;
 
-	table.set("extract_blocks", extract_blocks_with_lang_fn)?;
+	table.set("extract_blocks", extract_blocks_fn)?;
 	table.set("outer_block_content_or_raw", outer_block_content_or_raw_fn)?;
 
 	Ok(table)
@@ -28,13 +28,69 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 
 /// ## Lua Documentation
 /// ```lua
-/// md.extract_blocks(md_content: string, lang_name: string) -> Vec<MdBlock>
+/// -- Extract all blocks
+/// utils.md.extract_blocks(md_content: string) -> Vec<MdBlock>
+/// -- Extract blocks for the language 'lang'
+/// utils.md.extract_blocks(md_content: string, lang: string) -> Vec<MdBlock>
+/// -- Extract blocks (with or without language, and extrude: content, which the remaining content)
+/// utils.md.extract_blocks(md_content: String, {lang: string, extrude: "content"})
 /// ```
 ///
 /// Return the list of markdown blocks that match a given lang_name.
-fn extract_blocks_with_lang(lua: &Lua, (md_content, lang_name): (String, Option<String>)) -> mlua::Result<Value> {
-	let blocks: Vec<MdBlock> = md::MdBlockIter::new(&md_content, lang_name.as_deref()).collect();
-	blocks.into_lua(lua)
+fn extract_blocks(lua: &Lua, (md_content, options): (String, Option<Value>)) -> mlua::Result<MultiValue> {
+	let (lang, extrude): (Option<String>, Option<Extrude>) = match options {
+		// if options is of type string, then, just lang name
+		Some(Value::String(string)) => (Some(string.to_string_lossy()), None),
+		// if it is a table
+		Some(Value::Table(table)) => {
+			let lang = table.get::<Option<Value>>("lang")?;
+			let lang = lang
+				.map(|v| {
+					v.to_string()
+						.map_err(|err| crate::Error::custom("md_extract_blocks lang options must be of type string"))
+				})
+				.transpose()?;
+
+			let extrude = table.get::<Option<Value>>("extrude")?;
+			let extrude = extrude
+				.map(|extrude| match extrude {
+					Value::String(extrude) => {
+						if extrude.to_str().unwrap() == "content" {
+							Ok(Some(Extrude::Content))
+						} else {
+							Err(crate::Error::custom(
+								"md_extract_blocks extrude must be = to 'content' for now",
+							))
+						}
+					}
+					_ => Ok(None),
+				})
+				.transpose()?
+				.flatten();
+
+			(lang, extrude)
+		}
+		// TODO: Probably need to send error
+		_ => (None, None),
+	};
+
+	let mut blocks_it = md::MdBlockIter::new(&md_content, lang.as_deref(), extrude);
+	let mut values = MultiValue::new();
+
+	match extrude {
+		Some(Extrude::Content) => {
+			let (blocks, content) = blocks_it.collect_blocks_and_extruded_content();
+			values.push_back(blocks.into_lua(lua)?);
+			let content = lua.create_string(&content)?;
+			values.push_back(Value::String(content));
+		}
+		_ => {
+			let blocks: Vec<MdBlock> = blocks_it.collect();
+			values.push_back(blocks.into_lua(lua)?)
+		}
+	}
+
+	Ok(values)
 }
 
 /// ## Lua Documentation
@@ -59,16 +115,16 @@ fn outer_block_content_or_raw(_lua: &Lua, md_content: String) -> mlua::Result<St
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::run_reflective_agent;
+	use crate::_test_support::{assert_contains, assert_not_contains, run_reflective_agent};
 	use value_ext::JsonValueExt;
 
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-	async fn test_lua_md_extract_blocks() -> Result<()> {
+	async fn test_lua_md_extract_blocks_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		// NOTE: the [[ ]] for multi line in lua breaks with the ``` for code block, so, reading files.
 		let fx_script = r#"
 local file = utils.file.load("agent-script/agent-before-all-inputs-gen.devai")
-return utils.md.extract_blocks(file.content, "lua")
+return utils.md.extract_blocks(file.content, {lang = "lua"})
 		"#;
 
 		// -- Exec
@@ -88,6 +144,95 @@ return utils.md.extract_blocks(file.content, "lua")
 		let second_block = &blocks[1];
 		assert_eq!(second_block.x_get_str("lang")?, "lua");
 		assert!(second_block.x_get_str("content")?.contains("Data with input"));
+
+		Ok(())
+	}
+
+	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+	async fn test_lua_md_extract_blocks_with_lang_and_extruded_content() -> Result<()> {
+		// -- Setup & Fixtures
+		// NOTE: the [[ ]] for multi line in lua breaks when line starts with ```, so work around
+		let fx_script = r#"
+local content = "This is some content\n"
+content = content .. "\n```lua\n--some lua \n```\n"
+content = content .. "and other block\n\n```rust\n//! some rust block \n```\n"
+content = content .. "The end"
+
+local blocks, extruded_content = utils.md.extract_blocks(content, {lang = "lua", extrude = "content"})
+return {
+		blocks = blocks,
+		extruded_content = extruded_content
+}
+		"#;
+
+		// -- Exec
+		let res = run_reflective_agent(fx_script, None).await?;
+
+		// -- Check Blocks
+		let blocks = res.pointer("/blocks").ok_or("Should have blocks")?;
+		assert!(blocks.is_array());
+		let blocks = blocks.as_array().unwrap();
+		assert_eq!(blocks.len(), 1, "Should have found 1 lua blocks");
+
+		// Check first and only blockblock
+		let first_block = &blocks[0];
+		assert_eq!(first_block.x_get_str("lang")?, "lua");
+		assert!(first_block.x_get_str("content")?.contains("some lua"));
+
+		// -- Check Extruded Content
+		let content = res.x_get_str("extruded_content")?;
+		assert_contains(content, "This is some content");
+		assert_contains(content, "and other block");
+		assert_contains(content, "```rust");
+		assert_contains(content, "```\n");
+		assert_contains(content, "The end");
+
+		Ok(())
+	}
+
+	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+	async fn test_lua_md_extract_blocks_with_all_lang_and_extruded_content() -> Result<()> {
+		// -- Setup & Fixtures
+		// NOTE: the [[ ]] for multi line in lua breaks when line starts with ```, so work around
+		let fx_script = r#"
+local content = "This is some content\n"
+content = content .. "\n```lua\n--some lua \n```\n"
+content = content .. "and other block\n\n```rust\n//! some rust block \n```\n"
+content = content .. "The end"
+
+local blocks, extruded_content = utils.md.extract_blocks(content, {extrude = "content"})
+return {
+		blocks = blocks,
+		extruded_content = extruded_content
+}
+		"#;
+
+		// -- Exec
+		let res = run_reflective_agent(fx_script, None).await?;
+
+		// -- Check Blocks
+		let blocks = res.pointer("/blocks").ok_or("Should have blocks")?;
+		assert!(blocks.is_array());
+		let blocks = blocks.as_array().unwrap();
+		assert_eq!(blocks.len(), 2, "Should have found 2 blocks, lua and rust");
+
+		// Check first and only blockblock
+		let block = &blocks[0];
+		assert_eq!(block.x_get_str("lang")?, "lua");
+		assert!(block.x_get_str("content")?.contains("some lua"));
+		// Check second block
+		let block = &blocks[1];
+		assert_eq!(block.x_get_str("lang")?, "rust");
+		assert!(block.x_get_str("content")?.contains("some rust"));
+
+		// -- Check Extruded Content
+		let content = res.x_get_str("extruded_content")?;
+		assert_contains(content, "This is some content");
+		assert_contains(content, "and other block");
+		assert_not_contains(content, "```lua");
+		assert_not_contains(content, "```rust");
+		assert_not_contains(content, "```");
+		assert_contains(content, "The end");
 
 		Ok(())
 	}

@@ -2,6 +2,7 @@
 
 mod in_block_state;
 mod md_block_iter;
+mod md_meta_extractor;
 mod md_section_iter;
 mod md_section_split;
 mod outer_block;

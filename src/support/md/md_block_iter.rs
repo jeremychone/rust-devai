@@ -2,10 +2,26 @@ use crate::types::MdBlock;
 
 /// Represents an iterator over Markdown code blocks with optional language filtering.
 pub struct MdBlockIter<'a> {
-	lines: std::str::Lines<'a>,
+	// -- The iterator options
 	lang_filter: Option<&'a str>,
+	extrude: Option<Extrude>,
+	// -- The states
+	/// The content lines iterator
+	lines: std::str::Lines<'a>,
+	/// The eventual extrude content
+	extruded_content: Vec<&'a str>,
 }
 
+/// The type of "extrude" to be performed
+/// - `Content`: Concatenate all lines into one string
+/// - `Segments` (NOT SUPPORTED YET): Have a vector of strings for Before, In Between, and After
+#[derive(Debug, Clone, Copy)]
+pub enum Extrude {
+	Content,
+	// Segments, // TODO
+}
+
+/// Constructor and main iterator fuction
 impl<'a> MdBlockIter<'a> {
 	/// Creates a new MdBlock iterator from the given content.
 	///
@@ -16,10 +32,12 @@ impl<'a> MdBlockIter<'a> {
 	///     - `None`: Any code block is returned.
 	///     - `Some(s)`: Only code blocks with a matching language are returned.
 	///       - If `s` is an empty string, only code blocks without a specified language are returned.
-	pub fn new(content: &'a str, lang_filter: Option<&'a str>) -> Self {
+	pub fn new(content: &'a str, lang_filter: Option<&'a str>, extrude: Option<Extrude>) -> Self {
 		MdBlockIter {
 			lines: content.lines(),
 			lang_filter,
+			extrude,
+			extruded_content: Vec::new(),
 		}
 	}
 
@@ -30,12 +48,14 @@ impl<'a> MdBlockIter<'a> {
 	fn next_block(&mut self) -> Option<MdBlock> {
 		// If the line is inside a block and contains the language, it can be an empty string
 		let mut in_block: Option<&str> = None;
-		let mut captured_content: Option<String> = None;
+		let mut captured_content: Option<Vec<&str>> = None;
+
+		let extrude_content = matches!(self.extrude, Some(Extrude::Content));
 
 		for line in self.lines.by_ref() {
 			// -- Check if new block and capture language
 			if line.starts_with("```") {
-				// We are entering a new block
+				// -- We are entering a new block
 				if in_block.is_none() {
 					// Extract the language
 					let lang = line.trim_start_matches("```").trim();
@@ -44,22 +64,31 @@ impl<'a> MdBlockIter<'a> {
 					// Determine if content needs to be captured
 					captured_content = match self.lang_filter {
 						Some(filter) => {
+							// -- match the filter, so we start capturing the block
 							if filter == lang {
-								Some(String::new())
+								Some(Vec::new())
 							} else {
+								if extrude_content {
+									self.extruded_content.push(line);
+									self.extruded_content.push("\n");
+								}
 								None
 							}
 						}
-						None => Some(String::new()),
+						None => Some(Vec::new()),
 					};
 				}
-				// We are exiting a block
+				// -- We are exiting a block
 				else {
 					if let Some(content) = captured_content {
+						let content = content.join("");
 						return Some(MdBlock {
 							lang: Some(in_block.unwrap_or_default().to_string()),
 							content,
 						});
+					} else if extrude_content {
+						self.extruded_content.push(line);
+						self.extruded_content.push("\n");
 					}
 
 					in_block = None;
@@ -71,13 +100,33 @@ impl<'a> MdBlockIter<'a> {
 
 			// -- Capture the content
 			if let Some(content) = &mut captured_content {
-				content.push_str(line);
-				content.push('\n');
+				content.push(line);
+				content.push("\n");
+			}
+			// -- If no capture, but extrude_content, then, we extrude it
+			else if extrude_content {
+				self.extruded_content.push(line);
+				self.extruded_content.push("\n");
 			}
 		}
 
 		// No more blocks found
 		None
+	}
+}
+
+impl<'a> MdBlockIter<'a> {
+	pub fn collect_blocks_and_extruded_content(mut self) -> (Vec<MdBlock>, String) {
+		let mut blocks: Vec<MdBlock> = Vec::new();
+
+		for block in self.by_ref() {
+			blocks.push(block);
+		}
+
+		// Now that iteration is done, extract extruded_content
+		let extruded_content = self.extruded_content.join("");
+
+		(blocks, extruded_content)
 	}
 }
 

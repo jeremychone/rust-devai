@@ -1,10 +1,10 @@
-use crate::support::md::MdBlockIter;
+use crate::support::md::{Extrude, MdBlockIter};
 use crate::types::MdBlock;
 
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 #[test]
-fn test_md_block_iter_single_rust_block() -> Result<()> {
+fn test_md_block_iter_single_rust_block_simple() -> Result<()> {
 	let content = r#"
 Some text
 ```rust
@@ -15,7 +15,37 @@ fn main() {
 More text
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("rust")).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("rust"), None).collect();
+	assert_eq!(blocks.len(), 1);
+	assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "rust");
+	assert_eq!(blocks[0].content, "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
+
+	Ok(())
+}
+
+#[test]
+fn test_md_block_iter_single_rust_block_extrude_content() -> Result<()> {
+	let content = r#"
+Some text
+
+```rust
+fn main() {
+		println!("Hello, world!");
+}
+```
+More text
+"#;
+
+	let (blocks, content) =
+		MdBlockIter::new(content, Some("rust"), Some(Extrude::Content)).collect_blocks_and_extruded_content();
+	assert_eq!(
+		content,
+		"
+Some text
+
+More text
+",
+	);
 	assert_eq!(blocks.len(), 1);
 	assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "rust");
 	assert_eq!(blocks[0].content, "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
@@ -38,7 +68,7 @@ def hello():
 ```
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, None).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, None, None).collect();
 	assert_eq!(blocks.len(), 2);
 	assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "rust");
 	assert_eq!(blocks[0].content, "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
@@ -63,7 +93,7 @@ def hello():
 ```
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("python")).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("python"), None).collect();
 	assert_eq!(blocks.len(), 1);
 	assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "python");
 	assert_eq!(blocks[0].content, "def hello():\n\t\tprint(\"Hello, world!\")\n");
@@ -82,7 +112,7 @@ fn main() {
 ```
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("python")).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("python"), None).collect();
 	assert_eq!(blocks.len(), 0);
 
 	Ok(())
@@ -105,7 +135,7 @@ fn main() {
 
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("")).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some(""), None).collect();
 	assert_eq!(blocks.len(), 1);
 	assert_eq!(blocks[0].lang.as_deref(), Some(""));
 	assert_eq!(blocks[0].content, "Some content of empty lang block\n");
@@ -130,7 +160,7 @@ fn greet() {
 ```
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("rust")).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("rust"), None).collect();
 	assert_eq!(blocks.len(), 2);
 	assert_eq!(blocks[0].lang.as_ref().expect("should have lang"), "rust");
 	assert_eq!(blocks[0].content, "fn main() {\n\t\tprintln!(\"Hello, world!\");\n}\n");
@@ -152,7 +182,7 @@ def hello():
 ```
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("rust")).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("rust"), None).collect();
 	assert_eq!(blocks.len(), 1);
 	assert_eq!(blocks[0].content, ""); // Expecting an empty block
 
@@ -165,7 +195,7 @@ fn test_md_block_iter_no_code_blocks() -> Result<()> {
 This is a text without any code blocks.
         "#;
 
-	let blocks: Vec<MdBlock> = MdBlockIter::new(content, None).collect();
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, None, None).collect();
 	assert_eq!(blocks.len(), 0);
 
 	Ok(())
