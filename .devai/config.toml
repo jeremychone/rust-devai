@@ -7,7 +7,7 @@
 #            Groq: "deepseek-r1-distill-llama-70b", "llama3-8b-8192", "llama-3.3-70b-versatile"
 #             xAI: "grok-beta"
 #        DeepSeek: "deepseek-chat" "deepseek-reasoner" (from deepseek.com)
-model = "claude-3-5-sonnet-20241022"
+model = "deepseek-chat"
 
 # Temperature (by default unset)
 # temperature = 0.0
