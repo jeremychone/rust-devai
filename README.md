@@ -33,6 +33,12 @@ devai init
 # Will proofread and update the direct .md file from the current directory
 devai run proof-read -f "./*.md"
 # Can use multiple globs or direct files -f "./*.md" -f "./doc/**/*.md"
+
+# For a one shot run
+devai run --non-interactive proof-read -f "./doc/README.md"
+
+# or
+devai run --ni proof-read -f "./doc/README.md"
 ```
 
 The main **devai** concept is to minimize the friction of creating and running an agent while providing maximum control over how we want those agents to run and maximizing iteration speed to mature them quickly.
