@@ -19,7 +19,8 @@ unsafe_code = "forbid"
 tokio = { version = "1", features = ["full"] }
 flume = "0.11.1"
 # -- AI
-genai = "0.1.20"
+# genai = "0.1.20"
+genai = { path = "/Users/jeremychone/_jeremy/_rust/utils/rust-genai" }
 # -- Json & Data Files
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"

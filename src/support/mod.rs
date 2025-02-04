@@ -17,3 +17,6 @@ pub mod text;
 pub mod tomls;
 
 // endregion: --- Modules
+
+/// Generic wrapper for a NewType Pattern
+pub struct W<T>(pub T);
