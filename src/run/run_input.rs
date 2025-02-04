@@ -6,7 +6,7 @@ use crate::script::{DevaiCustom, FromValue};
 use crate::support::hbs::hbs_render;
 use crate::Result;
 use genai::adapter::AdapterKind;
-use genai::chat::{ChatMessage, ChatRequest};
+use genai::chat::{ChatMessage, ChatRequest, ChatResponse};
 use genai::ModelName;
 use mlua::IntoLua;
 use serde::Serialize;
@@ -16,6 +16,7 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize)]
 pub struct AiResponse {
 	pub content: Option<String>,
+	pub reasoning_content: Option<String>,
 	pub model_name: ModelName,
 	pub adapter_kind: AdapterKind,
 }
@@ -25,6 +26,7 @@ impl IntoLua for AiResponse {
 		let table = lua.create_table()?;
 
 		table.set("content", self.content.into_lua(lua)?)?;
+		table.set("reasoning_content", self.reasoning_content.into_lua(lua)?)?;
 		table.set("model_name", self.model_name.into_lua(lua)?)?;
 		table.set("adapter_kind", self.adapter_kind.as_str().into_lua(lua)?)?;
 
@@ -168,18 +170,28 @@ pub async fn run_agent_input(
 		hub.publish("<- ai_response content received").await;
 
 		let chat_res_mode_iden = chat_res.model_iden.clone();
-		let ai_response_content = chat_res.content_text_into_string().unwrap_or_default();
+		let ChatResponse {
+			content,
+			reasoning_content,
+			..
+		} = chat_res;
+
+		let ai_response_content = content.and_then(|c| c.text_into_string());
+		let ai_response_reasoning_content = reasoning_content;
 
 		if run_base_options.verbose() {
 			hub.publish(format!(
-				"\n-- AI Output (model: {} | adapter: {})\n\n{ai_response_content}\n",
-				chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
+				"\n-- AI Output (model: {} | adapter: {})\n\n{}\n",
+				chat_res_mode_iden.model_name,
+				chat_res_mode_iden.adapter_kind,
+				ai_response_content.as_deref().unwrap_or_default()
 			))
 			.await;
 		}
 
 		Some(AiResponse {
-			content: Some(ai_response_content),
+			content: ai_response_content,
+			reasoning_content: ai_response_reasoning_content,
 			model_name: chat_res_mode_iden.model_name,
 			adapter_kind: chat_res_mode_iden.adapter_kind,
 		})
