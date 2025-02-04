@@ -48,38 +48,36 @@ impl IntoLua for W<MetaUsage> {
 		// -- Prompt Details
 		// Note: we create the details even if None (simpler on the script side)
 		let prompt_details_table = lua.create_table()?;
-		table.set("prompt_tokens_details", prompt_details_table)?;
 		if let Some(prompt_tokens_details) = usage.prompt_tokens_details {
-			let details_table = lua.create_table()?;
 			// Note: The leaf value can be absent (same as nil in Lua)
 			if let Some(v) = prompt_tokens_details.cached_tokens {
-				details_table.set("cached_tokens", v.into_lua(lua)?)?;
+				prompt_details_table.set("cached_tokens", v.into_lua(lua)?)?;
 			}
 			if let Some(v) = prompt_tokens_details.audio_tokens {
-				details_table.set("audio_tokens", v.into_lua(lua)?)?;
+				prompt_details_table.set("audio_tokens", v.into_lua(lua)?)?;
 			}
 		}
+		table.set("prompt_tokens_details", prompt_details_table)?;
 
 		// -- Completion Details
 		// Note: we create the details even if None (simpler on the script side)
 		let completion_details_table = lua.create_table()?;
-		table.set("completion_tokens_details", completion_details_table)?;
 		if let Some(completion_tokens_details) = usage.completion_tokens_details {
-			let details_table = lua.create_table()?;
 			// Note: The leaf value can be absent (same as nil in Lua)
 			if let Some(v) = completion_tokens_details.reasoning_tokens {
-				details_table.set("reasoning_tokens", v.into_lua(lua)?)?;
+				completion_details_table.set("reasoning_tokens", v.into_lua(lua)?)?;
 			}
 			if let Some(v) = completion_tokens_details.audio_tokens {
-				details_table.set("audio_tokens", v.into_lua(lua)?)?;
+				completion_details_table.set("audio_tokens", v.into_lua(lua)?)?;
 			}
 			if let Some(v) = completion_tokens_details.accepted_prediction_tokens {
-				details_table.set("accepted_prediction_tokens", v.into_lua(lua)?)?;
+				completion_details_table.set("accepted_prediction_tokens", v.into_lua(lua)?)?;
 			}
 			if let Some(v) = completion_tokens_details.rejected_prediction_tokens {
-				details_table.set("rejected_prediction_tokens", v.into_lua(lua)?)?;
+				completion_details_table.set("rejected_prediction_tokens", v.into_lua(lua)?)?;
 			}
 		}
+		table.set("completion_tokens_details", completion_details_table)?;
 
 		Ok(mlua::Value::Table(table))
 	}

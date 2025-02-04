@@ -7,6 +7,7 @@ mod utils_file;
 mod utils_git;
 mod utils_html;
 mod utils_json;
+mod utils_lua;
 mod utils_md;
 mod utils_path;
 mod utils_rust;
