@@ -5,7 +5,7 @@ mod file_md;
 
 use crate::run::RuntimeContext;
 use crate::script::lua_script::utils_file::file_common::{
-	file_ensure_exists, file_first, file_list, file_list_load, file_load, file_save,
+	file_append, file_ensure_exists, file_first, file_list, file_list_load, file_load, file_save,
 };
 use crate::script::lua_script::utils_file::file_md::{file_load_md_sections, file_load_md_split_first};
 use crate::Result;
@@ -24,6 +24,11 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	let ctx = runtime_context.clone();
 	let file_save_fn =
 		lua.create_function(move |lua, (path, content): (String, String)| file_save(lua, &ctx, path, content))?;
+
+	// -- append
+	let ctx = runtime_context.clone();
+	let file_append_fn =
+		lua.create_function(move |lua, (path, content): (String, String)| file_append(lua, &ctx, path, content))?;
 
 	// -- ensure_exists
 	// (md_content, lang_name): (String, Option<String>)
@@ -58,6 +63,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	// -- All all function to the module
 	table.set("load", file_load_fn)?;
 	table.set("save", file_save_fn)?;
+	table.set("append", file_append_fn)?;
 	table.set("ensure_exists", file_ensure_exists_fn)?;
 	table.set("list", file_list_fn)?;
 	table.set("list_load", file_list_load_fn)?;

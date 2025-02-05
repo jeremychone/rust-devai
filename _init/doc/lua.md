@@ -43,6 +43,9 @@ local file = utils.file.load("doc/some-file.md")                -- FileRecord
 -- Save file content (will create directories as needed)
 utils.file.save("doc/some-file.md", "some new content")         -- void (no return for now)
 
+-- Append content to file (create file and directoris as needed) 
+utils.file.append("doc/some-file.md", "some new content")       -- void (no return for now)
+
 -- List files matching a glob pattern
 local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileMeta, ...}
 

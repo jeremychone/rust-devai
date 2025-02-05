@@ -7,6 +7,7 @@ use crate::{Error, Result};
 use mlua::{IntoLua, Lua, Value};
 use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
 use std::fs::write;
+use std::io::Write;
 
 /// ## Lua Documentation
 ///
@@ -61,6 +62,35 @@ pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, cont
 	write(&path, content)?;
 
 	get_hub().publish_sync(format!("-> Lua utils.file.save called on: {}", rel_path));
+
+	Ok(())
+}
+
+/// ## Lua Documentation
+///
+/// Append content to a file at a specified path
+///
+/// ```lua
+/// utils.file.append("doc/README.md", "Appended content to the file")
+/// ```
+///
+/// ### Returns
+///
+/// Does not return anything
+///
+pub(super) fn file_append(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, content: String) -> mlua::Result<()> {
+	let path = ctx.dir_context().resolve_path(&rel_path, PathResolver::DevaiParentDir)?;
+	ensure_file_dir(&path).map_err(Error::from)?;
+
+	let mut file = std::fs::OpenOptions::new()
+		.append(true)
+		.create(true)
+		.open(&path)
+		.map_err(Error::from)?;
+
+	file.write_all(content.as_bytes())?;
+
+	get_hub().publish_sync(format!("-> Lua utils.file.append called on: {}", rel_path));
 
 	Ok(())
 }
