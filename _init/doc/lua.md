@@ -72,62 +72,6 @@ local is_dir = path.is_dir("doc/")                     -- bool
 local parent_dir = path.parent("doc/some-file.md")     -- string
 ```
 
-### utils.git
-
-```lua
--- Restore a file to its last committed state
-utils.git.restore("src/main.rs")                       -- void
-```
-
-### utils.web
-
-See [WebResponse](#webresponse), [WebError](#weberror) for return types.
-
-```lua
--- Fetch content from a URL
-local content = utils.web.get("https://example.com")   -- WebResponse / WebError
-```
-
-### utils.md
-
-See [MdBlock](#mdblock)
-
-```lua
--- Extract the markdown blocks (if no name, all blocks will be extracted)
-local blocks = utils.md.extract_blocks("js")                 -- {MdBlock}
--- returns {} if no block found
-
--- If content starts with ```, it will remove the first and last ```, and return the content in between
--- Otherwise, it returns the original content
-local content = utils.md.outer_block_content_or_raw(content) -- string
-
-```
-
-### utils.json
-
-```lua
--- Parse a JSON string into a table
-local obj = utils.json.parse('{"name": "John", "age": 30}')  -- Object (lua table)
--- Stringify a table into a JSON string
-local json_str = utils.json.stringify(obj)                   -- string
--- Stringify a table into a single-line JSON string
-local json_line_str = utils.json.stringify_to_line(obj)      -- string
-```
-
-### utils.rust
-
-```lua
--- === utils.rust
--- Prune Rust code to keep only function declarations (removes function bodies)
-local result = utils.rust.prune_to_declarations(code)  -- string
-```
-
-## utils.html
-
-```lua
--- Prune HTML content to remove some empty tags, comments, and such
-local cleaned_html = utils.html.prune_to_content(html_content)  -- string
-```
 
 ## utils.text
 
@@ -167,6 +111,72 @@ local content_without_last_line = utils.text.remove_last_line(content)    -- str
 local updated_content = utils.text.replace_markers(content, new_sections) -- string
 ```
 
+
+### utils.md
+
+See [MdBlock](#mdblock)
+
+```lua
+-- Extract the markdown blocks (if no name, all blocks will be extracted)
+local blocks = utils.md.extract_blocks("js")                 -- {MdBlock}
+-- returns {} if no block found
+
+-- If content starts with ```, it will remove the first and last ```, and return the content in between
+-- Otherwise, it returns the original content
+local content = utils.md.outer_block_content_or_raw(content) -- string
+
+```
+
+### utils.json
+
+```lua
+-- Parse a JSON string into a table
+local obj = utils.json.parse('{"name": "John", "age": 30}')  -- Object (lua table)
+-- Stringify a table into a JSON string
+local json_str = utils.json.stringify(obj)                   -- string
+-- Stringify a table into a single-line JSON string
+local json_line_str = utils.json.stringify_to_line(obj)      -- string
+```
+
+### utils.lua
+
+```lua
+-- === utils.lua
+-- Return a pretty string of a lua value
+local dump = utils.lua.dump(some_var)  -- string
+print(dump)
+```
+
+### utils.rust
+
+```lua
+-- === utils.rust
+-- Prune Rust code to keep only function declarations (removes function bodies)
+local result = utils.rust.prune_to_declarations(code)  -- string
+```
+
+### utils.git
+
+```lua
+-- Restore a file to its last committed state
+utils.git.restore("src/main.rs")                       -- void
+```
+
+### utils.web
+
+See [WebResponse](#webresponse), [WebError](#weberror) for return types.
+
+```lua
+-- Fetch content from a URL
+local content = utils.web.get("https://example.com")   -- WebResponse / WebError
+```
+
+## utils.html
+
+```lua
+-- Prune HTML content to remove some empty tags, comments, and such
+local cleaned_html = utils.html.prune_to_content(html_content)  -- string
+```
 ## utils.cmd
 
 See [CmdResponse](#cmdresponse), [CmdError](#cmderror) for return types.
@@ -211,6 +221,35 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 - These are available in `devai run ..` as well as `devai solo ...`
 
 # Common Types
+
+## AIResponse
+
+In the `# Output` section, the `ai_response` get injected in the scope with the following structure: 
+
+```lua
+-- ai_reponse in '# Output' lua section
+
+ai_response: {
+  content:            string | nil, -- Typically not null
+  reasoning_content:  string | nil, -- if the model gives it back, e.g., deepseek-reasoner, deepseek stilled in ollama & Groq
+  uage: {
+    prompt_tokens:     number,
+    completion_tokens: number,
+
+    completion_tokens_details: { -- won't be nil
+      accepted_prediction_tokens: number | nil,
+      rejected_prediction_token:  number | nil,
+      audio_token:                number | nil,
+      reasoning_tokens:           number | nil,
+    },
+    
+    prompt_tokens_details: {     -- won't be nil
+      cached_tokens: number | nil,
+      audio_tokens:  number | nil,
+    }
+  }
+}
+```
 
 ## FileMeta
 
