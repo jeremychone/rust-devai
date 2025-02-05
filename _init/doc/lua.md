@@ -26,7 +26,7 @@
 - In the `# After All` stage
   - `inputs` - The inputs sent or modified by `# Before All`
   - `outputs` - The outputs returned by the `# Output` stage
-    - Same order as `inputs` and `nil` when an item has been skipped or the output did not return anything.
+    - The same order as `inputs`, and `nil` when an item has been skipped or the output did not return anything.
 
 ## utils
 
@@ -34,7 +34,7 @@ The utils top module is comprised of the following submodules.
 
 ### utils.file
 
-See [FileRecord](#filerecord), See [FileMeta](#filemeta), [MdSection](#mdsection) for return types.
+See [FileRecord](#filerecord), [FileMeta](#filemeta), [MdSection](#mdsection) for return types.
 
 ```lua
 -- Load file text content and return its FileRecord (See below), with `.content`
@@ -93,13 +93,13 @@ utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
 local normalized_content = utils.text.ensure_single_ending_newline(content)
                                                                            -- string
 
--- split_first - Split the first occurrence of a spearator
+-- split_first - Split the first occurrence of a separator
 local content = "some first content\n===\nsecond content"
 local first, second = utils.text.split_first(content,"===")
 -- first  = "some first content\n"
 -- second = "\nsecond content"
 -- NOTE: When no match, second is nil. 
---       If match, but nothing after, second is ""
+--       If matched, but nothing after, second is ""
 
 -- Remove the first line from content
 local content_without_first_line = utils.text.remove_first_line(content)  -- string
@@ -224,15 +224,15 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 
 ## AIResponse
 
-In the `# Output` section, the `ai_response` get injected in the scope with the following structure: 
+In the `# Output` section, the `ai_response` is injected in the scope with the following structure: 
 
 ```lua
--- ai_reponse in '# Output' lua section
+-- ai_response in '# Output' lua section
 
 ai_response: {
   content:            string | nil, -- Typically not null
-  reasoning_content:  string | nil, -- if the model gives it back, e.g., deepseek-reasoner, deepseek stilled in ollama & Groq
-  uage: {
+  reasoning_content:  string | nil, -- If the model gives it back, e.g., deepseek-reasoner, deepseek still in ollama & Groq
+  usage: {
     prompt_tokens:     number,
     completion_tokens: number,
 
@@ -345,7 +345,7 @@ The `WebResponse`
 
 ## WebError
 
-In case of an error, the WebError is:
+In case of an error, the `WebError` is:
 
 ```lua
 {

@@ -4,7 +4,7 @@ use mlua::{Lua, Result, Table, Value};
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
 
-	let dump_lua = lua.create_function(lua_dump)?;
+	let dump_lua = lua.create_function(dump)?;
 	table.set("dump", dump_lua)?;
 
 	Ok(table)
@@ -12,7 +12,7 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 
 // region:    --- Rust Lua Support
 
-pub fn lua_dump(lua: &Lua, value: Value) -> Result<String> {
+pub fn dump(lua: &Lua, value: Value) -> Result<String> {
 	fn dump_value(_lua: &Lua, value: Value, indent: usize) -> Result<String> {
 		let indent_str = "  ".repeat(indent);
 		match value {
@@ -82,7 +82,7 @@ mod tests {
 		outer_table.set("num", 3.21).unwrap();
 
 		// -- Check
-		let result = lua_dump(&lua, Value::Table(outer_table)).unwrap();
+		let result = dump(&lua, Value::Table(outer_table)).unwrap();
 		assert_contains(&result, r#"  bool = true"#);
 		assert_contains(&result, r#"    key1 = "value1""#);
 		assert_contains(&result, r#"    key2 = 42"#);
