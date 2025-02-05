@@ -90,7 +90,8 @@ pub(super) fn file_append(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, co
 
 	file.write_all(content.as_bytes())?;
 
-	get_hub().publish_sync(format!("-> Lua utils.file.append called on: {}", rel_path));
+	// NOTE: Could be too many prints
+	// get_hub().publish_sync(format!("-> Lua utils.file.append called on: {}", rel_path));
 
 	Ok(())
 }
