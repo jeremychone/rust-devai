@@ -12,6 +12,8 @@
 
 - [Full intro video for v0.5](https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj)
 
+- Built on top of the [Rust genai library](https://crates.io/crates/genai), which supports all the top AI providers and models (OpenAI, Anthropic, Gemini, DeepSeek, Groq, Ollama, xAI, and Cohere).
+
 - Top new features:
   - 2025-01-27 (v0.5.9) - Deepseek distill models support for Groq and Ollama (local)
   - 2025-01-23 (v0.5.7) - `devai run craft/text` or `devai run craft/code` (example of cool new agent module support)
