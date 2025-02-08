@@ -153,8 +153,7 @@ pub async fn run_agent_input(
 	// Now execute the instruction
 	let ai_response: Option<AiResponse> = if !is_inst_empty {
 		// NOTE: Put the instruction as user as with openai o1-... models does not seem to support system.
-		let chat_req = ChatRequest::from_messages(chat_messages);
-
+		let chat_req = ChatRequest::from_messages(chat_messages.clone());
 		hub.publish(format!(
 			"-> Sending rendered instruction to {} ...",
 			agent.genai_model()
@@ -199,6 +198,15 @@ pub async fn run_agent_input(
 	let res = if let Some(output_script) = agent.output_script() {
 		let lua_engine = runtime.new_lua_engine()?;
 		let lua_scope = lua_engine.create_table()?;
+
+		let chat_req = ChatRequest::from_messages(chat_messages);
+		let chat_req_content = chat_req
+			.messages
+			.iter()
+			.map(|msg| msg.content.text_as_str().unwrap_or_default().to_string())
+			.collect::<Vec<String>>()
+			.join("\n");
+		lua_scope.set("chat_req", chat_req_content)?;
 		lua_scope.set("input", lua_engine.serde_to_lua_value(input)?)?;
 		lua_scope.set("data", lua_engine.serde_to_lua_value(data)?)?;
 		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result)?)?;
