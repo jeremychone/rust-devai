@@ -2,7 +2,7 @@ use crate::hub::{get_hub, HubEvent};
 use crate::run::paths::CUSTOM_LUA_DIR;
 use crate::run::{get_devai_base_dir, RuntimeContext};
 use crate::script::lua_script::{
-	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_md, utils_path, utils_rust,
+	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_lua, utils_md, utils_path, utils_rust,
 	utils_text, utils_web,
 };
 use crate::{Error, Result};
@@ -199,12 +199,13 @@ macro_rules! init_and_set {
 }
 
 /// Module builders
-fn init_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
-	let table = lua.create_table()?;
+fn init_utils(lua_vm: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
+	// Note: using `lua_vm` to not conflict with the `lua` in the init_and_set that will get expanded as `lua` variable.
+	let table = lua_vm.create_table()?;
 
 	init_and_set!(
 		table,
-		lua,
+		lua_vm,
 		runtime_context,
 		// -- The lua module names that refers to utils_...
 		file,
@@ -216,10 +217,11 @@ fn init_utils(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
 		md,
 		json,
 		html,
-		cmd
+		cmd,
+		lua
 	);
 
-	let globals = lua.globals();
+	let globals = lua_vm.globals();
 	globals.set("utils", table)?;
 	Ok(())
 }

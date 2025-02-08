@@ -4,9 +4,10 @@ use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
 use crate::script::{DevaiCustom, FromValue};
 use crate::support::hbs::hbs_render;
+use crate::support::W;
 use crate::Result;
 use genai::adapter::AdapterKind;
-use genai::chat::{ChatMessage, ChatRequest};
+use genai::chat::{ChatMessage, ChatRequest, ChatResponse, MetaUsage};
 use genai::ModelName;
 use mlua::IntoLua;
 use serde::Serialize;
@@ -16,8 +17,10 @@ use std::collections::HashMap;
 #[derive(Debug, Serialize)]
 pub struct AiResponse {
 	pub content: Option<String>,
+	pub reasoning_content: Option<String>,
 	pub model_name: ModelName,
 	pub adapter_kind: AdapterKind,
+	pub usage: MetaUsage,
 }
 
 impl IntoLua for AiResponse {
@@ -25,8 +28,56 @@ impl IntoLua for AiResponse {
 		let table = lua.create_table()?;
 
 		table.set("content", self.content.into_lua(lua)?)?;
+		table.set("reasoning_content", self.reasoning_content.into_lua(lua)?)?;
 		table.set("model_name", self.model_name.into_lua(lua)?)?;
 		table.set("adapter_kind", self.adapter_kind.as_str().into_lua(lua)?)?;
+		table.set("usage", W(self.usage).into_lua(lua)?)?;
+
+		Ok(mlua::Value::Table(table))
+	}
+}
+
+impl IntoLua for W<MetaUsage> {
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+		let usage = self.0;
+
+		table.set("prompt_tokens", usage.prompt_tokens.into_lua(lua)?)?;
+		table.set("completion_tokens", usage.prompt_tokens.into_lua(lua)?)?;
+
+		// -- Prompt Details
+		// Note: we create the details even if None (simpler on the script side)
+		let prompt_details_table = lua.create_table()?;
+		if let Some(prompt_tokens_details) = usage.prompt_tokens_details {
+			// Note: The leaf value can be absent (same as nil in Lua)
+			if let Some(v) = prompt_tokens_details.cached_tokens {
+				prompt_details_table.set("cached_tokens", v.into_lua(lua)?)?;
+			}
+			if let Some(v) = prompt_tokens_details.audio_tokens {
+				prompt_details_table.set("audio_tokens", v.into_lua(lua)?)?;
+			}
+		}
+		table.set("prompt_tokens_details", prompt_details_table)?;
+
+		// -- Completion Details
+		// Note: we create the details even if None (simpler on the script side)
+		let completion_details_table = lua.create_table()?;
+		if let Some(completion_tokens_details) = usage.completion_tokens_details {
+			// Note: The leaf value can be absent (same as nil in Lua)
+			if let Some(v) = completion_tokens_details.reasoning_tokens {
+				completion_details_table.set("reasoning_tokens", v.into_lua(lua)?)?;
+			}
+			if let Some(v) = completion_tokens_details.audio_tokens {
+				completion_details_table.set("audio_tokens", v.into_lua(lua)?)?;
+			}
+			if let Some(v) = completion_tokens_details.accepted_prediction_tokens {
+				completion_details_table.set("accepted_prediction_tokens", v.into_lua(lua)?)?;
+			}
+			if let Some(v) = completion_tokens_details.rejected_prediction_tokens {
+				completion_details_table.set("rejected_prediction_tokens", v.into_lua(lua)?)?;
+			}
+		}
+		table.set("completion_tokens_details", completion_details_table)?;
 
 		Ok(mlua::Value::Table(table))
 	}
@@ -167,20 +218,32 @@ pub async fn run_agent_input(
 		hub.publish("<- ai_response content received").await;
 
 		let chat_res_mode_iden = chat_res.model_iden.clone();
-		let ai_response_content = chat_res.content_text_into_string().unwrap_or_default();
+		let ChatResponse {
+			content,
+			reasoning_content,
+			usage,
+			..
+		} = chat_res;
+
+		let ai_response_content = content.and_then(|c| c.text_into_string());
+		let ai_response_reasoning_content = reasoning_content;
 
 		if run_base_options.verbose() {
 			hub.publish(format!(
-				"\n-- AI Output (model: {} | adapter: {})\n\n{ai_response_content}\n",
-				chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind
+				"\n-- AI Output (model: {} | adapter: {})\n\n{}\n",
+				chat_res_mode_iden.model_name,
+				chat_res_mode_iden.adapter_kind,
+				ai_response_content.as_deref().unwrap_or_default()
 			))
 			.await;
 		}
 
 		Some(AiResponse {
-			content: Some(ai_response_content),
+			content: ai_response_content,
+			reasoning_content: ai_response_reasoning_content,
 			model_name: chat_res_mode_iden.model_name,
 			adapter_kind: chat_res_mode_iden.adapter_kind,
+			usage,
 		})
 	}
 	// if we do not have an instruction, just return null

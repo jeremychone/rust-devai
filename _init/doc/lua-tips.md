@@ -1,5 +1,4 @@
-
-## Skip if a string only has whitepace
+## Skip if a string only has whitespace
 
 ```lua
 -- If the string contains only whitespace, treat it as empty and skip.
@@ -8,6 +7,6 @@
 --    - the start and end indices if a match is found;
 --    - otherwise, it returns nil. Thus, `not ...` evaluates to true.
 if not content:find("%S") then
-    return devai.skip("Empty file - skipping for now. Start writing, and do a Redo.")
+    return devai.skip("Empty file - skipping for now. Start writing and do a redo.")
 end
 ```

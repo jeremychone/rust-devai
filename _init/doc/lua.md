@@ -26,7 +26,7 @@
 - In the `# After All` stage
   - `inputs` - The inputs sent or modified by `# Before All`
   - `outputs` - The outputs returned by the `# Output` stage
-    - Same order as `inputs` and `nil` when an item has been skipped or the output did not return anything.
+    - The same order as `inputs`, and `nil` when an item has been skipped or the output did not return anything.
 
 ## utils
 
@@ -34,7 +34,7 @@ The utils top module is comprised of the following submodules.
 
 ### utils.file
 
-See [FileRecord](#filerecord), See [FileMeta](#filemeta), [MdSection](#mdsection) for return types.
+See [FileRecord](#filerecord), [FileMeta](#filemeta), [MdSection](#mdsection) for return types.
 
 ```lua
 -- Load file text content and return its FileRecord (See below), with `.content`
@@ -42,6 +42,9 @@ local file = utils.file.load("doc/some-file.md")                -- FileRecord
 
 -- Save file content (will create directories as needed)
 utils.file.save("doc/some-file.md", "some new content")         -- void (no return for now)
+
+-- Append content to file (create file and directoris as needed) 
+utils.file.append("doc/some-file.md", "some new content")       -- void (no return for now)
 
 -- List files matching a glob pattern
 local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileMeta, ...}
@@ -72,21 +75,45 @@ local is_dir = path.is_dir("doc/")                     -- bool
 local parent_dir = path.parent("doc/some-file.md")     -- string
 ```
 
-### utils.git
+
+## utils.text
 
 ```lua
--- Restore a file to its last committed state
-utils.git.restore("src/main.rs")                       -- void
+local trimmed = utils.text.trim(content)        -- string
+local trimmed = utils.text.trim_start(content)  -- string
+local trimmed = utils.text.trim_end(content)    -- string
+
+-- Truncate content to a maximum length
+-- - ellipsis - optional third argument
+local truncated_content = utils.text.truncate(content, 100, "...")        -- string
+
+-- Ensure
+-- - second argument of type `{prefix = string, suffix = string}` both optional
+-- - if defined, it will add the prefix and suffix if they are not present
+utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
+
+-- Ensure content ends with a single newline
+local normalized_content = utils.text.ensure_single_ending_newline(content)
+                                                                           -- string
+
+-- split_first - Split the first occurrence of a separator
+local content = "some first content\n===\nsecond content"
+local first, second = utils.text.split_first(content,"===")
+-- first  = "some first content\n"
+-- second = "\nsecond content"
+-- NOTE: When no match, second is nil. 
+--       If matched, but nothing after, second is ""
+
+-- Remove the first line from content
+local content_without_first_line = utils.text.remove_first_line(content)  -- string
+-- Remove the last line from content
+local content_without_last_line = utils.text.remove_last_line(content)    -- string
+
+-- (Advanced) Replace markers in content with new sections
+--   - Markers for now are in between `<<START>>` and `<<END>>`
+local updated_content = utils.text.replace_markers(content, new_sections) -- string
 ```
 
-### utils.web
-
-See [WebResponse](#webresponse), [WebError](#weberror) for return types.
-
-```lua
--- Fetch content from a URL
-local content = utils.web.get("https://example.com")   -- WebResponse / WebError
-```
 
 ### utils.md
 
@@ -114,6 +141,15 @@ local json_str = utils.json.stringify(obj)                   -- string
 local json_line_str = utils.json.stringify_to_line(obj)      -- string
 ```
 
+### utils.lua
+
+```lua
+-- === utils.lua
+-- Return a pretty string of a lua value
+local dump = utils.lua.dump(some_var)  -- string
+print(dump)
+```
+
 ### utils.rust
 
 ```lua
@@ -122,51 +158,28 @@ local json_line_str = utils.json.stringify_to_line(obj)      -- string
 local result = utils.rust.prune_to_declarations(code)  -- string
 ```
 
+### utils.git
+
+```lua
+-- Restore a file to its last committed state
+utils.git.restore("src/main.rs")                       -- void
+```
+
+### utils.web
+
+See [WebResponse](#webresponse), [WebError](#weberror) for return types.
+
+```lua
+-- Fetch content from a URL
+local content = utils.web.get("https://example.com")   -- WebResponse / WebError
+```
+
 ## utils.html
 
 ```lua
 -- Prune HTML content to remove some empty tags, comments, and such
 local cleaned_html = utils.html.prune_to_content(html_content)  -- string
 ```
-
-## utils.text
-
-```lua
-local trimmed = utils.text.trim(content)        -- string
-local trimmed = utils.text.trim_start(content)  -- string
-local trimmed = utils.text.trim_end(content)    -- string
-
--- Truncate content to a maximum length
--- - ellipsis - optional third argument
-local truncated_content = utils.text.truncate(content, 100, "...")        -- string
-
--- Ensure
--- - second argument of type `{prefix = string, suffix = string}` both optional
--- - if defined, it will add the prefix and suffix if they are not present
-utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
-
--- Ensure content ends with a single newline
-local normalized_content = utils.text.ensure_single_ending_newline(content)
-                                                                           -- string
-
--- split_first - Split the first occurrence of a spearator
-local content = "some first content\n===\nsecond content"
-local first, second = utils.text.split_first(content,"===")
--- first  = "some first content\n"
--- second = "\nsecond content"
--- NOTE: When no match, second is nil. 
---       If match, but nothing after, second is ""
-
--- Remove the first line from content
-local content_without_first_line = utils.text.remove_first_line(content)  -- string
--- Remove the last line from content
-local content_without_last_line = utils.text.remove_last_line(content)    -- string
-
--- (Advanced) Replace markers in content with new sections
---   - Markers for now are in between `<<START>>` and `<<END>>`
-local updated_content = utils.text.replace_markers(content, new_sections) -- string
-```
-
 ## utils.cmd
 
 See [CmdResponse](#cmdresponse), [CmdError](#cmderror) for return types.
@@ -211,6 +224,35 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 - These are available in `devai run ..` as well as `devai solo ...`
 
 # Common Types
+
+## AIResponse
+
+In the `# Output` section, the `ai_response` is injected in the scope with the following structure: 
+
+```lua
+-- ai_response in '# Output' lua section
+
+ai_response: {
+  content:            string | nil, -- Typically not null
+  reasoning_content:  string | nil, -- If the model gives it back, e.g., deepseek-reasoner, deepseek still in ollama & Groq
+  usage: {
+    prompt_tokens:     number,
+    completion_tokens: number,
+
+    completion_tokens_details: { -- won't be nil
+      accepted_prediction_tokens: number | nil,
+      rejected_prediction_token:  number | nil,
+      audio_token:                number | nil,
+      reasoning_tokens:           number | nil,
+    },
+    
+    prompt_tokens_details: {     -- won't be nil
+      cached_tokens: number | nil,
+      audio_tokens:  number | nil,
+    }
+  }
+}
+```
 
 ## FileMeta
 
@@ -306,7 +348,7 @@ The `WebResponse`
 
 ## WebError
 
-In case of an error, the WebError is:
+In case of an error, the `WebError` is:
 
 ```lua
 {

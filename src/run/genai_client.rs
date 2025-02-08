@@ -2,11 +2,14 @@
 
 use crate::support::cred::get_or_prompt_api_key;
 use crate::Result;
+use genai::chat::ChatOptions;
 use genai::resolver::AuthData;
 use genai::{Client, ModelIden};
 
 pub fn get_genai_client() -> Result<genai::Client> {
+	let options = ChatOptions::default().with_normalize_reasoning_content(true);
 	let client = Client::builder()
+		.with_chat_options(options)
 		.with_auth_resolver_fn(|model: ModelIden| {
 			// -- Get the key_name, if none, then, could be ollama, so return None
 			let Some(key_name) = model.adapter_kind.default_key_env_name() else {

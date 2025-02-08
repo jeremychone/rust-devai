@@ -12,10 +12,18 @@
 
 - [Full intro video for v0.5](https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj)
 
-- What's hot and new:
+- Built on top of the [Rust genai library](https://crates.io/crates/genai), which supports all the top AI providers and models (OpenAI, Anthropic, Gemini, DeepSeek, Groq, Ollama, xAI, and Cohere).
+
+- Top new features:
+  - 2025-01-27 (v0.5.9) - Deepseek distill models support for Groq and Ollama (local)
   - 2025-01-23 (v0.5.7) - `devai run craft/text` or `devai run craft/code` (example of cool new agent module support)
   - 2025-01-06 (v0.5.4) - DeepSeek `deepseek-chat` support
   - 2024-12-08 (v0.5.1) - Added support for **xAI**
+
+- Thanks to
+  - [David Horner](https://github.com/davehorner) for adding Windows support for Open Agent (with VSCode) ([#30](https://github.com/jeremychone/rust-devai/pull/30))
+  - [Diaa Kasem](https://github.com/diaakasem) for `--non-interactive`/`--ni` mode ([#28](https://github.com/jeremychone/rust-devai/pull/28))
+  - [Stephane Philipakis](https://github.com/sphilipakis), a top **devai** collaborator.
 
 #### Install
 
@@ -34,31 +42,29 @@ devai init
 devai run proof-read -f "./*.md"
 # Can use multiple globs or direct files -f "./*.md" -f "./doc/**/*.md"
 
-# For a one shot run
+# For a one-shot run (or --ni)
 devai run --non-interactive proof-read -f "./doc/README.md"
 
-# or
-devai run --ni proof-read -f "./doc/README.md"
 ```
 
-The main **devai** concept is to minimize the friction of creating and running an agent while providing maximum control over how we want those agents to run and maximizing iteration speed to mature them quickly.
+The main concept of **devai** is to minimize friction in creating and running agents while providing maximum control over how we want those agents to run and maximizing iteration speed to mature them quickly.
 
 **IMPORTANT 1**: Make sure everything is committed before usage (at least while you are learning about devai).
 
-**IMPORTANT 2**: Make sure to have your **`OPENAI_API_KEY`**, **`ANTHROPIC_API_KEY`**, **`DEEPSEEK_API_KEY`**, or **`XAI_API_KEY`**, or the key of your model provider [more info on api keys](_init/doc/README.md#api-keys)
+**IMPORTANT 2**: Make sure to have your **`OPENAI_API_KEY`**, **`ANTHROPIC_API_KEY`**, **`DEEPSEEK_API_KEY`**, or **`XAI_API_KEY`**, or the key of your model provider [more info on API keys](_init/doc/README.md#api-keys)
 
 **NOTE**: Since `v0.5.4`, the agent folders now have the `command-` prefix under `.devai/` (DevAI will update the folder names when needed).
 
 #### How it works
 
 - **One Agent** == **One Markdown** 
-    - An `.devai` Agent file is just a **Markdown File** with some sections for each stage of the agent processing.
+    - A `.devai` Agent file is just a **Markdown File** with sections for each stage of the agent processing.
     - See below for all the [possible stages](#multi-stage).
 - `devai run proof-read -f "./*.md"` will run the installed Command Agent file `.devai/default/proof-read.devai` on all source files matching `./src/*.md` (Here is the source file for the default [proof-read.devai](/_init/agents/proof-read.devai))
   - Each matching file will become an `input` of type [FileMeta](./_init/doc/lua.md#filemeta) for the **Lua** and **Handlebars** parts of the agent file. 
 - **devai** agents are simple `.devai` files that can be placed anywhere on disk.
   - e.g., `devai run ./my-path/to/my-agent.devai ...`  
-- **Multi AI Provider / Models** - **devai** uses the [genai](https://crates.io/crates/genai) and therefore supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come. 
+- **Multi AI Provider / Models** - **devai** uses [genai](https://crates.io/crates/genai) and therefore supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come. 
 - **Lua** is used for all scripting (thanks to the great [mlua](https://crates.io/crates/mlua) crate).
 - **Handlebars** is used for all prompt templating (thanks to the great Rust native [handlebars](https://crates.io/crates/handlebars) crate).     
 
@@ -83,7 +89,7 @@ A single **devai** file may comprise any of the following stages.
 
 ## [devai doc](_init/doc/README.md)
 
-See the devai doc at **[_init/doc/README.md](_init/doc/README.md)** (With [Lua modules doc](_init/doc/lua.md))
+See the devai documentation at **[_init/doc/README.md](_init/doc/README.md)** (With [Lua modules doc](_init/doc/lua.md))
 
 You can also run the `ask-devai` agent. 
 
@@ -94,11 +100,7 @@ devai run ask-devai
 # and then open the `.devai/tmp/ask-devai.md`
 ```
 
-## Thanks
-
-**TOP COLLABORATOR** Big **thanks** to [Stephane Philipakis](https://github.com/sphilipakis), a top **devai** collaborator contributing to the next-generation methodology for production coding with GenAI.
-
-## Future Plan
+## Future Plans
 
 - More Lua functions
 - Agent module `my-module` may run `my-module/main.devai`, and running `my-module/some-other` will run `my-module/some-other.devai`
