@@ -144,7 +144,6 @@ local json_line_str = utils.json.stringify_to_line(obj)      -- string
 ### utils.lua
 
 ```lua
--- === utils.lua
 -- Return a pretty string of a lua value
 local dump = utils.lua.dump(some_var)  -- string
 print(dump)

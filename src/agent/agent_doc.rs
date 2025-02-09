@@ -1,4 +1,4 @@
-use crate::agent::agent_config::AgentConfig;
+use crate::agent::agent_options::AgentOptions;
 use crate::agent::{Agent, AgentInner, PartKind, PromptPart};
 use crate::support::md::InBlockState;
 use crate::support::tomls::parse_toml;
@@ -21,14 +21,7 @@ impl AgentDoc {
 		Ok(Self { spath, raw_content })
 	}
 
-	#[cfg(test)]
-	pub fn from_content(path: impl AsRef<Path>, content: impl Into<String>) -> Result<Self> {
-		let spath = SPath::new(path.as_ref())?;
-		let raw_content = content.into();
-		Ok(Self { spath, raw_content })
-	}
-
-	pub fn into_agent(self, name: impl Into<String>, config: AgentConfig) -> Result<Agent> {
+	pub fn into_agent(self, name: impl Into<String>, config: AgentOptions) -> Result<Agent> {
 		let agent_inner = self.into_agent_inner(name.into(), config)?;
 		let agent = Agent::new(agent_inner)?;
 		Ok(agent)
@@ -36,7 +29,7 @@ impl AgentDoc {
 
 	/// Internal method to create the first part of the agent inner
 	/// This is sort of a Lexer, but very customize to extracting the Agent parts
-	fn into_agent_inner(self, name: String, mut config: AgentConfig) -> Result<AgentInner> {
+	fn into_agent_inner(self, name: String, agent_options: AgentOptions) -> Result<AgentInner> {
 		#[derive(Debug)]
 		enum CaptureMode {
 			None,
@@ -46,9 +39,13 @@ impl AgentDoc {
 			// Inside the code block
 			BeforeAllCodeBlock,
 
-			// Bellow the # Config section
+			// Below the # Options section
+			OptionsSection,
+			OptionsTomlBlock,
+
+			// (legacy) Below the # Config section
 			ConfigSection,
-			// inside the ConfigTomlBlock
+			// (legacy) inside the ConfigTomlBlock
 			ConfigTomlBlock,
 
 			// Below the data heading (perhaps not in a code block)
@@ -79,6 +76,7 @@ impl AgentDoc {
 				matches!(
 					self,
 					CaptureMode::ConfigTomlBlock
+						| CaptureMode::OptionsTomlBlock
 						| CaptureMode::BeforeAllCodeBlock
 						| CaptureMode::DataCodeBlock
 						| CaptureMode::OutputCodeBlock
@@ -89,11 +87,13 @@ impl AgentDoc {
 
 		let mut capture_mode = CaptureMode::None;
 
-		let mut config_toml = String::new();
-		let mut before_all_script = String::new();
-		let mut data_script = String::new();
-		let mut output_script = String::new();
-		let mut after_all_script = String::new();
+		// -- The buffers
+		let mut config_toml: Vec<&str> = Vec::new();
+		let mut options_toml: Vec<&str> = Vec::new();
+		let mut before_all_script: Vec<&str> = Vec::new();
+		let mut data_script: Vec<&str> = Vec::new();
+		let mut output_script: Vec<&str> = Vec::new();
+		let mut after_all_script: Vec<&str> = Vec::new();
 
 		let mut prompt_parts: Vec<PromptPart> = Vec::new();
 		// the vec String allow to be more efficient (as join later is more efficient)
@@ -108,12 +108,13 @@ impl AgentDoc {
 
 		for line in self.raw_content.lines() {
 			block_state = block_state.compute_new(line);
-
 			// If heading we decide the capture mode
 			if block_state.is_out() && line.starts_with('#') && !line.starts_with("##") {
 				let header = line[1..].trim().to_lowercase();
 				if header == "config" {
 					capture_mode = CaptureMode::ConfigSection;
+				} else if header == "options" {
+					capture_mode = CaptureMode::OptionsSection;
 				} else if header == "before all" {
 					capture_mode = CaptureMode::BeforeAllSection;
 				} else if header == "data" {
@@ -138,7 +139,7 @@ impl AgentDoc {
 			match capture_mode {
 				CaptureMode::None => {}
 
-				// -- Config
+				// -- Config (legacy, now use options)
 				CaptureMode::ConfigSection => {
 					if line.starts_with("```toml") {
 						capture_mode = CaptureMode::ConfigTomlBlock;
@@ -152,6 +153,23 @@ impl AgentDoc {
 						continue;
 					} else {
 						push_line(&mut config_toml, line);
+					}
+				}
+
+				// -- Options
+				CaptureMode::OptionsSection => {
+					if line.starts_with("```toml") {
+						capture_mode = CaptureMode::OptionsTomlBlock;
+						continue;
+					}
+				}
+
+				CaptureMode::OptionsTomlBlock => {
+					if line.starts_with("```") {
+						capture_mode = CaptureMode::None;
+						continue;
+					} else {
+						push_line(&mut options_toml, line);
 					}
 				}
 
@@ -235,33 +253,64 @@ impl AgentDoc {
 		finalize_current_prompt_part(&mut current_part, &mut prompt_parts);
 
 		// -- Returning the data
-		if !config_toml.is_empty() {
-			let value = parse_toml(&config_toml)?;
-			config = config.merge(value)?;
-		}
 
-		let genai_model_name = config.model().map(ModelName::from);
+		let config_toml = buffer_to_string(config_toml);
+		let options_toml = buffer_to_string(options_toml);
 
+		let agent_options_ov: Option<AgentOptions> = match (config_toml, options_toml) {
+			(None, None) => None,
+			(None, Some(options_toml)) => Some(AgentOptions::from_options_value(parse_toml(&options_toml)?)?),
+			(Some(config_toml), None) => Some(AgentOptions::from_config_value(parse_toml(&config_toml)?)?),
+			(Some(_), Some(_)) => {
+				return Err("\
+Agent .devai file cannot have a '# Config' and '# Options' section.
+Use the '# Options' section ('# Config' is not the legacy way to provides agent options)
+"
+				.into())
+			}
+		};
+
+		let agent_options = match agent_options_ov {
+			Some(agent_options_ov) => agent_options.merge(agent_options_ov)?,
+			None => agent_options,
+		};
+
+		// -- Get the model name
+		let model_name = agent_options.model().map(ModelName::from);
+		let resolved_model_name = agent_options.resolve_model().map(ModelName::from);
+
+		// -- Build the AgentInner
 		let agent_inner = AgentInner {
-			config,
+			agent_options,
 
 			name,
 
 			file_name: self.spath.name().to_string(),
 			file_path: self.spath.to_str().to_string(),
 
-			genai_model_name,
+			model_name,
+			resolved_model_name,
 
-			before_all_script: string_as_option_if_empty(before_all_script),
-			data_script: string_as_option_if_empty(data_script),
+			before_all_script: buffer_to_string(before_all_script),
+			data_script: buffer_to_string(data_script),
 
 			prompt_parts,
 
-			output_script: string_as_option_if_empty(output_script),
-			after_all_script: string_as_option_if_empty(after_all_script),
+			output_script: buffer_to_string(output_script),
+			after_all_script: buffer_to_string(after_all_script),
 		};
 
 		Ok(agent_inner)
+	}
+}
+
+/// Constructor for test
+#[cfg(test)]
+impl AgentDoc {
+	pub fn from_content(path: impl AsRef<Path>, content: impl Into<String>) -> Result<Self> {
+		let spath = SPath::new(path.as_ref())?;
+		let raw_content = content.into();
+		Ok(Self { spath, raw_content })
 	}
 }
 
@@ -297,16 +346,16 @@ fn finalize_current_prompt_part(current_part: &mut Option<CurrentPromptPart<'_>>
 }
 
 /// Push a new line and the a \n to respect the new line
-fn push_line(content: &mut String, line: &str) {
-	content.push_str(line);
-	content.push('\n');
+fn push_line<'a, 'b, 'c: 'b>(content: &'a mut Vec<&'b str>, line: &'c str) {
+	content.push(line);
+	content.push("\n");
 }
 
-fn string_as_option_if_empty(content: String) -> Option<String> {
+fn buffer_to_string(content: Vec<&str>) -> Option<String> {
 	if content.is_empty() {
 		None
 	} else {
-		Some(content)
+		Some(content.join(""))
 	}
 }
 

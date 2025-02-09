@@ -11,8 +11,16 @@ pub enum Error {
 	CommandAgentNotFound(String),
 
 	// -- Agent
+	#[display("Model is missing for agent path: {agent_path}")]
 	ModelMissing {
 		agent_path: String,
+	},
+
+	// -- Config
+	#[display("Config invalid (config path: {path})\n  reason: {reason}")]
+	Config {
+		path: String,
+		reason: String,
 	},
 
 	// -- Run
@@ -47,7 +55,7 @@ pub enum Error {
 	Io(std::io::Error),
 
 	// -- Custom
-	#[display("Error::Custom\n{_0}")]
+	#[display("{_0}")]
 	#[from]
 	Custom(String),
 

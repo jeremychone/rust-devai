@@ -61,6 +61,7 @@ pub async fn exec_run_first(run_args: RunArgs, dir_context: DirContext) -> Resul
 	let cmd_agent_name = &run_args.cmd_agent_name;
 
 	let runtime = Runtime::new(dir_context)?;
+
 	let agent = find_agent(cmd_agent_name, runtime.dir_context(), PathResolver::CurrentDir)?;
 
 	let run_options = RunCommandOptions::new(run_args)?;

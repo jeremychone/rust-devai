@@ -22,7 +22,7 @@ pub async fn run_solo_agent(
 	hub.publish(format!(
 		"==== Running solo agent: {}\n        with model: {}{genai_info}",
 		agent.file_path(),
-		agent.genai_model()
+		agent.resolved_model()
 	))
 	.await;
 

@@ -1,4 +1,4 @@
-use crate::agent::agent_config::AgentConfig;
+use crate::agent::agent_options::AgentOptions;
 use crate::agent::PromptPart;
 use crate::{Error, Result};
 use genai::chat::ChatOptions;
@@ -10,7 +10,8 @@ use std::sync::Arc;
 #[derive(Debug, Clone)]
 pub struct Agent {
 	inner: Arc<AgentInner>,
-	genai_model: ModelName,
+	model: ModelName,
+	resolved_model: ModelName,
 	genai_chat_options: Arc<ChatOptions>,
 }
 
@@ -19,18 +20,23 @@ impl Agent {
 	pub(super) fn new(agent_inner: AgentInner) -> Result<Agent> {
 		let inner = Arc::new(agent_inner);
 
-		let genai_model = inner.genai_model_name.clone().ok_or_else(|| Error::ModelMissing {
+		let resolved_model = inner.resolved_model_name.clone().ok_or_else(|| Error::ModelMissing {
+			agent_path: inner.file_path.to_string(),
+		})?;
+
+		let model = inner.model_name.clone().ok_or_else(|| Error::ModelMissing {
 			agent_path: inner.file_path.to_string(),
 		})?;
 
 		let mut chat_options = ChatOptions::default();
-		if let Some(temp) = inner.config.temperature() {
+		if let Some(temp) = inner.agent_options.temperature() {
 			chat_options.temperature = Some(temp);
 		}
 
 		Ok(Agent {
 			inner,
-			genai_model,
+			model,
+			resolved_model,
 			genai_chat_options: chat_options.into(),
 		})
 	}
@@ -38,16 +44,19 @@ impl Agent {
 
 /// Getters
 impl Agent {
-	pub fn genai_model(&self) -> &ModelName {
-		&self.genai_model
+	pub fn model(&self) -> &ModelName {
+		&self.model
+	}
+	pub fn resolved_model(&self) -> &ModelName {
+		&self.resolved_model
 	}
 
 	pub fn genai_chat_options(&self) -> &ChatOptions {
 		&self.genai_chat_options
 	}
 
-	pub fn config(&self) -> &AgentConfig {
-		&self.inner.config
+	pub fn config(&self) -> &AgentOptions {
+		&self.inner.agent_options
 	}
 
 	pub fn name(&self) -> &str {
@@ -95,13 +104,16 @@ impl Agent {
 /// AgentInner is ok to be public to allow user-code to build Agent simply.
 #[derive(Debug, Clone)]
 pub(super) struct AgentInner {
-	pub config: AgentConfig,
-
 	pub name: String,
+
 	pub file_name: String,
 	pub file_path: String,
 
-	pub genai_model_name: Option<ModelName>,
+	pub agent_options: AgentOptions,
+
+	/// The model that came from the options
+	pub model_name: Option<ModelName>,
+	pub resolved_model_name: Option<ModelName>,
 
 	pub before_all_script: Option<String>,
 

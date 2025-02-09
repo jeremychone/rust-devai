@@ -50,11 +50,20 @@ pub async fn run_command_agent(
 		Ok(path) => path.to_string(),
 		Err(_) => agent.file_path().to_string(),
 	};
+
+	let model = agent.model();
+	let resolved_model = agent.resolved_model();
+	let model_name = if model as &str != resolved_model as &str {
+		format!("{model} ({resolved_model})")
+	} else {
+		resolved_model.to_string()
+	};
+
 	hub.publish(format!(
 		"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
 		agent.name(),
 		agent_path,
-		agent.genai_model()
+		model_name
 	))
 	.await;
 

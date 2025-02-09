@@ -208,12 +208,12 @@ pub async fn run_agent_input(
 
 		hub.publish(format!(
 			"-> Sending rendered instruction to {} ...",
-			agent.genai_model()
+			agent.resolved_model()
 		))
 		.await;
 
 		let chat_res = client
-			.exec_chat(agent.genai_model(), chat_req, Some(agent.genai_chat_options()))
+			.exec_chat(agent.resolved_model(), chat_req, Some(agent.genai_chat_options()))
 			.await?;
 
 		hub.publish("<- ai_response content received").await;

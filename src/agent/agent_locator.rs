@@ -1,4 +1,4 @@
-use crate::agent::agent_config::AgentConfig;
+use crate::agent::agent_options::AgentOptions;
 use crate::agent::{Agent, AgentDoc};
 use crate::run::{DirContext, PathResolver};
 use crate::support::tomls::parse_toml;
@@ -257,12 +257,16 @@ fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<AgentRel>>
 }
 
 /// Loads the base agent configuration.
-pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentConfig> {
+pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentOptions> {
 	let config_path = dir_context.devai_dir().get_config_toml_path()?;
-	let config_content = read_to_string(config_path)?;
+	let config_content = read_to_string(&config_path)?;
 	let config_value = parse_toml(&config_content)?;
-	let config = AgentConfig::from_value(config_value)?;
-	Ok(config)
+
+	let options = AgentOptions::from_config_value(config_value).map_err(|err| Error::Config {
+		path: config_path.to_string(),
+		reason: err.to_string(),
+	})?;
+	Ok(options)
 }
 
 // endregion: --- Support
