@@ -5,6 +5,7 @@ use crate::script::lua_script::{
 	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_lua, utils_md, utils_path, utils_rust,
 	utils_text, utils_web,
 };
+use crate::script::lua_script::devai_config;
 use crate::{Error, Result};
 use mlua::{Lua, LuaSerdeExt, Table, Value};
 
@@ -24,6 +25,8 @@ impl LuaEngine {
 
 		// -- init devai
 		utils_devai::init_module(&lua, &runtime_context)?;
+
+		devai_config::init_module(&lua, &runtime_context)?;
 
 		// -- Init package.path
 		init_package_path(&lua, &runtime_context)?;
