@@ -73,6 +73,16 @@ function prep_inst_and_content(content, separator, is_content_default)
   return inst, content
 end
 
+-- Access .devai/config.toml in Lua
+if devai_config then
+    print("Loaded Devai Config:")
+    for key, value in pairs(devai_config) do
+        print(key, value)
+    end
+else
+    print("Error: devai_config is not available!")
+end
+
 return {
   prep_input_file = prep_input_file,
   should_skip = should_skip,

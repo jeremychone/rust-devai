@@ -22,6 +22,9 @@ pub struct DevaiDir {
 
 //
 impl DevaiDir {
+	pub fn dir_full_path(&self) -> &SPath {
+		&self.devai_dir_full_path
+	}
 	pub fn from_parent_dir(parent_dir: impl AsRef<Path>) -> Result<Self> {
 		let workspace_dir = SPath::from_path(parent_dir)?;
 		// Note: Here we use the `./.devai` which is fixed, and the `./`

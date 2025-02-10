@@ -10,11 +10,13 @@
 //! * `path::is_file(path: string) -> bool`
 //! * `path::is_dir(path: string) -> bool`
 //! * `path::parent(path: string) -> string | nil`
+//! * `path::join(path: string) -> string | nil`
 
 use crate::run::{PathResolver, RuntimeContext};
 use mlua::{Lua, Table};
 use std::path::Path;
 use crate::Result;
+use std::path::PathBuf;
 
 pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
     let table = lua.create_table()?;
@@ -31,6 +33,12 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
     let ctx = runtime_context.clone();
     let path_is_dir_fn = lua.create_function(move |_lua, path: String| path_is_dir(&ctx, path))?;
 
+    // -- join
+    let ctx = runtime_context.clone();
+
+    // let path_join_fn = lua.create_function(move |_lua, paths: Vec<String>| path_join(&ctx, paths))?;
+    let path_join_fn = lua.create_function(path_join)?;
+
     // -- parent
     let path_parent_fn = lua.create_function(move |_lua, path: String| path_parent(path))?;
 
@@ -39,6 +47,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
     table.set("is_file", path_is_file_fn)?;
     table.set("is_dir", path_is_dir_fn)?;
     table.set("parent", path_parent_fn)?;
+    table.set("join", path_join_fn)?;
 
     Ok(table)
 }
@@ -94,6 +103,47 @@ fn path_parent(path: String) -> mlua::Result<Option<String>> {
         None => Ok(None),
     }
 }
+
+
+
+/// ## Lua Documentation
+/// ```lua
+/// path.join(path: string) -> string | nil
+/// ```
+///
+/// Returns the path, with path joined.
+/// (follows the Rust PathBuf::join(&self) logic)
+// fn path_join(_: &RuntimeContext, , paths: Vec<String>) -> mlua::Result<Option<String>> {
+//     let mut path_buf = Path::new(&paths.pop());
+//     path_buf.join(leaf);
+//     Ok(Some(path_buf.to_string_lossy().into_owned()))
+// }
+
+fn path_join(lua: &Lua, paths: mlua::Variadic<mlua::Value>) -> mlua::Result<mlua::Value> {
+    if paths.is_empty() {
+        return Ok(mlua::Value::Nil);
+    }
+    let mut path_buf = PathBuf::new();
+
+    if let Some(mlua::Value::Table(table)) = paths.first() {
+        for pair in table.clone().pairs::<mlua::Integer, String>() {
+            let (_, path) = pair?;
+            path_buf.push(Path::new(&path));
+        }
+    } else {
+        for arg in paths {
+            if let mlua::Value::String(lua_str) = arg {
+                if let Ok(str_value) = lua_str.to_str() {
+                    path_buf.push(Path::new(&str_value.to_owned()));
+                }
+            }
+        }
+    }
+
+    let joined_path = lua.create_string(path_buf.to_string_lossy().as_ref())?;
+    Ok(mlua::Value::String(joined_path))
+}
+
 
 // endregion: --- Lua Functions
 
