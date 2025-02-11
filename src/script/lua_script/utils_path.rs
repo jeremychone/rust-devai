@@ -11,6 +11,7 @@
 //! * `path::is_dir(path: string) -> bool`
 //! * `path::parent(path: string) -> string | nil`
 //! * `path::join(path: string) -> string | nil`
+//! * `path.split(path: string) -> parent, filename`
 
 use crate::run::{PathResolver, RuntimeContext};
 use mlua::{Lua, MultiValue, Result, Table};
