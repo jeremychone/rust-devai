@@ -41,7 +41,7 @@ pub async fn run_command_agent(
 	return_output_values: bool,
 ) -> Result<RunCommandResponse> {
 	let hub = get_hub();
-	let concurrency = agent.config().input_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
+	let concurrency = agent.options().input_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
 	// -- Print the run info
 	let genai_info = get_genai_info(agent);
@@ -306,7 +306,7 @@ fn get_input_label(input: &Value) -> Option<String> {
 fn get_genai_info(agent: &Agent) -> String {
 	let mut genai_infos: Vec<String> = vec![];
 
-	if let Some(temp) = agent.config().temperature() {
+	if let Some(temp) = agent.options().temperature() {
 		genai_infos.push(format!("temperature: {temp}"));
 	}
 

@@ -55,7 +55,7 @@ impl Agent {
 		&self.genai_chat_options
 	}
 
-	pub fn config(&self) -> &AgentOptions {
+	pub fn options(&self) -> &AgentOptions {
 		&self.inner.agent_options
 	}
 

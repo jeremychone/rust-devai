@@ -1,8 +1,11 @@
-# Options
+# Config
 
 ```toml
-model = "test_model_for_demo"
-input_concurrency = 12
+[genai]
+model = "test_model_for_legacy_config"
+
+[runtime]
+input_concurrency = 8
 ```
 
 # Data

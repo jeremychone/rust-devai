@@ -397,8 +397,8 @@ mod tests {
 		Ok(())
 	}
 
-	#[test]
-	fn test_agent_doc_config_ok() -> Result<()> {
+	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+	async fn test_agent_doc_options_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let agent_doc_path = "./tests-data/agent-doc/agent-demo.md";
 
@@ -407,8 +407,33 @@ mod tests {
 		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
 
 		// -- Check config
-		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.config().input_concurrency(), Some(8), "concurrency");
+		assert_eq!(agent.options().model(), Some("test_model_for_demo"));
+		assert_eq!(agent.options().input_concurrency(), Some(12), "concurrency");
+
+		// -- Check Other
+		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
+		let inst = &first_prompt_part.content;
+		assert_contains(inst, "Some paragraph for instruction");
+		let data_script = agent.data_script().ok_or("Should have data_script")?;
+		assert_contains(data_script, "-- Some scripts that load the data");
+		let output_script = agent.output_script().ok_or("Should have output_script")?;
+		assert_contains(output_script, "-- Optional output processing.");
+
+		Ok(())
+	}
+
+	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+	async fn test_agent_doc_legacy_config_ok() -> Result<()> {
+		// -- Setup & Fixtures
+		let agent_doc_path = "./tests-data/agent-doc/agent-legacy-config.md";
+
+		// -- Exec
+		let doc = AgentDoc::from_file(agent_doc_path)?;
+		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
+
+		// -- Check config
+		assert_eq!(agent.options().model(), Some("test_model_for_legacy_config"));
+		assert_eq!(agent.options().input_concurrency(), Some(8), "concurrency");
 
 		// -- Check Other
 		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
@@ -432,8 +457,8 @@ mod tests {
 		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
 
 		// -- Check config
-		assert_eq!(agent.config().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.config().input_concurrency(), None);
+		assert_eq!(agent.options().model(), Some("test_model_for_demo"));
+		assert_eq!(agent.options().input_concurrency(), None);
 
 		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
 

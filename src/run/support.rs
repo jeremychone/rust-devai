@@ -4,7 +4,7 @@ use crate::agent::Agent;
 pub fn get_genai_info(agent: &Agent) -> String {
 	let mut genai_infos: Vec<String> = vec![];
 
-	if let Some(temp) = agent.config().temperature() {
+	if let Some(temp) = agent.options().temperature() {
 		genai_infos.push(format!("temperature: {temp}"));
 	}
 
