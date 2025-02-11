@@ -9,7 +9,7 @@ use value_ext::JsonValueExt;
 /// optionally overridden in the `# Config` section of the Command Agent Markdown.
 ///
 /// Note: The values are flattened for simplicity but may be nested in the future.
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Default, Serialize)]
 pub struct AgentOptions {
 	#[serde(default)]
 	legacy: bool,
@@ -43,6 +43,38 @@ impl ModelAliases {
 			}
 		}
 		self
+	}
+}
+
+impl mlua::FromLua for ModelAliases {
+	fn from_lua(value: mlua::Value, _lua: &mlua::Lua) -> mlua::Result<Self> {
+		match value {
+			mlua::Value::Table(aliases_table) => {
+				let mut aliases = HashMap::new();
+				for pair in aliases_table.pairs::<String, String>() {
+					let (k, v) = pair.map_err(|err| {
+						mlua::Error::runtime(format!(
+							"model_aliases value type is invalid. Should be string.\n    Cause: {err}"
+						))
+					})?; // TODO: need to return informative error
+					aliases.insert(k, v);
+				}
+				Ok(ModelAliases { inner: aliases })
+			}
+			other => Err(mlua::Error::runtime(format!(
+				r#"model_aliases invalid.\n    Cause: for agent options must be of type table (e.g., {{ small = "gpt-4o-mini" }}), but was {other:?}"#
+			))),
+		}
+	}
+}
+
+impl mlua::IntoLua for &ModelAliases {
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+		for (k, v) in self.inner.iter() {
+			table.set(k.as_str(), v.as_str())?;
+		}
+		Ok(mlua::Value::Table(table))
 	}
 }
 
@@ -122,6 +154,52 @@ impl AgentOptions {
 	}
 }
 
+// region:    --- IntoLua
+
+impl mlua::IntoLua for &AgentOptions {
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
+		let table = lua.create_table()?;
+		table.set("model", self.model())?;
+		table.set("resolved_model", self.resolve_model())?;
+		table.set("temperature", self.temperature)?;
+		table.set("input_concurrency", self.input_concurrency)?;
+
+		let model_aliases = self.model_aliases.as_ref();
+		table.set("model_aliases", model_aliases)?;
+
+		Ok(mlua::Value::Table(table))
+	}
+}
+
+impl mlua::FromLua for AgentOptions {
+	fn from_lua(value: mlua::Value, lua: &mlua::Lua) -> mlua::Result<Self> {
+		if let mlua::Value::Table(table) = value {
+			let model = table.get::<Option<String>>("model")?;
+			let temperature = table.get::<Option<f64>>("temperature")?;
+			let input_concurrency = table.get::<Option<usize>>("input_concurrency")?;
+
+			// --
+			let model_aliases = table.get::<Option<mlua::Value>>("model_aliases")?;
+			let model_aliases = model_aliases.map(|v| ModelAliases::from_lua(v, lua)).transpose()?;
+
+			let options = AgentOptions {
+				legacy: false,
+				model,
+				temperature,
+				input_concurrency,
+				model_aliases,
+			};
+
+			Ok(options)
+		} else {
+			Err(mlua::Error::runtime("Agent Options must be a table"))
+		}
+	}
+}
+// endregion: --- IntoLua
+
+// region:    --- Parsing
+
 enum OptionsParsing {
 	Parsed(AgentOptions),
 	Unparsed(Value),
@@ -184,6 +262,8 @@ To update your config.toml:
 	}
 }
 
+// endregion: --- Parsing
+
 /// Implementations for various test.
 #[cfg(test)]
 impl AgentOptions {
@@ -207,9 +287,10 @@ mod tests {
 
 	use super::*;
 	use crate::support::tomls::parse_toml;
+	use mlua::{FromLua, IntoLua};
 
 	#[test]
-	fn test_config_current_with_aliases() -> Result<()> {
+	fn test_options_current_with_aliases() -> Result<()> {
 		// -- Setup & Fixtures
 		let config_content = simple_fs::read_to_string("./tests-data/config/config-current-with-aliases.toml")?;
 		let config_value = serde_json::to_value(&parse_toml(&config_content)?)?;
@@ -231,7 +312,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_config_legacy_0_5_9() -> Result<()> {
+	fn test_options_legacy_0_5_9() -> Result<()> {
 		// -- Setup & Fixtures
 		let config_content = simple_fs::read_to_string("./tests-data/config/config-v_0_5_09.toml")?;
 		let config_value = serde_json::to_value(&parse_toml(&config_content)?)?;
@@ -248,6 +329,67 @@ mod tests {
 			options.get_model_for_alias("small").is_none(),
 			" should not have any alias"
 		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_options_lua_from() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = mlua::Lua::new();
+		let options_chunk = lua.load(
+			r#"
+return {
+	model = "gpt-4o-mini",
+	temperature = 0.3,
+	model_aliases = { small = "flash-001" },
+	item_concurrency = nil, -- same as absent
+}"#,
+		);
+		let options_lua = options_chunk.eval::<mlua::Value>()?;
+
+		// -- Exec
+		let options = AgentOptions::from_lua(options_lua, &lua)?;
+
+		// -- Check
+		assert_eq!(options.model(), Some("gpt-4o-mini"));
+		assert_eq!(options.temperature(), Some(0.3));
+		assert!(
+			options.input_concurrency().is_none(),
+			"input concurrency should be none"
+		);
+		assert_eq!(options.get_model_for_alias("small"), Some("flash-001"));
+		assert!(
+			options.get_model_for_alias("non-existent").is_none(),
+			"Model alias 'non-existent' should be none"
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_options_lua_into() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = mlua::Lua::new();
+		let options = parse_toml(
+			r#"
+	model = "gpt-4o-mini"
+	temperature = 0.3
+	model_aliases = { small = "flash-001" }		
+		"#,
+		)?;
+		let options = AgentOptions::from_options_value(options.clone())?;
+
+		// -- Exec
+		let options_lua = options.into_lua(&lua)?;
+
+		// -- Check
+		let options_table = options_lua.as_table().ok_or("Should be a table")?;
+		assert_eq!(&options_table.get::<String>("model")?, "gpt-4o-mini");
+		assert_eq!(options_table.get::<f64>("temperature")?, 0.3);
+		let aliases_table = options_table.get::<mlua::Value>("model_aliases")?;
+		let aliases_table = aliases_table.as_table().ok_or("model_aliases should be table")?;
+		assert_eq!(&aliases_table.get::<String>("small")?, "flash-001");
 
 		Ok(())
 	}

@@ -6,7 +6,7 @@ use crate::script::lua_script::{
 	utils_text, utils_web,
 };
 use crate::{Error, Result};
-use mlua::{Lua, LuaSerdeExt, Table, Value};
+use mlua::{IntoLua, Lua, LuaSerdeExt, Table, Value};
 
 pub struct LuaEngine {
 	lua: Lua,
@@ -90,6 +90,16 @@ impl LuaEngine {
 		Ok(res)
 	}
 
+	/// Just passthrough for into_lua
+	#[allow(unused)]
+	pub fn to_lua(&self, val: impl IntoLua) -> Result<Value> {
+		let res = val.into_lua(&self.lua)?;
+		Ok(res)
+	}
+}
+
+/// private
+impl LuaEngine {
 	/// Upgrade a custom scope to full scope with all of the globals added.
 	/// NOTE: A `base_lua_path` is the container of the `lua/` dir. So
 	///       `base_lua_path = /some/dir`, the path added to lua package path will be `/some/dir/lua/?.lua,/some/dir/lua/?/init.lua`

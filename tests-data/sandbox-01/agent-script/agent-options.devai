@@ -1,0 +1,53 @@
+# Options
+
+```toml
+# Here we can override any options properties 
+# (they will be merged with the options from config.toml)
+model = "cost-saver"
+```
+
+# Before All
+
+```lua
+
+return {
+    b_r_model = options.resolved_model
+}
+```
+
+
+# Data
+
+```lua
+return {
+    b_r_model = before_all.b_r_model,
+    i_model = options.model,
+    i_resolved_model = options.resolved_model,
+}
+```
+
+# Output
+
+```lua
+
+local o_model = options.model
+local o_r_model = options.resolved_model
+
+local some_text = "Your model is: " .. options.model .. " and the temperature is " .. (options.temperature or "unset")
+
+return "\nsome_text: " .. some_text ..
+"\nb_r_model: " .. data.b_r_model ..
+"\ni_model: " .. data.i_model .. 
+"\ni_r_model: " .. data.i_resolved_model .. 
+"\no_model: " .. o_model .. 
+"\no_r_model: " .. o_r_model
+```
+
+# After All
+
+```lua
+
+return "\na_r_model: " .. options.resolved_model ..
+"\na_b_r_model: " .. before_all.b_r_model
+
+```

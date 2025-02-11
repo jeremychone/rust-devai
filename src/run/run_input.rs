@@ -109,7 +109,15 @@ impl RunAgentInputResponse {
 	}
 }
 
-/// Run and agent input for command agent or solo agent.
+/// Run the agent for one input
+/// - Build the scope
+/// - Execute Data
+/// - Render the prompt sections
+/// - Send the AI
+/// - Execute Output
+///
+/// Note 1: For now, this will create a new Lua engine.
+///         This is likely to stay as it creates a strong segregation between input execution
 pub async fn run_agent_input(
 	runtime: &Runtime,
 	agent: &Agent,
@@ -129,6 +137,7 @@ pub async fn run_agent_input(
 	lua_scope.set("input", lua_engine.serde_to_lua_value(input.clone())?)?;
 	lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result.clone())?)?;
 	lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
+	lua_scope.set("options", agent.options())?;
 
 	let agent_dir = agent.file_dir()?;
 	let agent_dir_str = agent_dir.to_str();
@@ -203,7 +212,6 @@ pub async fn run_agent_input(
 
 	// Now execute the instruction
 	let ai_response: Option<AiResponse> = if !is_inst_empty {
-		// NOTE: Put the instruction as user as with openai o1-... models does not seem to support system.
 		let chat_req = ChatRequest::from_messages(chat_messages);
 
 		hub.publish(format!(
@@ -267,6 +275,7 @@ pub async fn run_agent_input(
 		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result)?)?;
 		lua_scope.set("ai_response", ai_response)?;
 		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
+		lua_scope.set("options", agent.options())?;
 
 		let lua_value = lua_engine.eval(output_script, Some(lua_scope), Some(&[agent_dir_str]))?;
 		let output_response = serde_json::to_value(lua_value)?;

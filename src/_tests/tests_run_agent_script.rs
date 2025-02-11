@@ -52,6 +52,40 @@ async fn test_run_agent_script_before_all_simple() -> Result<()> {
 }
 
 #[tokio::test]
+async fn test_run_agent_script_with_options_read() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
+	let agent = load_test_agent("./agent-script/agent-options.devai", &runtime)?;
+
+	// -- Exec
+	let inputs = vec!["one".into(), "two".into()];
+	let res = run_command_agent(&runtime, &agent, Some(inputs), &RunBaseOptions::default(), true).await?;
+
+	let outputs = res.outputs.ok_or("Should have output values")?;
+	let first_output = outputs
+		.first()
+		.ok_or("Should have at least one output")?
+		.as_str()
+		.ok_or("after_all should be str")?;
+
+	let after_all = res.after_all.ok_or("should have after_all")?;
+	let after_all = after_all.as_str().ok_or("after_all should be str")?;
+
+	// -- Check First Output
+	assert_contains(first_output, "b_r_model: deepseek-chat");
+	assert_contains(first_output, "i_model: cost-saver");
+	assert_contains(first_output, "i_r_model: deepseek-chat");
+	assert_contains(first_output, "o_model: cost-saver");
+	assert_contains(first_output, "o_r_model: deepseek-chat");
+
+	// -- Check After All
+	assert_contains(after_all, "a_r_model: deepseek-chat");
+	assert_contains(after_all, "a_b_r_model: deepseek-chat");
+
+	Ok(())
+}
+
+#[tokio::test]
 async fn test_run_agent_script_before_all_inputs_reshape() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
