@@ -15,8 +15,8 @@
 use crate::run::{PathResolver, RuntimeContext};
 use crate::Result;
 use mlua::{Lua, Table, Value};
+use std::path::Path;
 use std::path::PathBuf;
-use std::path::{Path, MAIN_SEPARATOR};
 
 pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
@@ -34,8 +34,6 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	let path_is_dir_fn = lua.create_function(move |_lua, path: String| path_is_dir(&ctx, path))?;
 
 	// -- join
-	let ctx = runtime_context.clone();
-
 	// let path_join_fn = lua.create_function(move |_lua, paths: Vec<String>| path_join(&ctx, paths))?;
 	let path_join_fn = lua.create_function(path_join)?;
 
@@ -140,7 +138,7 @@ fn path_join(lua: &Lua, paths: mlua::Variadic<mlua::Value>) -> mlua::Result<mlua
 		}
 	}
 	// Normalize the path separator (`\` or `/`) using `MAIN_SEPARATOR`
-	let normalized_path = path_buf.to_string_lossy().replace(['/', '\\'], &MAIN_SEPARATOR.to_string());
+	let normalized_path = path_buf.to_string_lossy().replace(['/', '\\'], std::path::MAIN_SEPARATOR_STR);
 	let joined_path = lua.create_string(&normalized_path)?;
 	Ok(Value::String(joined_path))
 }
