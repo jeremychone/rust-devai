@@ -98,9 +98,9 @@ pub struct RunArgs {
 	#[arg(long = "dry", value_parser = ["req", "res"])]
 	pub dry_mode: Option<String>,
 
-    /// Non-interactive mode (one-shot execution)
-    #[arg(long = "not-interactive", alias = "ni")]
-    pub not_interactive: bool,
+	/// Non-interactive mode (one-shot execution)
+	#[arg(long = "not-interactive", alias = "ni")]
+	pub not_interactive: bool,
 }
 
 /// Arguments for the `solo` subcommand
