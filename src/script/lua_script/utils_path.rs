@@ -13,13 +13,15 @@
 //! * `path::join(path: string) -> string | nil`
 
 use crate::run::{PathResolver, RuntimeContext};
-use crate::Result;
-use mlua::{Lua, Table, Value};
+use mlua::{Lua, MultiValue, Result, Table};
 use std::path::Path;
 use std::path::PathBuf;
 
 pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
+
+	// -- split
+	let path_split_fn = lua.create_function(path_split)?;
 
 	// -- exists
 	let ctx = runtime_context.clone();
@@ -33,12 +35,11 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	let ctx = runtime_context.clone();
 	let path_is_dir_fn = lua.create_function(move |_lua, path: String| path_is_dir(&ctx, path))?;
 
-	// -- join
-	// let path_join_fn = lua.create_function(move |_lua, paths: Vec<String>| path_join(&ctx, paths))?;
-	let path_join_fn = lua.create_function(path_join)?;
-
 	// -- parent
 	let path_parent_fn = lua.create_function(move |_lua, path: String| path_parent(path))?;
+
+	// -- join
+	let path_join_fn = lua.create_function(path_join)?;
 
 	// -- Add all functions to the module
 	table.set("exists", path_exists_fn)?;
@@ -46,11 +47,35 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	table.set("is_dir", path_is_dir_fn)?;
 	table.set("parent", path_parent_fn)?;
 	table.set("join", path_join_fn)?;
+    table.set("split", path_split_fn)?;
 
 	Ok(table)
 }
 
 // region:    --- Lua Functions
+
+/// ## Lua Documentation
+/// ```lua
+/// path.split(path: string) -> parent, filename
+/// ```
+/// {utils.path.split("some/path/to_file.md")} to create an array.
+///
+/// Split path into parent, filename.
+fn path_split(lua: &Lua, path: String) -> mlua::Result<MultiValue> {
+	let path_buf = std::path::PathBuf::from(&path);
+
+	let parent = path_buf.parent().map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
+	let filename = path_buf
+		.file_name()
+		.map(|f| f.to_string_lossy().into_owned())
+		.unwrap_or_default();
+	let parent_str = lua.create_string(&parent)?;
+	let filename_str = lua.create_string(&filename)?;
+	Ok(MultiValue::from_vec(vec![
+		mlua::Value::String(parent_str),
+		mlua::Value::String(filename_str),
+	]))
+}
 
 /// ## Lua Documentation
 /// ```lua
@@ -140,7 +165,7 @@ fn path_join(lua: &Lua, paths: mlua::Variadic<mlua::Value>) -> mlua::Result<mlua
 	// Normalize the path separator (`\` or `/`) using `MAIN_SEPARATOR`
 	let normalized_path = path_buf.to_string_lossy().replace(['/', '\\'], std::path::MAIN_SEPARATOR_STR);
 	let joined_path = lua.create_string(&normalized_path)?;
-	Ok(Value::String(joined_path))
+	Ok(mlua::Value::String(joined_path))
 }
 
 // endregion: --- Lua Functions
@@ -331,7 +356,7 @@ mod tests {
 		Ok(())
 	}
 
-	#[tokio::test]
+  	#[tokio::test]
 	async fn test_lua_path_join() -> Result<()> {
 		// -- Fixtures
 		let cases = &[
@@ -379,12 +404,55 @@ mod tests {
 			),
 		];
 
-		// -- Exec & Check
 		for (lua_table, expected_path) in cases {
 			let res = run_reflective_agent(&format!(r#"return utils.path.join({lua_table})"#), None).await?;
 
 			let result_path = res.as_str().ok_or("Should return a string")?;
 			assert_eq!(result_path, expected_path, "Path mismatch for table input: {lua_table}");
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_path_split() -> Result<()> {
+		// -- Fixtures
+		let paths = &[
+			("some/path/to_file.md", "some/path", "to_file.md"),
+			("folder/file.txt", "folder", "file.txt"),
+			("justafile.md", "", "justafile.md"), // No parent directory
+			("/absolute/path/file.log", "/absolute/path", "file.log"),
+			("/file_at_root", "/", "file_at_root"),
+			("trailing/slash/", "trailing", "slash"), // Directory with no file
+		];
+
+		// -- Exec & Check
+		for (path, expected_parent, expected_filename) in paths {
+			let res = run_reflective_agent(
+				&format!(
+					r#"
+                        local parent, filename = utils.path.split("{path}")
+                        return {{ parent, filename }} -- Wrap values in a Lua table
+                    "#
+				),
+				None,
+			)
+			.await?;
+
+			let res_array = res.as_array().ok_or("Expected an array from Lua function")?;
+
+			let parent = res_array
+				.get(0)
+				.and_then(|v| v.as_str())
+				.ok_or("First value should be a string")?;
+
+			let filename = res_array
+				.get(1)
+				.and_then(|v| v.as_str())
+				.ok_or("Second value should be a string")?;
+
+			assert_eq!(parent, *expected_parent, "Parent mismatch for path: {path}");
+			assert_eq!(filename, *expected_filename, "Filename mismatch for path: {path}");
 		}
 
 		Ok(())
