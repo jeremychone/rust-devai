@@ -15,6 +15,7 @@
 
 use crate::run::{PathResolver, RuntimeContext};
 use mlua::{Lua, MultiValue, Result, Table};
+use simple_fs::SPath;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -48,7 +49,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	table.set("is_dir", path_is_dir_fn)?;
 	table.set("parent", path_parent_fn)?;
 	table.set("join", path_join_fn)?;
-    table.set("split", path_split_fn)?;
+	table.set("split", path_split_fn)?;
 
 	Ok(table)
 }
@@ -63,18 +64,14 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 ///
 /// Split path into parent, filename.
 fn path_split(lua: &Lua, path: String) -> mlua::Result<MultiValue> {
-	let path_buf = std::path::PathBuf::from(&path);
+	let path = SPath::from(path);
 
-	let parent = path_buf.parent().map(|p| p.to_string_lossy().into_owned()).unwrap_or_default();
-	let filename = path_buf
-		.file_name()
-		.map(|f| f.to_string_lossy().into_owned())
-		.unwrap_or_default();
-	let parent_str = lua.create_string(&parent)?;
-	let filename_str = lua.create_string(&filename)?;
+	let parent = path.parent().map(|p| p.to_string()).unwrap_or_default();
+	let file_name = path.file_name().unwrap_or_default().to_string();
+
 	Ok(MultiValue::from_vec(vec![
-		mlua::Value::String(parent_str),
-		mlua::Value::String(filename_str),
+		mlua::Value::String(lua.create_string(parent)?),
+		mlua::Value::String(lua.create_string(file_name)?),
 	]))
 }
 
@@ -357,7 +354,7 @@ mod tests {
 		Ok(())
 	}
 
-  	#[tokio::test]
+	#[tokio::test]
 	async fn test_lua_path_join() -> Result<()> {
 		// -- Fixtures
 		let cases = &[
@@ -443,7 +440,7 @@ mod tests {
 			let res_array = res.as_array().ok_or("Expected an array from Lua function")?;
 
 			let parent = res_array
-				.get(0)
+				.first()
 				.and_then(|v| v.as_str())
 				.ok_or("First value should be a string")?;
 
