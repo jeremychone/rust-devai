@@ -30,12 +30,12 @@ pub static VERSION: &str = crate_version!();
 #[tokio::main]
 async fn main() -> Result<()> {
 	// -- Command arguments
-	let args = CliArgs::parse(); // will fail early, but that’s okay.
+	let args = CliArgs::parse(); // Will fail early, but that’s okay.
 
 	// -- Start executor
 	let mut executor = Executor::new();
 	let executor_tx = executor.command_tx();
-	// TODO: todo probably want to move the spwn inside executor.start
+	// TODO: Probably want to move the spwn inside executor.start
 	tokio::spawn(async move {
 		if let Err(err) = executor.start().await {
 			let hub = get_hub();
@@ -46,13 +46,13 @@ async fn main() -> Result<()> {
 
 	// -- Start UI
 	let tui = TuiApp::new(executor_tx);
-	// This will wait all done
+	// This will wait until all done
 	tui.start_with_args(args).await?;
 
 	// -- End
-	// tokio wait for 100ms
-	// Note: This will allow the hub message to drain
-	//       This is a shorterm trick before we get the whole TUI app
+	// Tokio wait for 100ms
+	// Note: This will allow the hub message to drain.
+	//       This is a short-term trick before we get the whole TUI app.
 	tokio::time::sleep(Duration::from_millis(100)).await;
 	println!("\n     ---- Until next one, happy coding! ----");
 
