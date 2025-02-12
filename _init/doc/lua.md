@@ -66,13 +66,19 @@ local sections = utils.file.load_md_sections("doc/readme.md", "# Summary")
 
 ```lua
 -- Check if a path exists
-local exists = path.exists("doc/some-file.md")         -- bool
+local exists = utils.path.exists("doc/some-file.md")         -- bool
 -- Check if a path is a file
-local is_file = path.is_file("doc/some-file.md")       -- bool
+local is_file = utils.path.is_file("doc/some-file.md")       -- bool
 -- Check if a path is a directory
-local is_dir = path.is_dir("doc/")                     -- bool
+local is_dir = utils.path.is_dir("doc/")                     -- bool
 -- Get the parent directory of a path
-local parent_dir = path.parent("doc/some-file.md")     -- string
+local parent_dir = utils.path.parent("doc/some-file.md")     -- string
+-- Split for parent and filename
+local parent_dir, file_name = utils.path.split("path/to/some-file.md") -- parent, file
+-- returns "path/to", "some-file.md"
+-- Join path
+local path = utils.path.join("path", "to", "some-file.md")   -- string
+-- "path/to/some-file.md"
 ```
 
 
