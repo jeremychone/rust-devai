@@ -30,7 +30,7 @@ And (optionally) add the code below the `====` as a starting point
 })
 
 -- Split the content 
-local inst, content = craft.prep_inst_and_content(file.content, "====", false)
+local inst, content = craft.prep_inst_and_content(file.content, "====", {content_is_default = false})
 
 local should_skip = craft.should_skip(inst, content)
 if should_skip ~= nil then

@@ -56,15 +56,18 @@ function should_skip(inst, content)
   return nil
 end
 
--- retuns `inst, content` and each can be nil if 
-function prep_inst_and_content(content, separator, is_content_default) 
+-- retuns `inst, content` and each can be nil
+-- options {content_is_default = bool}
+--   - When content_is_default, means that if no two parts, the content will be the first_part
+function prep_inst_and_content(content, separator, options) 
+  local content_is_default = options and options.content_is_default or false
   local first_part, second_part = utils.text.split_first(content, separator)
 
   local inst, content = nil, nil
   if second_part ~= nil then 
     inst = first_part
     content = second_part
-  elseif is_content_default then
+  elseif content_is_default then
     content = first_part
   else 
     inst = first_part

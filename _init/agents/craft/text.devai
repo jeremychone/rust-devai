@@ -36,7 +36,7 @@ if should_skip ~= nil then
 end
 
 -- split the content 
-local inst, content = craft.prep_inst_and_content(content, "====", true)
+local inst, content = craft.prep_inst_and_content(content, "====", {content_is_default = true})
 
 return {
     path      = file.path,
@@ -54,6 +54,8 @@ Your goal is to proofread the English of the document the user is giving you.
 - When you provide the answer, do not wrap it in a markdown code block or give an explanation.
 - The user might give some instructions as well; these will be marked with `== Start User Instructions` ... `== End User Instruction`
 
+# Instruction
+
 {{#if data.content_inst}}
 Here are the additional user instructions
 == Start User Instructions
@@ -61,9 +63,11 @@ Here are the additional user instructions
 == End User Instructions
 {{/if}}
 
-# Instruction
+== Start Content
 
 {{data.content}}
+
+== End Content
 
 # Output
 
