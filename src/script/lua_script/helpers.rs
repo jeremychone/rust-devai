@@ -1,5 +1,4 @@
-use mlua::{Table, Value};
-use std::sync::Arc;
+use mlua::Value;
 
 // Return a Vec<String> from a lua Value which can be String or Array of strings
 pub fn to_vec_of_strings(value: Value, err_prefix: &'static str) -> mlua::Result<Vec<String>> {
@@ -39,36 +38,3 @@ pub fn to_vec_of_strings(value: Value, err_prefix: &'static str) -> mlua::Result
 		}),
 	}
 }
-
-// region:    --- LuaTableError
-
-#[derive(Debug)]
-struct LuaTableError {
-	table: Table,
-}
-
-impl std::error::Error for LuaTableError {}
-
-impl std::fmt::Display for LuaTableError {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		// Convert the Lua table to a string representation for the error message
-		let mut output = String::new();
-		for pair in self.table.pairs::<Value, Value>() {
-			match pair {
-				Ok((key, value)) => {
-					output.push_str(&format!("{:?}: {:?}, ", key, value));
-				}
-				Err(_) => {
-					output.push_str("Error reading table values, ");
-				}
-			}
-		}
-		write!(f, "LuaTableError: {{ {} }}", output.trim_end_matches(", "))
-	}
-}
-
-pub fn make_table_external_error(table: Table) -> mlua::Error {
-	mlua::Error::ExternalError(Arc::new(LuaTableError { table }))
-}
-
-// endregion: --- LuaTableError

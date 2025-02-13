@@ -9,7 +9,6 @@
 //! * `utils.rust.prune_to_declarations(code: string) -> string`
 
 use crate::run::RuntimeContext;
-use crate::script::lua_script::helpers::make_table_external_error;
 use crate::support::code::run_prune_to_declarations;
 use crate::Result;
 use mlua::{Lua, Table, Value};
@@ -41,11 +40,7 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 fn prune_to_declarations(lua: &Lua, code: String) -> mlua::Result<Value> {
 	match run_prune_to_declarations(&code) {
 		Ok(result) => Ok(Value::String(lua.create_string(&result)?)),
-		Err(err) => {
-			let error_table = lua.create_table()?;
-			error_table.set("error", format!("Failed to prune Rust code: {}", err))?;
-			Err(make_table_external_error(error_table))
-		}
+		Err(err) => Err(crate::Error::Lua(format!("Failed to prune Rust code: {}", err)).into()),
 	}
 }
 

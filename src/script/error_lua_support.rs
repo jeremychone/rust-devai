@@ -16,9 +16,9 @@ impl Error {
 				} else {
 					msg
 				};
-				buff.push(format!("Lua error element:\n{}", msg));
+				buff.push(format!("Lua error:\n{}", msg));
 			} else {
-				buff.push(format!("Other error element:\n{}", item));
+				buff.push(format!("Other lua error:\n{}", item));
 			}
 		}
 		Error::Lua(buff.join("\n"))

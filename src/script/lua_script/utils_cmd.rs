@@ -9,7 +9,7 @@
 //! * `utils.cmd.exec(cmd_name: string, args?: string | table) -> {stdout: string, stderr: string, exit: number}`
 
 use crate::run::RuntimeContext;
-use crate::script::lua_script::helpers::{make_table_external_error, to_vec_of_strings};
+use crate::script::lua_script::helpers::to_vec_of_strings;
 use mlua::{Lua, Table, Value};
 use std::process::Command;
 
@@ -82,24 +82,43 @@ fn cmd_exec(lua: &Lua, (cmd_name, args): (String, Option<Value>)) -> mlua::Resul
 			let exit_code = output.status.code().unwrap_or(-1) as i64;
 
 			let res = lua.create_table()?;
-			res.set("stdout", stdout)?;
-			res.set("stderr", stderr)?;
+			res.set("stdout", stdout.as_str())?;
+			res.set("stderr", stderr.as_str())?;
 			res.set("exit", exit_code)?;
 
 			if exit_code == 0 {
 				Ok(Value::Table(res))
 			} else {
 				res.set("error", format!("Command exited with non-zero status: {}", exit_code))?;
-				Err(make_table_external_error(res))
+				let cmd = command.get_program().to_str().unwrap_or_default();
+				let args = command
+					.get_args()
+					.map(|a| a.to_str().unwrap_or_default())
+					.collect::<Vec<&str>>();
+				let args = args.join(" ");
+				Err(crate::Error::Lua(format!(
+					"\
+Fail to execute: {cmd} {args}
+stdout:\n{stdout}\n
+stderr:\n{stderr}\n
+exit code: exit_code\n"
+				))
+				.into())
 			}
 		}
 		Err(err) => {
-			let res = lua.create_table()?;
-			res.set("stdout", Value::Nil)?;
-			res.set("stderr", Value::Nil)?;
-			res.set("exit", Value::Nil)?;
-			res.set("error", err.to_string())?;
-			Err(make_table_external_error(res))
+			let cmd = command.get_program().to_str().unwrap_or_default();
+			let args = command
+				.get_args()
+				.map(|a| a.to_str().unwrap_or_default())
+				.collect::<Vec<&str>>();
+			let args = args.join(" ");
+			Err(crate::Error::Lua(format!(
+				"\
+Fail to execute: {cmd} {args}
+Cause:\n{err}"
+			))
+			.into())
 		}
 	}
 }

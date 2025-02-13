@@ -172,11 +172,12 @@ utils.git.restore("src/main.rs")                       -- void
 
 ### utils.web
 
-See [WebResponse](#webresponse), [WebError](#weberror) for return types.
+See [WebResponse](#webresponse).
 
 ```lua
--- Fetch content from a URL
-local content = utils.web.get("https://example.com")   -- WebResponse / WebError
+-- Fetch result from a URL (see WebResponse object)
+local result = utils.web.get("https://example.com")   -- WebResponse 
+-- Return an exception when a web request cannot be executed (e.g., bad URL, remote server not available)
 ```
 
 ## utils.html
@@ -187,11 +188,11 @@ local cleaned_html = utils.html.prune_to_content(html_content)  -- string
 ```
 ## utils.cmd
 
-See [CmdResponse](#cmdresponse), [CmdError](#cmderror) for return types.
+See [CmdResponse](#cmdresponse)
 
 ```lua
 -- Execute a system command utils.cmd.exec(cmd_name, cmd_args)
-local result = utils.cmd.exec("ls", {"-ll", "./**/*.md"})  -- CmdResponse / CmdError
+local result = utils.cmd.exec("ls", {"-ll", "./**/*.md"})  -- CmdResponse
 ```
 
 ## devai
@@ -325,19 +326,6 @@ The `CmdResponse` is returned by `utils.cmd.exec`
 }
 ```
 
-## CmdError
-
-When `utils.cmd.exec` fails, here is the type:
-
-```lua
-{
-  stdout = string | nil,  -- Standard output if available
-  stderr = string | nil,  -- Standard error if available
-  exit   = number | nil,  -- Exit code if available
-  error  = string         -- Error message from command execution
-}
-```
-
 ## WebResponse
 
 The `WebResponse`
@@ -348,18 +336,5 @@ The `WebResponse`
  status = number,
  url = string,
  content = string,
-}
-```
-
-## WebError
-
-In case of an error, the `WebError` is:
-
-```lua
-{
- success = false,
- status  = number | nil,
- url     = string,
- error   = string,
 }
 ```

@@ -1,12 +1,12 @@
 [default_options]
 # Required (any model supported by the Rust genai crate)
 # e.g.,    
-#          Gemini: "gemini-2.0-flash-001", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b" 
-#             xAI: "grok-beta"
-#       Anthropic: "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-haiku-20240307"
 #          Ollama: "llama3.3:70b", "llama3.1:8b", "llama3.2:3b" "deepseek-r1:8b" "deepseek-coder-v2:16b" (or any locally installed Ollama)
 #            Groq: "deepseek-r1-distill-llama-70b", "llama3-8b-8192", "llama-3.3-70b-versatile"
+#             xAI: "grok-beta"
+#       Anthropic: "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-haiku-20240307"
 #          OpenAI: "o3-mini", "o3-mini-high", "o3-mini-low", "gpt-4o", "gpt-4o-mini"
+#          Gemini: "gemini-2.0-flash-001", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b" 
 #        DeepSeek: "deepseek-chat" "deepseek-reasoner" (from deepseek.com)
 model = "gpt-4o-mini" # or an alias below (e.g. "fast", "cost-saver")
 

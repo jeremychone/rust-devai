@@ -10,7 +10,6 @@
 
 use crate::hub::get_hub;
 use crate::run::RuntimeContext;
-use crate::script::lua_script::helpers::make_table_external_error;
 use crate::{Error, Result};
 use mlua::{Lua, Table, Value};
 use reqwest::redirect::Policy;
@@ -82,20 +81,16 @@ fn web_get(lua: &Lua, url: String) -> mlua::Result<Value> {
 						res.set("status", status_code)?;
 						res.set("url", &*url)?;
 						res.set("error", format!("Not a 2xx status code ({status_code})"))?;
-						// NOTE: Experimenting with this error format
-						Err(make_table_external_error(res))
+						// NOTE: This is not an error, as the web request was sent
+						Ok(Value::Table(res))
 					}
 				}
-				Err(err) => {
-					let status = err.status().map(|s| s.as_u16());
-					let res = lua.create_table()?;
-					res.set("success", false)?;
-					res.set("status", status)?;
-					res.set("url", &*url)?;
-					res.set("error", err.to_string())?;
-					// NOTE: Experimenting with this error format
-					Err(make_table_external_error(res))
-				}
+				Err(err) => Err(crate::Error::Lua(format!(
+					"\
+Fail to do utils.web.get for url: {url}
+Cause: {err}"
+				))
+				.into()),
 			};
 
 			if res.is_ok() {
@@ -158,9 +153,8 @@ utils.web.get(url)
 
 		// -- Check
 		// TODO: Need to have better way to capture structured lua error
-		assert_contains(&err, "false"); // success = false
-		assert_contains(&err, "error"); // error message
-		assert_contains(&err, "this-cannot-go"); // url
+		assert_contains(&err, "Fail to do utils.web.get"); // success = false
+		assert_contains(&err, "https://this-cannot-go/anywhere-or-can-it.devai"); // error message
 
 		Ok(())
 	}
