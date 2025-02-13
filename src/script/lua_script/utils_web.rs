@@ -80,6 +80,8 @@ fn web_get(lua: &Lua, url: String) -> mlua::Result<Value> {
 						res.set("success", false)?;
 						res.set("status", status_code)?;
 						res.set("url", &*url)?;
+						let content = response.text().await.unwrap_or_default();
+						res.set("content", content)?;
 						res.set("error", format!("Not a 2xx status code ({status_code})"))?;
 						// NOTE: This is not an error, as the web request was sent
 						Ok(Value::Table(res))
