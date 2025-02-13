@@ -175,10 +175,31 @@ utils.git.restore("src/main.rs")                       -- void
 See [WebResponse](#webresponse).
 
 ```lua
--- Fetch result from a URL (see WebResponse object)
-local result = utils.web.get("https://example.com")   -- WebResponse 
+-- Fetch web_response from a URL (see WebResponse object)
+local web_response = utils.web.get("https://example.com")   -- WebResponse 
 -- Return an exception when a web request cannot be executed (e.g., bad URL, remote server not available)
+
+-- Do a post 
+local web_response = utils.web.post("https://httpbin.org/post", { some = "stuff"})
+-- if data is table, will be serialize as json, and content_type `application/json` 
+-- If data is string, then, just as is, and `plain/text`
 ```
+
+#### WebResponse
+
+The `WebResponse`
+
+```lua
+{
+ success = true,
+ status = number,
+ url = string,
+ content = string | table, 
+}
+-- .content will be Lua Table if response content_type is application/json
+--          otherwie, just string
+```
+
 
 ## utils.html
 
@@ -323,18 +344,5 @@ The `CmdResponse` is returned by `utils.cmd.exec`
   stdout = string,  -- Standard output from the command
   stderr = string,  -- Standard error from the command
   exit   = number   -- Exit code (0 for success)
-}
-```
-
-## WebResponse
-
-The `WebResponse`
-
-```lua
-{
- success = true,
- status = number,
- url = string,
- content = string,
 }
 ```

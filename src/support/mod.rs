@@ -2,9 +2,11 @@
 
 mod as_strs_ext;
 mod cow_lines;
+mod str_ext;
 
 pub use as_strs_ext::*;
 pub use cow_lines::*;
+pub use str_ext::*;
 
 pub mod code;
 pub mod cred;
