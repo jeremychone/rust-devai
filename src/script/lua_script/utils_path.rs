@@ -6,19 +6,27 @@
 //! The `path` module exposes functions used to interact with file paths.
 //!
 //! ### Functions
-//! * `path::exists(path: string) -> bool`
-//! * `path::is_file(path: string) -> bool`
-//! * `path::is_dir(path: string) -> bool`
-//! * `path::parent(path: string) -> string | nil`
-//! * `path::join(path: string) -> string | nil`
+//! * `utils.path.exists(path: string) -> bool`
+//! * `utils.path.is_file(path: string) -> bool`
+//! * `utils.path.is_dir(path: string) -> bool`
+//! * `utils.path.parent(path: string) -> string | nil`
+//! * `utils.path.join(path: string) -> string | nil` (default non os normalized)
+//! * `utils.path.join_os_normalized(path: string) -> string | nil` (windows style if start with like C:)
+//! * `utils.path.join_os_non_normalized(path: string) -> string | nil` (default, as user specified)
 //! * `path.split(path: string) -> parent, filename`
+//!
+//! NOTE 1: Currently, `utils.path.join` uses `utils.path.join_os_non_normalized`. This might change in the future.
+//!
+//! NOTE 2: The reason why normalized is prefixed with `_os_`
+//!         is because there is another type of normalization that removes the "../".
+//!         There are no functions for this yet, but keeping the future open.
 
 use crate::run::{PathResolver, RuntimeContext};
-use mlua::{Value, Variadic};
 use mlua::{Lua, MultiValue, Result, Table};
+use mlua::{Value, Variadic};
 use simple_fs::SPath;
-use std::path::{Path, MAIN_SEPARATOR};
 use std::path::PathBuf;
+use std::path::{Path, MAIN_SEPARATOR};
 
 pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
@@ -42,9 +50,9 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	let path_parent_fn = lua.create_function(move |_lua, path: String| path_parent(path))?;
 
 	// -- joins
-	let path_join_non_normalized_fn = lua.create_function(path_join_non_normalized)?;
-	let path_join_normalized_fn = lua.create_function(path_join_normalized)?;
-	let path_join_fn = lua.create_function(path_join_normalized)?;
+	let path_join_non_os_normalized_fn = lua.create_function(path_join_non_os_normalized)?;
+	let path_join_os_normalized_fn = lua.create_function(path_join_os_normalized)?;
+	let path_join_fn = lua.create_function(path_join_non_os_normalized)?;
 
 	// -- Add all functions to the module
 	table.set("exists", path_exists_fn)?;
@@ -52,8 +60,8 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	table.set("is_dir", path_is_dir_fn)?;
 	table.set("parent", path_parent_fn)?;
 	table.set("join", path_join_fn)?;
-	table.set("join_non_normalized", path_join_non_normalized_fn)?;
-	table.set("join_normalized", path_join_normalized_fn)?;
+	table.set("join_os_non_normalized", path_join_non_os_normalized_fn)?;
+	table.set("join_os_normalized", path_join_os_normalized_fn)?;
 	table.set("split", path_split_fn)?;
 
 	Ok(table)
@@ -134,133 +142,116 @@ fn path_parent(path: String) -> mlua::Result<Option<String>> {
 /// ```lua
 /// path.join(path: string) -> string | nil
 ///
-/// Table example:
+/// -- Table example:
 /// local paths = {"folder", "subfolder", "file.txt"}
 /// local full_path = utils.path.join(paths)
 ///
-/// Arg example:
+/// -- Arg example:
 /// local full_path = utils.path.join("folder", "subfolder", "file.txt")
 ///
 /// ```
 ///
 /// Returns the path, with paths joined.
 /// (follows the Rust PathBuf::join(&self) logic)
-
-
-
-
-
-
-
-
-
-/// Joins path components without normalization.
-/// 
+///
+/// Joins path components without OS normalization.
+///
+/// JC NOTE: This might be deprecated at some oint
+///
 /// This version uses Rust’s `PathBuf` join logic without altering the components (apart from ignoring empty strings).
 /// Any mixed or extra separators are preserved.
-pub fn path_join_non_normalized(lua: &Lua, paths: Variadic<Value>) -> Result<Value> {
-    let mut path_buf = PathBuf::new();
-    if paths.is_empty() {
-        return Ok(Value::Nil);
-    }
-    // If the first argument is a table, iterate over its entries.
-    if let Some(Value::Table(table)) = paths.first() {
-        for pair in table.clone().pairs::<mlua::Integer, String>() {
-            let (_, s) = pair?;
-            path_buf.push(s);
-        }
-    } else {
-        // Otherwise, iterate over the variadic arguments.
-        for arg in paths {
-            if let Value::String(s) = arg {
+pub fn path_join_non_os_normalized(lua: &Lua, paths: Variadic<Value>) -> Result<Value> {
+	let mut path_buf = PathBuf::new();
+	if paths.is_empty() {
+		return Ok(Value::Nil);
+	}
+	// If the first argument is a table, iterate over its entries.
+	if let Some(Value::Table(table)) = paths.first() {
+		for pair in table.clone().pairs::<mlua::Integer, String>() {
+			let (_, s) = pair?;
+			path_buf.push(s);
+		}
+	} else {
+		// Otherwise, iterate over the variadic arguments.
+		for arg in paths {
+			if let Value::String(s) = arg {
 				path_buf.push(s.to_str()?.to_string());
-            }
-        }
-    }
-    Ok(Value::String(lua.create_string(path_buf.to_string_lossy().as_ref())?))
+			}
+		}
+	}
+	Ok(Value::String(lua.create_string(path_buf.to_string_lossy().as_ref())?))
 }
 
-/// Joins path components with normalization.
-/// 
-/// This version first gathers nonempty strings then “normalizes” each component by trimming extra leading 
+/// Joins path components with OS normalization.
+///
+/// This version first gathers nonempty strings then “normalizes” each component by trimming extra leading
 /// and trailing slashes. If the first component looks like a Windows path (i.e. its second character is a colon,
 /// e.g. `"C:"`, or it starts with a backslash), then the join is done using backslashes (and any forward slashes
 /// in the components are converted to backslashes). Otherwise, the platform’s native separator is used.
-pub fn path_join_normalized(lua: &Lua, paths: Variadic<Value>) -> Result<Value> {
-    let mut comps = Vec::new();
-    if paths.is_empty() {
-        return Ok(Value::Nil);
-    }
-    if let Some(Value::Table(table)) = paths.first() {
-        for pair in table.clone().pairs::<mlua::Integer, String>() {
-            let (_, s) = pair?;
-            if !s.is_empty() {
-                comps.push(s);
-            }
-        }
-    } else {
-        for arg in paths {
-            if let Value::String(s) = arg {
-                let s = s.to_str()?;
-                if !s.is_empty() {
-                    comps.push(s.to_string());
-                }
-            }
-        }
-    }
-    if comps.is_empty() {
-        return Ok(Value::String(lua.create_string("")?));
-    }
-    let is_windows = is_windows_style(&comps[0]);
-    let sep: char = if is_windows { '\\' } else { MAIN_SEPARATOR };
-    let mut result = String::new();
-    if is_windows {
-        // For Windows‑style, trim trailing slashes from the first component and convert any '/' to '\\'.
-        let first = comps[0].trim_end_matches(|c| c == '\\' || c == '/').replace("/", "\\");
-        result.push_str(&first);
-        for comp in comps.iter().skip(1) {
-            // For subsequent components, trim both leading and trailing slashes and convert '/' to '\\'.
-            let part = comp.trim_matches(|c| c == '\\' || c == '/').replace("/", "\\");
-            if !part.is_empty() {
-                if !result.ends_with(sep) {
-                    result.push(sep);
-                }
-                result.push_str(&part);
-            }
-        }
-    } else {
-        // For non–Windows style, simply trim extra slashes.
-        let first = comps[0].trim_end_matches(|c| c == '\\' || c == '/');
-        result.push_str(first);
-        for comp in comps.iter().skip(1) {
-            let part = comp.trim_matches(|c| c == '\\' || c == '/');
-            if !part.is_empty() {
-                if !result.ends_with(sep) {
-                    result.push(sep);
-                }
-                result.push_str(part);
-            }
-        }
-    }
-    Ok(Value::String(lua.create_string(&result)?))
+pub fn path_join_os_normalized(lua: &Lua, paths: Variadic<Value>) -> Result<Value> {
+	let mut comps = Vec::new();
+	if paths.is_empty() {
+		return Ok(Value::Nil);
+	}
+	if let Some(Value::Table(table)) = paths.first() {
+		for pair in table.clone().pairs::<mlua::Integer, String>() {
+			let (_, s) = pair?;
+			if !s.is_empty() {
+				comps.push(s);
+			}
+		}
+	} else {
+		for arg in paths {
+			if let Value::String(s) = arg {
+				let s = s.to_str()?;
+				if !s.is_empty() {
+					comps.push(s.to_string());
+				}
+			}
+		}
+	}
+	if comps.is_empty() {
+		return Ok(Value::String(lua.create_string("")?));
+	}
+	let is_windows = is_windows_style(&comps[0]);
+	let sep: char = if is_windows { '\\' } else { MAIN_SEPARATOR };
+	let mut result = String::new();
+	if is_windows {
+		// For Windows‑style, trim trailing slashes from the first component and convert any '/' to '\\'.
+		let first = comps[0].trim_end_matches(['\\', '/']).replace("/", "\\");
+		result.push_str(&first);
+		for comp in comps.iter().skip(1) {
+			// For subsequent components, trim both leading and trailing slashes and convert '/' to '\\'.
+			let part = comp.trim_matches(|c| c == '\\' || c == '/').replace("/", "\\");
+			if !part.is_empty() {
+				if !result.ends_with(sep) {
+					result.push(sep);
+				}
+				result.push_str(&part);
+			}
+		}
+	} else {
+		// For non–Windows style, simply trim extra slashes.
+		let first = comps[0].trim_end_matches(['\\', '/']);
+		result.push_str(first);
+		for comp in comps.iter().skip(1) {
+			let part = comp.trim_matches(|c| c == '\\' || c == '/');
+			if !part.is_empty() {
+				if !result.ends_with(sep) {
+					result.push(sep);
+				}
+				result.push_str(part);
+			}
+		}
+	}
+	Ok(Value::String(lua.create_string(&result)?))
 }
 
 /// Returns true if the given string looks like a Windows‑style path.
 /// That is, if its second character is a colon (e.g. `"C:"`) or it starts with a backslash.
 fn is_windows_style(s: &str) -> bool {
-    (s.len() >= 2 && s.as_bytes()[1] == b':') || s.starts_with('\\')
+	(s.len() >= 2 && s.as_bytes()[1] == b':') || s.starts_with('\\')
 }
-
-
-
-
-
-
-
-
-
-
-
 
 // endregion: --- Lua Functions
 
@@ -268,21 +259,23 @@ fn is_windows_style(s: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use mlua::Lua;
+	use super::*;
+	use mlua::Lua;
 
-    /// Sets up a Lua instance with both functions registered under `utils.path`.
-    fn setup_lua() -> Lua {
-        let lua = Lua::new();
-        let globals = lua.globals();
-        let utils = lua.create_table().unwrap();
-        let path_table = lua.create_table().unwrap();
-        path_table.set("join_non_normalized", lua.create_function(path_join_non_normalized).unwrap()).unwrap();
-        path_table.set("join_normalized", lua.create_function(path_join_normalized).unwrap()).unwrap();
-        utils.set("path", path_table).unwrap();
-        globals.set("utils", utils).unwrap();
-        lua
-    }
+	/// Sets up a Lua instance with both functions registered under `utils.path`.
+	fn setup_lua() -> Result<Lua> {
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+
+		let lua = Lua::new();
+		let globals = lua.globals();
+		let utils = lua.create_table().unwrap();
+		// let path_table = lua.create_table().unwrap();
+
+		let path_table = init_module(&lua, &runtime.context())?;
+		utils.set("path", path_table).unwrap();
+		globals.set("utils", utils).unwrap();
+		Ok(lua)
+	}
 
 	// NOTE 1: Here we are testing these functions in the context of an agent to ensure they work in that context.
 	//         A more purist approach would be to test the Lua functions in a blank Lua engine, but the net value of testing
@@ -294,6 +287,7 @@ mod tests {
 	use std::path::MAIN_SEPARATOR;
 
 	use crate::_test_support::run_reflective_agent;
+	use crate::run::Runtime;
 
 	#[tokio::test]
 	async fn test_lua_path_exists_true() -> Result<()> {
@@ -467,64 +461,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_path_join() -> Result<()> {
-		// -- Fixtures
-		let cases = &[
-			// Standard paths
-			(
-				r#"{"folder", "subfolder", "file.txt"}"#,
-				format!("folder{}subfolder{}file.txt", MAIN_SEPARATOR, MAIN_SEPARATOR),
-			),
-			(r#"{"single"}"#, "single".to_string()),
-			(
-				r#"{"leading", "", "trailing"}"#,
-				format!("leading{}trailing", MAIN_SEPARATOR),
-			), // Handles empty segments
-			// Mixed path separators
-			// DISABLE FOR NOW does not work on mac apparently.
-			// (
-			// 	r#"{"folder\\", "subfolder/", "file.txt"}"#,
-			// 	format!("folder{}subfolder{}file.txt", MAIN_SEPARATOR, MAIN_SEPARATOR),
-			// ),
-			(
-				r#"{"C:\\Users", "Admin", "Documents\\file.txt"}"#,
-				format!(
-					"C:{}Users{}Admin{}Documents{}file.txt",
-					MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR
-				),
-			),
-			(
-				r#"{"C:/Users", "Admin", "Documents/file.txt"}"#,
-				format!(
-					"C:{}Users{}Admin{}Documents{}file.txt",
-					MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR
-				),
-			),
-			// Absolute paths
-			(
-				r#"{"\\server", "share", "folder", "file.txt"}"#,
-				format!(
-					"{}server{}share{}folder{}file.txt",
-					MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR
-				),
-			),
-			(
-				r#"{"C:/", "Windows", "System32"}"#,
-				format!("C:{}Windows{}System32", MAIN_SEPARATOR, MAIN_SEPARATOR),
-			),
-		];
-
-		for (lua_table, expected_path) in cases {
-			let res = run_reflective_agent(&format!(r#"return utils.path.join({lua_table})"#), None).await?;
-
-			let result_path = res.as_str().ok_or("Should return a string")?;
-			assert_eq!(result_path, expected_path, "Path mismatch for table input: {lua_table}");
-		}
-
-		Ok(())
-	}
-
-	#[tokio::test]
 	async fn test_lua_path_split() -> Result<()> {
 		// -- Fixtures
 		let paths = &[
@@ -568,79 +504,150 @@ mod tests {
 		Ok(())
 	}
 
+	#[test]
+	fn test_lua_path_join_default() -> Result<()> {
+		common_test_lua_path_join_non_os_normalized("join")?;
+		Ok(())
+	}
 
+	#[test]
+	fn test_path_join_os_non_normalized() -> Result<()> {
+		common_test_lua_path_join_non_os_normalized("join_os_non_normalized")?;
+		Ok(())
+	}
 
+	#[test]
+	fn test_path_join_os_normalized_lua_engine() -> Result<()> {
+		common_test_lua_path_join_os_normalized_lua_engine("join_os_normalized")?;
+		Ok(())
+	}
 
+	#[tokio::test]
+	async fn test_path_join_os_normalized_reflective() -> Result<()> {
+		common_test_lua_path_join_os_normalized_reflective("join_os_normalized").await?;
+		Ok(())
+	}
 
-    #[tokio::test]
-    async fn test_path_join_non_normalized_common() -> Result<()> {
-        let lua = setup_lua();
-        let mut expected1 = PathBuf::new();
-        expected1.push("folder");
-        expected1.push("subfolder");
-        expected1.push("file.txt");
+	// region:    --- Tests Support
 
-        let mut expected2 = PathBuf::new();
-        expected2.push("folder\\");
-        expected2.push("subfolder/");
-        expected2.push("file.txt");
+	fn common_test_lua_path_join_non_os_normalized(join_fn_name: &str) -> Result<()> {
+		let lua = setup_lua()?;
+		let mut expected1 = PathBuf::new();
+		expected1.push("folder");
+		expected1.push("subfolder");
+		expected1.push("file.txt");
 
-        let cases = vec![
-            (r#"{"folder", "subfolder", "file.txt"}"#, expected1.to_string_lossy().to_string()),
-            (r#"{"folder\\", "subfolder/", "file.txt"}"#, expected2.to_string_lossy().to_string()),
-        ];
-        for (input, expected) in cases {
-            let code = format!("return utils.path.join_non_normalized({})", input);
-            let result: String = lua.load(&code).eval()?;
-            assert_eq!(result, expected, "Non-normalized failed for input: {}", input);
-        }
-        Ok(())
-    }
+		let mut expected2 = PathBuf::new();
+		expected2.push("folder\\");
+		expected2.push("subfolder/");
+		expected2.push("file.txt");
 
-    #[tokio::test]
-    async fn test_path_join_normalized_common() -> Result<()> {
-        let lua = setup_lua();
-        let sep = MAIN_SEPARATOR;
-        let cases = vec![
-            // Standard (non-Windows) paths.
-            (
-                r#"{"folder", "subfolder", "file.txt"}"#,
-                format!("folder{sep}subfolder{sep}file.txt", sep = sep),
-            ),
-            (
-                r#"{"leading", "", "trailing"}"#,
-                format!("leading{sep}trailing", sep = sep),
-            ),
-            (
-                r#"{"folder\\", "subfolder/", "file.txt"}"#,
-                format!("folder{sep}subfolder{sep}file.txt", sep = sep),
-            ),
-            // Windows‑style paths.
-            (
-                r#"{"C:/Users", "Admin", "Documents/file.txt"}"#,
-                "C:\\Users\\Admin\\Documents\\file.txt".to_string(),
-            ),
-            (
-                r#"{"\\server", "share", "folder", "file.txt"}"#,
-                "\\server\\share\\folder\\file.txt".to_string(),
-            ),
-        ];
-        for (input, expected) in cases {
-            let code = format!("return utils.path.join_normalized({})", input);
-            let result: String = lua.load(&code).eval()?;
-            assert_eq!(result, expected, "Normalized failed for input: {}", input);
-        }
-        Ok(())
-    }
+		let cases = vec![
+			(
+				r#"{"folder", "subfolder", "file.txt"}"#,
+				expected1.to_string_lossy().to_string(),
+			),
+			(
+				r#"{"folder\\", "subfolder/", "file.txt"}"#,
+				expected2.to_string_lossy().to_string(),
+			),
+		];
+		for (input, expected) in cases {
+			let code = format!("return utils.path.{join_fn_name}({})", input);
+			let result: String = lua.load(&code).eval()?;
+			assert_eq!(result, expected, "Non-normalized failed for input: {}", input);
+		}
+		Ok(())
+	}
 
+	async fn common_test_lua_path_join_os_normalized_reflective(join_fn_name: &str) -> Result<()> {
+		// -- Fixtures
+		let cases = &[
+			// Standard paths
+			(
+				r#"{"folder", "subfolder", "file.txt"}"#,
+				format!("folder{}subfolder{}file.txt", MAIN_SEPARATOR, MAIN_SEPARATOR),
+			),
+			(r#"{"single"}"#, "single".to_string()),
+			(r#"{"leading", "", "trailing"}"#, "leading/trailing".to_string()), // Handles empty segments
+			(
+				r#"{"C:\\Users", "Admin", "Documents\\file.txt"}"#,
+				"C:\\Users\\Admin\\Documents\\file.txt".to_string(),
+			),
+			(
+				r#"{"C:/Users", "Admin", "Documents/file.txt"}"#,
+				"C:\\Users\\Admin\\Documents\\file.txt".to_string(),
+			),
+			(r#"{"C:/", "Windows", "System32"}"#, "C:\\Windows\\System32".to_string()),
+			//
+			// IMPORTANT: The tests below are out of scope for now for the os_normalization
+			//
+			// Mixed path separators
+			// DISABLE FOR NOW does not work on mac apparently.
+			// (
+			// 	r#"{"folder\\", "subfolder/", "file.txt"}"#,
+			// 	format!("folder{}subfolder{}file.txt", MAIN_SEPARATOR, MAIN_SEPARATOR),
+			// ),
+			//
+			// Absolute paths/ UNC Type
+			// DISABLE - This won't path on unixy, because of the current logic
+			//           But UNC type of path is out of scope for now
+			// (
+			// 	r#"{"\\server", "share", "folder", "file.txt"}"#,
+			// 	format!(
+			// 		"{}server{}share{}folder{}file.txt",
+			// 		MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR, MAIN_SEPARATOR
+			// 	),
+			// ),
+		];
 
+		// -- Exec & Check
+		for (lua_table, expected_path) in cases {
+			let code = format!(r#"return utils.path.{}({lua_table})"#, join_fn_name);
+			let res = run_reflective_agent(&code, None).await?;
 
+			let result_path = res.as_str().ok_or("Should return a string")?;
+			assert_eq!(result_path, expected_path, "Path mismatch for table input: {lua_table}");
+		}
 
+		Ok(())
+	}
 
-
-
-
-
+	fn common_test_lua_path_join_os_normalized_lua_engine(join_fn_name: &str) -> Result<()> {
+		let lua = setup_lua()?;
+		let sep = MAIN_SEPARATOR;
+		let cases = vec![
+			// Standard (non-Windows) paths.
+			(
+				r#"{"folder", "subfolder", "file.txt"}"#,
+				format!("folder{sep}subfolder{sep}file.txt", sep = sep),
+			),
+			(
+				r#"{"leading", "", "trailing"}"#,
+				format!("leading{sep}trailing", sep = sep),
+			),
+			(
+				r#"{"folder\\", "subfolder/", "file.txt"}"#,
+				format!("folder{sep}subfolder{sep}file.txt", sep = sep),
+			),
+			// Windows‑style paths.
+			(
+				r#"{"C:/Users", "Admin", "Documents/file.txt"}"#,
+				"C:\\Users\\Admin\\Documents\\file.txt".to_string(),
+			),
+			(
+				r#"{"\\server", "share", "folder", "file.txt"}"#,
+				"\\server\\share\\folder\\file.txt".to_string(),
+			),
+		];
+		for (input, expected) in cases {
+			let code = format!("return utils.path.{join_fn_name}({})", input);
+			let result: String = lua.load(&code).eval()?;
+			assert_eq!(result, expected, "Normalized failed for input: {}", input);
+		}
+		Ok(())
+	}
+	// endregion: --- Tests Support
 }
 
 // endregion: --- Tests
