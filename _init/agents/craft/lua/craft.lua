@@ -35,8 +35,9 @@ function prep_input_file(input, options)
   return utils.file.load(path)
 end
 
--- Will return a string if this task should be skipped
--- Returns the message to display to the user
+-- Will return a devai skip if this task should be skipped
+--   - If both inst and content are empty
+--   - Or if inst (or content if inst is empty) starts with 'placeholder'
 function should_skip(inst, content) 
   inst = inst and utils.text.trim(inst) or ""
   content = content and utils.text.trim(content) or ""
