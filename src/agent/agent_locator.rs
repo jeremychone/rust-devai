@@ -308,21 +308,21 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_get_solo_and_target_path() -> Result<()> {
-		let data = &[
-			// (path, expected_solo_path, expected_target_path)
-			("./some/file.md", "./some/file.md.devai", "./some/file.md"),
-			("./some/file.md.devai", "./some/file.md.devai", "./some/file.md"),
-			("./some/file.devai", "./some/file.devai", "./some/file.md"),
-		];
+    	let data = &[
+        	// (input path, expected solo path, expected target path)
+        	("./some/file.md", "./some/file.md.devai", "./some/file.md"),
+        	("./some/file.md.devai", "./some/file.md.devai", "./some/file.md"),
+        	("./some/file.devai", "./some/file.devai", "./some/file.md"),
+    	];
 
-		// -- Exec & Check
-		for (path, expected_solo_path, expected_target_path) in data {
-			let (solo_path, target_path) = get_solo_and_target_path(path)?;
-			assert_eq!(solo_path.to_str(), *expected_solo_path);
-			assert_eq!(target_path.to_str(), *expected_target_path);
-		}
+    	for (path, expected_solo_path, expected_target_path) in data {
+        	let (solo_path, target_path) = get_solo_and_target_path(path)?;
+        	// Compare the Path objects directly.
+        	assert_eq!(solo_path.path(), Path::new(expected_solo_path));
+        	assert_eq!(target_path.path(), Path::new(expected_target_path));
+    	}
 
-		Ok(())
+    	Ok(())
 	}
 
 	#[tokio::test]
