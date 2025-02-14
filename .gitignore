@@ -25,6 +25,11 @@ _*
 # Ignore the .devai (typically temporary solos)
 src/**/*.devai
 
+# -- Devai for test
+!/tests-data/sandbox-01/.devai/
+/tests-data/sandbox-01/.devai/*
+!/tests-data/sandbox-01/.devai/config.toml
+
 # -- Rust
 target/
 # !Cargo.lock # commented by default
