@@ -144,7 +144,7 @@ pub(super) fn file_ensure_exists(
 ///   path    = "doc/README.md",
 ///   name    = "README.md",
 ///   stem    = "README",
-///   ext     = "md",
+///   ext     = "md"
 /// }
 /// ```
 ///
@@ -173,6 +173,30 @@ pub(super) fn file_list(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -
 	Ok(res)
 }
 
+/// ## Lua Documentation
+///
+/// List a set of file reference (no content) for a given glob and load them
+///
+/// ```lua
+/// let all_doc_file = utils.file.list_load("doc/**/*.md")
+/// ```
+///
+///
+/// ### Returns
+///
+/// ```lua
+/// -- An array/table of FileRecord
+/// {
+///   path    = "doc/README.md",
+///   name    = "README.md",
+///   stem    = "README",
+///   ext     = "md",
+///   content = "..."
+/// }
+/// ```
+///
+/// To get the content of files, needs iterate and load each
+///
 pub(super) fn file_list_load(lua: &Lua, ctx: &RuntimeContext, include_globs: Value) -> mlua::Result<Value> {
 	let (base_path, include_globs) = base_path_and_globs(ctx, include_globs)?;
 

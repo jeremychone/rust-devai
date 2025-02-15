@@ -49,6 +49,9 @@ utils.file.append("doc/some-file.md", "some new content")       -- void (no retu
 -- List files matching a glob pattern
 local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileMeta, ...}
 
+-- List files and load their content
+local all_files = utils.file.list_load({"doc/**/*.md", "src/**/*.rs"})           -- {FileRecord, ...}
+
 -- Get the first file reference matching a glob pattern
 local first_doc_file = utils.file.first("doc/**/*.md")          -- FileMeta | Nil
 
