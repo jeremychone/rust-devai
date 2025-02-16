@@ -1,5 +1,5 @@
 use crate::hub::get_hub;
-use crate::run::paths::{CUSTOM_AGENT_DIR, CUSTOM_LUA_DIR, DEVAI_BASE};
+use crate::run::path_consts::{CUSTOM_AGENT_DIR, CUSTOM_LUA_DIR, DEVAI_BASE};
 use crate::Result;
 use home::home_dir;
 use simple_fs::ensure_dir;

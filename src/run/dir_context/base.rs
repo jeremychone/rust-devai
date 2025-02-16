@@ -7,7 +7,7 @@ use std::path::Path;
 #[allow(clippy::enum_variant_names)] // to remove
 pub enum PathResolver {
 	CurrentDir,
-	DevaiParentDir,
+	WorkspaceDir,
 	#[allow(unused)]
 	DevaiDir,
 }
@@ -79,7 +79,7 @@ impl DirContext {
 		} else {
 			match mode {
 				PathResolver::CurrentDir => Ok(self.current_dir.join(path)?),
-				PathResolver::DevaiParentDir => Ok(self.workspace_dir.join(path)?),
+				PathResolver::WorkspaceDir => Ok(self.workspace_dir.join(path)?),
 				PathResolver::DevaiDir => Ok(self.devai_dir().devai_dir_full_path().join(path)?),
 			}
 		}

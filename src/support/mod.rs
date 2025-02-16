@@ -15,6 +15,7 @@ pub mod hbs;
 pub mod html;
 pub mod jsons;
 pub mod md;
+pub mod paths;
 pub mod text;
 pub mod tomls;
 

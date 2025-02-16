@@ -12,7 +12,7 @@ pub fn load_inline_agent(path: &str, content: impl Into<String>) -> Result<Agent
 }
 
 pub fn load_test_agent(name: &str, runtime: &Runtime) -> Result<Agent> {
-	find_agent(name, runtime.dir_context(), PathResolver::DevaiParentDir)
+	find_agent(name, runtime.dir_context(), PathResolver::WorkspaceDir)
 }
 
 pub fn load_test_solo_agent_and_solo_config(path: &str, runtime: &Runtime) -> Result<(Agent, RunSoloOptions)> {

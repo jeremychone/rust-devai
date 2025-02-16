@@ -39,15 +39,19 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 
 	// -- list
 	let ctx = runtime_context.clone();
-	let file_list_fn = lua.create_function(move |lua, (globs,): (Value,)| file_list(lua, &ctx, globs))?;
+	let file_list_fn =
+		lua.create_function(move |lua, (globs, options): (Value, Option<Value>)| file_list(lua, &ctx, globs, options))?;
 
 	// -- list_load
 	let ctx = runtime_context.clone();
-	let file_list_load_fn = lua.create_function(move |lua, (globs,): (Value,)| file_list_load(lua, &ctx, globs))?;
+	let file_list_load_fn = lua.create_function(move |lua, (globs, options): (Value, Option<Value>)| {
+		file_list_load(lua, &ctx, globs, options)
+	})?;
 
 	// -- first
 	let ctx = runtime_context.clone();
-	let file_first_fn = lua.create_function(move |lua, (globs,): (Value,)| file_first(lua, &ctx, globs))?;
+	let file_first_fn = lua
+		.create_function(move |lua, (globs, options): (Value, Option<Value>)| file_first(lua, &ctx, globs, options))?;
 
 	// -- load_md_sections
 	let ctx = runtime_context.clone();

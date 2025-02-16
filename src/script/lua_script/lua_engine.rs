@@ -1,5 +1,5 @@
 use crate::hub::{get_hub, HubEvent};
-use crate::run::paths::CUSTOM_LUA_DIR;
+use crate::run::path_consts::CUSTOM_LUA_DIR;
 use crate::run::{get_devai_base_dir, RuntimeContext};
 use crate::script::lua_script::{
 	utils_cmd, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_lua, utils_md, utils_path, utils_rust,

@@ -96,7 +96,7 @@ fn path_split(lua: &Lua, path: String) -> mlua::Result<MultiValue> {
 ///
 /// Checks if the specified path exists.
 fn path_exists(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
-	let path = ctx.dir_context().resolve_path(&path, PathResolver::DevaiParentDir)?;
+	let path = ctx.dir_context().resolve_path(&path, PathResolver::WorkspaceDir)?;
 	Ok(path.exists())
 }
 
@@ -107,7 +107,7 @@ fn path_exists(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 ///
 /// Checks if the specified path is a file.
 fn path_is_file(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
-	let path = ctx.dir_context().resolve_path(&path, PathResolver::DevaiParentDir)?;
+	let path = ctx.dir_context().resolve_path(&path, PathResolver::WorkspaceDir)?;
 	Ok(path.is_file())
 }
 
@@ -118,7 +118,7 @@ fn path_is_file(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 ///
 /// Checks if the specified path is a directory.
 fn path_is_dir(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
-	let path = ctx.dir_context().resolve_path(&path, PathResolver::DevaiParentDir)?;
+	let path = ctx.dir_context().resolve_path(&path, PathResolver::WorkspaceDir)?;
 	Ok(path.is_dir())
 }
 
@@ -517,6 +517,7 @@ mod tests {
 	// region:    --- Tests Support
 
 	fn common_test_lua_path_join_non_os_normalized(join_fn_name: &str) -> Result<()> {
+		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let mut expected1 = PathBuf::new();
 		expected1.push("folder");
@@ -538,11 +539,14 @@ mod tests {
 				expected2.to_string_lossy().to_string(),
 			),
 		];
+
+		// -- Exec & Check
 		for (input, expected) in cases {
 			let code = format!("return utils.path.{join_fn_name}({})", input);
 			let result: String = lua.load(&code).eval()?;
 			assert_eq!(result, expected, "Non-normalized failed for input: {}", input);
 		}
+
 		Ok(())
 	}
 
