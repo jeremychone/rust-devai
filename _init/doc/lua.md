@@ -135,6 +135,8 @@ utils.md.extract_blocks(md_content: string) -> Vec<MdBlock>
 utils.md.extract_blocks(md_content: string, lang: string) -> Vec<MdBlock>
 -- Extract blocks (with or without language, and extrude: content, which the remaining content)
 utils.md.extract_blocks(md_content: String, {lang: string, extrude: "content"})
+-- Extract, parse, and merge the `#!meta`, and return the value and the concatenated remaining text.
+local meta, remain = utils.md.extract_emai(md_content: String, {lang: string, extrude: "content"})
 
 -- If content starts with ```, it will remove the first and last ```, and return the content in between
 -- Otherwise, it returns the original content

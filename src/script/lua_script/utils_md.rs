@@ -5,22 +5,27 @@
 //! processing LLM responses.
 //!
 //! ### Functions
-//! * `md.extract_blocks(md_content: string, lang_name?: string) -> Vec<MdBlock>`
-//! * `md.outer_block_content_or_raw(md_content: string) -> string`
+//! * `utils.md.extract_blocks(md_content: string, lang?: string) -> Vec<MdBlock>`
+//! * `utils.md.extract_blocks(md_content: string, {lang?: string, extrude: "content"}) -> Vec<MdBlock>, extruded_content`
+//! * `utils.md.extract_meta(md_content) -> Table, String`
+//! * `utils.md.outer_block_content_or_raw(md_content: string) -> string`
 
 use crate::run::RuntimeContext;
 use crate::support::md::{self, Extrude};
+use crate::support::W;
 use crate::types::MdBlock;
 use crate::Result;
-use mlua::{IntoLua, Lua, MultiValue, Table, Value};
+use mlua::{IntoLua, Lua, LuaSerdeExt, MultiValue, Table, Value};
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
 
 	let extract_blocks_fn = lua.create_function(extract_blocks)?;
 	let outer_block_content_or_raw_fn = lua.create_function(outer_block_content_or_raw)?;
+	let extract_meta_fn = lua.create_function(extract_meta)?;
 
 	table.set("extract_blocks", extract_blocks_fn)?;
+	table.set("extract_meta", extract_meta_fn)?;
 	table.set("outer_block_content_or_raw", outer_block_content_or_raw_fn)?;
 
 	Ok(table)
@@ -95,6 +100,20 @@ fn extract_blocks(lua: &Lua, (md_content, options): (String, Option<Value>)) -> 
 
 /// ## Lua Documentation
 /// ```lua
+/// let meta, remain = utils.md.extract_meta(md_content: string) -> table, string
+/// ```
+///
+/// Extracts the meta blocks, parses/merges their values, and also returns the remaining concatenated content.
+///
+fn extract_meta(lua: &Lua, md_content: String) -> mlua::Result<MultiValue> {
+	let (value, remain) = md::extract_meta(&md_content)?;
+	let lua_value = lua.to_value(&value)?;
+	let values = MultiValue::from_vec(vec![lua_value, W(remain).into_lua(lua)?]);
+	Ok(values)
+}
+
+/// ## Lua Documentation
+/// ```lua
 /// utils.md.outer_block_content_or_raw(md_content: string) -> string
 /// ```
 ///
@@ -115,7 +134,8 @@ fn outer_block_content_or_raw(_lua: &Lua, md_content: String) -> mlua::Result<St
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{assert_contains, assert_not_contains, run_reflective_agent};
+	use crate::_test_support::{assert_contains, assert_not_contains, eval_lua, run_reflective_agent, setup_lua};
+	use serde_json::Value;
 	use value_ext::JsonValueExt;
 
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -233,6 +253,52 @@ return {
 		assert_not_contains(content, "```rust");
 		assert_not_contains(content, "```");
 		assert_contains(content, "The end");
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_lua_md_extract_meta() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "md")?;
+		let lua_code = r#"
+local content = [[
+Some content
+```toml
+#!meta
+some = "stuff"
+```
+some more content
+```toml
+#!meta
+# Another meta block
+num = 123
+```
+And this is the end
+]]
+local meta, remain = utils.md.extract_meta(content)
+return {
+   meta   = meta,
+	 remain = remain
+}
+		"#;
+
+		// -- Exec
+		let res: Value = eval_lua(&lua, lua_code)?;
+
+		// -- Check meta
+		let meta = res.get("meta").ok_or("Should have meta")?;
+		assert_eq!(meta.x_get_str("some")?, "stuff");
+		assert_eq!(meta.x_get_i64("num")?, 123);
+
+		// -- Check remain
+		let remain = res.x_get_str("remain")?;
+		assert_contains(remain, "Some content");
+		assert_contains(remain, "some more content");
+		assert_contains(remain, "And this is the end");
+		assert_not_contains(remain, "Another meta block");
+		assert_not_contains(remain, "num = 123");
+		assert_not_contains(remain, "#!meta");
 
 		Ok(())
 	}

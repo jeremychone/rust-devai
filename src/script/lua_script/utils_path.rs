@@ -13,7 +13,7 @@
 //! * `utils.path.join(path: string) -> string | nil` (default non os normalized)
 //! * `utils.path.join_os_normalized(path: string) -> string | nil` (windows style if start with like C:)
 //! * `utils.path.join_os_non_normalized(path: string) -> string | nil` (default, as user specified)
-//! * `path.split(path: string) -> parent, filename`
+//! * `utils.path.split(path: string) -> parent, filename`
 //!
 //! NOTE 1: Currently, `utils.path.join` uses `utils.path.join_os_non_normalized`. This might change in the future.
 //!
@@ -22,7 +22,8 @@
 //!         There are no functions for this yet, but keeping the future open.
 
 use crate::run::{PathResolver, RuntimeContext};
-use mlua::{Lua, MultiValue, Result, Table};
+use crate::Result;
+use mlua::{Lua, MultiValue, Table};
 use mlua::{Value, Variadic};
 use simple_fs::SPath;
 use std::path::PathBuf;
@@ -160,7 +161,7 @@ fn path_parent(path: String) -> mlua::Result<Option<String>> {
 ///
 /// This version uses Rust’s `PathBuf` join logic without altering the components (apart from ignoring empty strings).
 /// Any mixed or extra separators are preserved.
-pub fn path_join_non_os_normalized(lua: &Lua, paths: Variadic<Value>) -> Result<Value> {
+pub fn path_join_non_os_normalized(lua: &Lua, paths: Variadic<Value>) -> mlua::Result<Value> {
 	let mut path_buf = PathBuf::new();
 	if paths.is_empty() {
 		return Ok(Value::Nil);
@@ -188,7 +189,7 @@ pub fn path_join_non_os_normalized(lua: &Lua, paths: Variadic<Value>) -> Result<
 /// and trailing slashes. If the first component looks like a Windows path (i.e. its second character is a colon,
 /// e.g. `"C:"`, or it starts with a backslash), then the join is done using backslashes (and any forward slashes
 /// in the components are converted to backslashes). Otherwise, the platform’s native separator is used.
-pub fn path_join_os_normalized(lua: &Lua, paths: Variadic<Value>) -> Result<Value> {
+pub fn path_join_os_normalized(lua: &Lua, paths: Variadic<Value>) -> mlua::Result<Value> {
 	let mut comps = Vec::new();
 	if paths.is_empty() {
 		return Ok(Value::Nil);
@@ -262,21 +263,6 @@ mod tests {
 	use super::*;
 	use mlua::Lua;
 
-	/// Sets up a Lua instance with both functions registered under `utils.path`.
-	fn setup_lua() -> Result<Lua> {
-		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-
-		let lua = Lua::new();
-		let globals = lua.globals();
-		let utils = lua.create_table().unwrap();
-		// let path_table = lua.create_table().unwrap();
-
-		let path_table = init_module(&lua, &runtime.context())?;
-		utils.set("path", path_table).unwrap();
-		globals.set("utils", utils).unwrap();
-		Ok(lua)
-	}
-
 	// NOTE 1: Here we are testing these functions in the context of an agent to ensure they work in that context.
 	//         A more purist approach would be to test the Lua functions in a blank Lua engine, but the net value of testing
 	//         them in the context where they will run is higher. Height wins.
@@ -286,7 +272,7 @@ mod tests {
 
 	use std::path::MAIN_SEPARATOR;
 
-	use crate::_test_support::run_reflective_agent;
+	use crate::_test_support::{run_reflective_agent, setup_lua};
 	use crate::run::Runtime;
 
 	#[tokio::test]
@@ -531,7 +517,7 @@ mod tests {
 	// region:    --- Tests Support
 
 	fn common_test_lua_path_join_non_os_normalized(join_fn_name: &str) -> Result<()> {
-		let lua = setup_lua()?;
+		let lua = setup_lua(super::init_module, "path")?;
 		let mut expected1 = PathBuf::new();
 		expected1.push("folder");
 		expected1.push("subfolder");
@@ -614,7 +600,7 @@ mod tests {
 	}
 
 	fn common_test_lua_path_join_os_normalized_lua_engine(join_fn_name: &str) -> Result<()> {
-		let lua = setup_lua()?;
+		let lua = setup_lua(super::init_module, "path")?;
 		let sep = MAIN_SEPARATOR;
 		let cases = vec![
 			// Standard (non-Windows) paths.

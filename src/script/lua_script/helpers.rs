@@ -1,4 +1,5 @@
-use mlua::Value;
+use crate::support::W;
+use mlua::{IntoLua, Value};
 
 // Return a Vec<String> from a lua Value which can be String or Array of strings
 pub fn to_vec_of_strings(value: Value, err_prefix: &'static str) -> mlua::Result<Vec<String>> {
@@ -36,5 +37,17 @@ pub fn to_vec_of_strings(value: Value, err_prefix: &'static str) -> mlua::Result
 			to: "Vec<String>".to_string(),
 			message: Some(format!("{err_prefix} - Expected a string or a list of strings")),
 		}),
+	}
+}
+
+impl IntoLua for W<&String> {
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<Value> {
+		Ok(Value::String(lua.create_string(self.0)?))
+	}
+}
+
+impl IntoLua for W<String> {
+	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<Value> {
+		Ok(Value::String(lua.create_string(&self.0)?))
 	}
 }

@@ -3,14 +3,7 @@ use crate::types::MdBlock;
 use crate::Result;
 use serde_json::Value;
 
-///
-/// Extrude the meta code blocks, and compute the merge value of those blocks.
-///
-/// For example, will be bound to Lua as
-/// ```lua
-/// local value_obj, content = utils.text.meta_extract(content)
-/// ```
-pub fn meta_extrude(content: &str) -> Result<(Value, String)> {
+pub fn extract_meta(content: &str) -> Result<(Value, String)> {
 	let (meta_blocks, content) = extract_md_blocks_and_content(content, true)?;
 	let content = content.unwrap_or_default();
 
@@ -244,7 +237,7 @@ def some()
 	#[test]
 	fn test_meta_extrude_simple() -> Result<()> {
 		// -- Exec
-		let (value_root, content) = meta_extrude(FX_MD_SIMPLE)?;
+		let (value_root, content) = extract_meta(FX_MD_SIMPLE)?;
 
 		// -- Check
 		assert_eq!(value_root.x_get_f64("temperature")?, 0.0);

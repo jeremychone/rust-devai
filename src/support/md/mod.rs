@@ -9,6 +9,7 @@ mod outer_block;
 
 pub use in_block_state::*;
 pub use md_block_iter::*;
+pub use md_meta_extractor::*;
 pub use md_section_iter::*;
 pub use outer_block::*;
 
