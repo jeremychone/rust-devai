@@ -152,12 +152,32 @@ fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>>
 	for &dir in dirs {
 		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
 
-		if let Some(found_file) = files.into_iter().find(|f| match_agent(dir, name, f)) {
+		let mut main_files: Vec<SFile> = Vec::new();
+
+		// First try to find the full path name like `my-agent`/`ma`, `my-mod/super`/`mm/s`
+		if let Some(found_file) = files.into_iter().find(|f| {
+			// Note: here we capture if the f.stem is "main" so that we can quickly match it below.
+			if f.stem() == "main" {
+				main_files.push(f.clone())
+			}
+			match_agent(dir, name, f)
+		}) {
 			// NOTE: Because the dirs are form the DevaiDir and might not be absolute, and relative to working dir
 			//       But later, need to remove from the current_dir of the DirContext, so, needs full path
 			let found_file = found_file.canonicalize()?;
 			let doc = AgentDoc::from_file(found_file)?;
 			return Ok(Some(doc));
+		}
+
+		// if not found, then, perhaps is the just mode agent and want to have a main
+		let name = format!("{name}/main");
+		for sfile in main_files {
+			if match_agent(dir, &name, &sfile) {
+				// NOTE: See above
+				let found_file = sfile.canonicalize()?;
+				let doc = AgentDoc::from_file(found_file)?;
+				return Ok(Some(doc));
+			}
 		}
 	}
 	Ok(None)
@@ -167,11 +187,11 @@ fn match_agent(base_dir: &Path, name: &str, sfile: &SFile) -> bool {
 	let Some(agent_rel) = AgentRel::new(base_dir, sfile) else {
 		return false;
 	};
-
 	name == agent_rel.rel_path_stem() || name == agent_rel.initials()
 }
 
-/// The structure that reprente and agent
+/// The structure that represent the agent and relative path
+#[derive(Debug)]
 pub struct AgentRel {
 	sfile: SFile,
 	rel_path: SPath,
@@ -394,7 +414,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_find_command_agent_nested_ctx() -> Result<()> {
+	async fn test_find_command_agent_nested_full_name() -> Result<()> {
 		// -- Setup & Fixtures
 		// TODO: Probably need to run the init in sandbox_01
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
@@ -426,6 +446,46 @@ mod tests {
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/agent/sub-dir");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "sub-agent.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "sub-agent");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_find_command_agent_nested_main() -> Result<()> {
+		// -- Setup & Fixtures
+		// TODO: Probably need to run the init in sandbox_01
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		ensure_dir("tests-data/sandbox-01/.devai/custom/agent/mod-agent/")?;
+		std::fs::copy(
+			Path::new(SANDBOX_01_DIR).join("agent-script/agent-ctx-reflect.devai"),
+			"tests-data/sandbox-01/.devai/custom/agent/mod-agent/main.devai",
+		)?;
+		// -- Exec
+		let agent = find_agent("mod-agent", runtime.dir_context(), PathResolver::CurrentDir)?;
+		let res = run_test_agent(&runtime, &agent).await?;
+
+		// -- Check
+		// workspace_dir
+		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
+		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
+		assert!(
+			workspace_dir.ends_with("tests-data/sandbox-01"),
+			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
+		);
+
+		// devai dir
+		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "mod-agent");
+		assert_eq!(
+			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
+			"./.devai/custom/agent/mod-agent/main.devai"
+		);
+		assert_eq!(
+			res.x_get_as::<&str>("AGENT_FILE_DIR")?,
+			"./.devai/custom/agent/mod-agent"
+		);
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "main.devai");
+		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "main");
 
 		Ok(())
 	}
