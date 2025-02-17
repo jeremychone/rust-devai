@@ -14,6 +14,8 @@ pub fn extract_meta(content: &str) -> Result<(Value, String)> {
 
 // region:    --- Block Value Parser
 
+/// Will merge the meta blocks content (today support only toml)
+/// Return the serde_json value, and this will always be of Value
 fn merge_values(meta_blocks: Vec<MdBlock>) -> Result<Value> {
 	let mut values: Vec<Value> = Vec::new();
 
