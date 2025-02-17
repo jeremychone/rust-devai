@@ -40,6 +40,33 @@ pub fn to_vec_of_strings(value: Value, err_prefix: &'static str) -> mlua::Result
 	}
 }
 
+/// Pragmatic way to get a string property from an option lua value
+/// TODO: To refactor/clean later
+pub fn get_value_prop_as_string(
+	value: Option<&mlua::Value>,
+	prop_name: &str,
+	err_prefix: &str,
+) -> mlua::Result<Option<String>> {
+	let Some(value) = value else { return Ok(None) };
+
+	let table = value.as_table().ok_or_else(|| {
+		crate::Error::custom(format!(
+			"{err_prefix} - value should be of type lua table, but was of another type."
+		))
+	})?;
+
+	match table.get::<Option<Value>>(prop_name)? {
+		Some(Value::String(string)) => {
+			// TODO: probaby need to normalize_dir to remove the eventual end "/"
+			Ok(Some(string.to_string_lossy()))
+		}
+		Some(other) => {
+			Err(crate::Error::custom("utils.file... options.base_dir must be of type string is present").into())
+		}
+		None => Ok(None),
+	}
+}
+
 impl IntoLua for W<&String> {
 	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<Value> {
 		Ok(Value::String(lua.create_string(self.0)?))

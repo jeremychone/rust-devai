@@ -18,7 +18,8 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 
 	// -- load
 	let ctx = runtime_context.clone();
-	let file_load_fn = lua.create_function(move |lua, (path,): (String,)| file_load(lua, &ctx, path))?;
+	let file_load_fn =
+		lua.create_function(move |lua, (path, options): (String, Option<Value>)| file_load(lua, &ctx, path, options))?;
 
 	// -- save
 	let ctx = runtime_context.clone();

@@ -1,6 +1,6 @@
 use crate::hub::get_hub;
-use crate::run::{PathResolver, RuntimeContext};
-use crate::script::lua_script::helpers::to_vec_of_strings;
+use crate::run::{DirContext, PathResolver, RuntimeContext};
+use crate::script::lua_script::helpers::{get_value_prop_as_string, to_vec_of_strings};
 use crate::support::{files, paths, AsStrsExt};
 use crate::types::{FileMeta, FileRecord};
 use crate::{Error, Result};
@@ -33,8 +33,13 @@ use std::io::Write;
 /// ```
 ///
 ///
-pub(super) fn file_load(lua: &Lua, ctx: &RuntimeContext, rel_path: String) -> mlua::Result<mlua::Value> {
-	let base_path = ctx.dir_context().resolve_path("", PathResolver::WorkspaceDir)?;
+pub(super) fn file_load(
+	lua: &Lua,
+	ctx: &RuntimeContext,
+	rel_path: String,
+	options: Option<Value>,
+) -> mlua::Result<mlua::Value> {
+	let base_path = compute_base_dir(ctx.dir_context(), options.as_ref())?;
 	let rel_path = SPath::new(rel_path).map_err(Error::from)?;
 
 	let file_record = FileRecord::load(&base_path, &rel_path)?;
@@ -164,7 +169,7 @@ pub(super) fn file_list(
 	include_globs: Value,
 	options: Option<Value>,
 ) -> mlua::Result<Value> {
-	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options)?;
+	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options.as_ref())?;
 
 	let sfiles = list_files(
 		&base_path,
@@ -216,7 +221,7 @@ pub(super) fn file_list_load(
 	include_globs: Value,
 	options: Option<Value>,
 ) -> mlua::Result<Value> {
-	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options)?;
+	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options.as_ref())?;
 
 	let sfiles = list_files(
 		&base_path,
@@ -271,7 +276,7 @@ pub(super) fn file_first(
 	include_globs: Value,
 	options: Option<Value>,
 ) -> mlua::Result<Value> {
-	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options)?;
+	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options.as_ref())?;
 	let mut sfiles = iter_files(
 		&base_path,
 		Some(&include_globs.x_as_strs()),
@@ -319,34 +324,21 @@ impl FromLua for EnsureExistsOptions {
 fn base_dir_and_globs(
 	ctx: &RuntimeContext,
 	include_globs: Value,
-	options: Option<Value>,
+	options: Option<&Value>,
 ) -> Result<(SPath, Vec<String>)> {
+	let globs: Vec<String> = to_vec_of_strings(include_globs, "file::file_list globs argument")?;
+	let base_dir = compute_base_dir(ctx.dir_context(), options)?;
+	Ok((base_dir, globs))
+}
+
+fn compute_base_dir(dir_context: &DirContext, options: Option<&Value>) -> Result<SPath> {
 	// the default base_phat is the workspace dir.
-	let workspace_path = ctx.dir_context().resolve_path("", PathResolver::WorkspaceDir)?;
+	let workspace_path = dir_context.resolve_path("", PathResolver::WorkspaceDir)?;
 
 	// if options, try to resolve the options.base_dir
-	let options_base_dir = match options {
-		Some(options) => {
-			let table = options
-				.as_table()
-				.ok_or("utils.file... options should be of type lua table, but was of another type.")?;
-			match table.get::<Option<Value>>("base_dir")? {
-				Some(Value::String(string)) => {
-					// TODO: probaby need to normalize_dir to remove the eventual end "/"
-					Some(string.to_string_lossy())
-				}
-				Some(other) => {
-					return Err(crate::Error::custom(
-						"utils.file... options.base_dir must be of type string is present",
-					))
-				}
-				None => None,
-			}
-		}
-		None => None,
-	};
+	let base_dir = get_value_prop_as_string(options, "base_dir", "utils.file... options fail")?;
 
-	let base_dir = match options_base_dir {
+	let base_dir = match base_dir {
 		Some(base_dir) => {
 			if paths::is_relative(&base_dir) {
 				workspace_path.join_str(&base_dir)
@@ -357,9 +349,7 @@ fn base_dir_and_globs(
 		None => workspace_path,
 	};
 
-	let globs: Vec<String> = to_vec_of_strings(include_globs, "file::file_list globs argument")?;
-
-	Ok((base_dir, globs))
+	Ok(base_dir)
 }
 
 // endregion: --- Support
