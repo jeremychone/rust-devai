@@ -1,10 +1,10 @@
 use crate::hub::get_hub;
 use crate::run::{PathResolver, RuntimeContext};
 use crate::script::lua_script::helpers::to_vec_of_strings;
-use crate::support::{paths, AsStrsExt};
+use crate::support::{files, paths, AsStrsExt};
 use crate::types::{FileMeta, FileRecord};
 use crate::{Error, Result};
-use mlua::{IntoLua, Lua, Value};
+use mlua::{FromLua, IntoLua, Lua, Value};
 use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
 use std::fs::write;
 use std::io::Write;
@@ -113,11 +113,19 @@ pub(super) fn file_ensure_exists(
 	ctx: &RuntimeContext,
 	path: String,
 	content: Option<String>,
+	options: Option<EnsureExistsOptions>,
 ) -> mlua::Result<mlua::Value> {
+	let options = options.unwrap_or_default();
 	let rel_path = SPath::new(path).map_err(Error::from)?;
 	let full_path = ctx.dir_context().resolve_path(&rel_path, PathResolver::WorkspaceDir)?;
 
+	// if the file does not exist, create it.
 	if !full_path.exists() {
+		let content = content.unwrap_or_default();
+		write(&full_path, content)?;
+	}
+	// if we have the options.content_when_empty flag, if empty
+	else if options.content_when_empty && files::is_file_empty(&full_path)? {
 		let content = content.unwrap_or_default();
 		write(full_path, content)?;
 	}
@@ -283,6 +291,27 @@ pub(super) fn file_first(
 
 	Ok(res)
 }
+
+// region:    --- Options
+#[derive(Debug, Default)]
+pub struct EnsureExistsOptions {
+	/// Set the eventual provided content if the file is empty (only whitespaces)
+	content_when_empty: bool,
+}
+
+impl FromLua for EnsureExistsOptions {
+	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+		let table = value
+			.as_table()
+			.ok_or(crate::Error::custom("EnsureExistsOptions should be a table"))?;
+		let set_content_when_empty = table.get("content_when_empty")?;
+		Ok(Self {
+			content_when_empty: set_content_when_empty,
+		})
+	}
+}
+
+// endregion: --- Options
 
 // region:    --- Support
 
