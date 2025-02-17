@@ -497,19 +497,19 @@ mod tests {
 	}
 
 	#[test]
-	fn test_path_join_os_non_normalized() -> Result<()> {
+	fn test_lua_path_join_os_non_normalized() -> Result<()> {
 		common_test_lua_path_join_non_os_normalized("join_os_non_normalized")?;
 		Ok(())
 	}
 
 	#[test]
-	fn test_path_join_os_normalized_lua_engine() -> Result<()> {
+	fn test_lua_path_join_os_normalized_lua_engine() -> Result<()> {
 		common_test_lua_path_join_os_normalized_lua_engine("join_os_normalized")?;
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn test_path_join_os_normalized_reflective() -> Result<()> {
+	async fn test_lua_path_join_os_normalized_reflective() -> Result<()> {
 		common_test_lua_path_join_os_normalized_reflective("join_os_normalized").await?;
 		Ok(())
 	}

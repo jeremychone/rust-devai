@@ -12,6 +12,7 @@ mod utils_md;
 mod utils_path;
 mod utils_rust;
 mod utils_text;
+mod utils_code;
 mod utils_web;
 
 mod lua_engine;
