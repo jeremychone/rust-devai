@@ -421,7 +421,7 @@ mod tests {
 	}
 
 	#[test]
-	fn test_lua_file_list_glob_with_base_dir() -> Result<()> {
+	fn test_lua_file_list_glob_with_base_dir_all_nested() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::super::init_module, "file")?;
 		let lua_code = r#"
@@ -449,6 +449,36 @@ return { files = files }
 		assert_eq!(
 			"agent-hello-3.devai",
 			files.get(1).ok_or("Should have a least two file")?.x_get_str("name")?
+		);
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_lua_file_list_glob_with_base_dir_one_level() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::super::init_module, "file")?;
+		let lua_code = r#"
+local files = utils.file.list({"agent-hello-*.devai"}, {base_dir = "sub-dir-a"})
+return { files = files }
+		"#;
+
+		// -- Exec
+		let res = eval_lua(&lua, lua_code)?;
+
+		// -- Check
+		let files = res
+			.get("files")
+			.ok_or("Should have .files")?
+			.as_array()
+			.ok_or("file should be array")?;
+
+		assert_eq!(files.len(), 1, ".files.len() should be 1");
+		// NOTE: Here we assume the order will be deterministic and the same across OSes (tested on Mac).
+		//       This logic might need to be changed, or actually, the list might need to have a fixed order.
+		assert_eq!(
+			"agent-hello-2.devai",
+			files.first().ok_or("Should have a least one file")?.x_get_str("name")?
 		);
 
 		Ok(())
