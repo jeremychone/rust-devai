@@ -9,6 +9,8 @@ use std::fs::read_to_string;
 pub struct FileRecord {
 	/// The path, might and will probably be relative
 	pub path: String,
+	/// The dir/parent path of this file from path (will be empty if no parent of the rel path)
+	pub dir: String,
 	/// The name of the file with extension e.g., `main.rs`
 	pub name: String,
 	/// Stem
@@ -24,9 +26,11 @@ impl FileRecord {
 	pub fn load(base_path: &SPath, rel_path: &SPath) -> Result<Self> {
 		let full_path = base_path.join(rel_path)?;
 		let content = read_to_string(&full_path)?;
+		let dir = rel_path.parent().map(|p| p.to_string()).unwrap_or_default();
 
 		Ok(FileRecord {
 			path: rel_path.to_string(),
+			dir,
 			name: rel_path.name().to_string(),
 			stem: rel_path.stem().to_string(),
 			ext: rel_path.ext().to_string(),
@@ -41,6 +45,7 @@ impl IntoLua for FileRecord {
 	fn into_lua(self, lua: &Lua) -> mlua::Result<mlua::Value> {
 		let table = lua.create_table()?;
 		table.set("path", self.path)?;
+		table.set("dir", self.dir)?;
 		table.set("name", self.name)?;
 		table.set("stem", self.stem)?;
 		table.set("ext", self.ext)?;

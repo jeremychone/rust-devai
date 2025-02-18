@@ -126,6 +126,7 @@ pub(super) fn file_ensure_exists(
 
 	// if the file does not exist, create it.
 	if !full_path.exists() {
+		simple_fs::ensure_file_dir(&full_path).map_err(|err| Error::custom(err.to_string()))?;
 		let content = content.unwrap_or_default();
 		write(&full_path, content)?;
 	}
