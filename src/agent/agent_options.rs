@@ -44,6 +44,16 @@ impl ModelAliases {
 		}
 		self
 	}
+
+	pub fn merge_new(&self, aliases_ov: Option<ModelAliases>) -> ModelAliases {
+		let mut inner: HashMap<String, String> = self.inner.clone();
+		if let Some(aliases) = aliases_ov {
+			for (k, v) in aliases.inner {
+				inner.insert(k, v);
+			}
+		}
+		ModelAliases { inner }
+	}
 }
 
 impl mlua::FromLua for ModelAliases {
@@ -138,6 +148,8 @@ impl AgentOptions {
 	}
 
 	/// Merge the current options with a new options value, returning the merged `AgentOptions`.
+	///
+	/// Note: This will consume both, avoiding any new allocation
 	pub fn merge(self, options_ov: AgentOptions) -> Result<AgentOptions> {
 		let model_aliases = match self.model_aliases {
 			Some(aliases) => Some(aliases.merge(options_ov.model_aliases)),
@@ -147,6 +159,21 @@ impl AgentOptions {
 		Ok(AgentOptions {
 			legacy: options_ov.legacy, // only take the value of the legacy
 			model: options_ov.model.or(self.model),
+			temperature: options_ov.temperature.or(self.temperature),
+			input_concurrency: options_ov.input_concurrency.or(self.input_concurrency),
+			model_aliases,
+		})
+	}
+
+	pub fn merge_new(&self, options_ov: AgentOptions) -> Result<AgentOptions> {
+		let model_aliases = match &self.model_aliases {
+			Some(aliases) => Some(aliases.merge_new(options_ov.model_aliases)),
+			None => options_ov.model_aliases.clone(),
+		};
+
+		Ok(AgentOptions {
+			legacy: options_ov.legacy, // only take the value of the legacy
+			model: options_ov.model.or(self.model.clone()),
 			temperature: options_ov.temperature.or(self.temperature),
 			input_concurrency: options_ov.input_concurrency.or(self.input_concurrency),
 			model_aliases,

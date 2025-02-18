@@ -22,7 +22,7 @@ pub async fn run_solo_agent(
 	hub.publish(format!(
 		"==== Running solo agent: {}\n        with model: {}{genai_info}",
 		agent.file_path(),
-		agent.resolved_model()
+		agent.options_as_ref().resolve_model().unwrap_or("No agent") // NOTE: Solo will be removed.
 	))
 	.await;
 
@@ -33,35 +33,42 @@ pub async fn run_solo_agent(
 	let input = FileMeta::from(run_solo_options.target_path());
 	let input = serde_json::to_value(input)?;
 	let before_all_data = Value::Null;
-	let run_input_response = run_agent_input(
-		runtime,
-		agent,
-		before_all_data,
-		label,
-		input,
-		&literals,
-		run_solo_options.base_run_config(),
-	)
-	.await?;
+	let agent_options = agent.options_as_ref();
 
-	let run_input_value = run_input_response.map(|v| v.into_value()).unwrap_or_default();
+	// NOTE: Starting to deprecate/remove run solo
 
-	if let Value::String(text) = run_input_value {
-		let target_path = run_solo_options.target_path();
-		let target_full_path = runtime.dir_context().resolve_path(target_path, mode)?;
-		write(target_full_path, text)?;
-		hub.publish(format!(
-			"-> Solo Agent ouput saved to: {}",
-			run_solo_options.target_path()
-		))
-		.await;
-	} else {
-		hub.publish("-! Solo Agent return not text. Skipping saving to file.").await;
-	}
+	todo!()
 
-	hub.publish("-- DONE").await;
+	// let run_input_response = run_agent_input(
+	// 	runtime,
+	// 	agent,
+	// 	agent_options, // not needed to support agent_options_ov, solo will be deprecated.
+	// 	before_all_data,
+	// 	label,
+	// 	input,
+	// 	&literals,
+	// 	run_solo_options.base_run_config(),
+	// )
+	// .await?;
 
-	Ok(())
+	// let run_input_value = run_input_response.map(|v| v.into_value()).unwrap_or_default();
+
+	// if let Value::String(text) = run_input_value {
+	// 	let target_path = run_solo_options.target_path();
+	// 	let target_full_path = runtime.dir_context().resolve_path(target_path, mode)?;
+	// 	write(target_full_path, text)?;
+	// 	hub.publish(format!(
+	// 		"-> Solo Agent ouput saved to: {}",
+	// 		run_solo_options.target_path()
+	// 	))
+	// 	.await;
+	// } else {
+	// 	hub.publish("-! Solo Agent return not text. Skipping saving to file.").await;
+	// }
+
+	// hub.publish("-- DONE").await;
+
+	// Ok(())
 }
 
 // region:    --- Tests

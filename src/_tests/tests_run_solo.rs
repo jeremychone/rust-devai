@@ -3,7 +3,6 @@ type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tes
 use super::*;
 use crate::_test_support::load_test_solo_agent_and_solo_config;
 
-#[tokio::test]
 async fn test_run_agent_s_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;

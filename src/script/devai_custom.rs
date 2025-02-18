@@ -6,11 +6,17 @@ use value_ext::JsonValueExt;
 #[derive(Debug, strum::AsRefStr)]
 pub enum DevaiCustom {
 	/// Will
-	Skip { reason: Option<String> },
-	BeforeAllResponse {
-		inputs: Option<Vec<Value>>,
-		before_all: Option<Value>,
+	Skip {
+		reason: Option<String>,
 	},
+	BeforeAllResponse(BeforeAllResponse),
+}
+
+#[derive(Debug, Default)]
+pub struct BeforeAllResponse {
+	pub inputs: Option<Vec<Value>>,
+	pub before_all: Option<Value>,
+	pub options: Option<Value>,
 }
 
 /// Return of the `DevaiCustom::from_value` allowing to avoid cloning in case it's not a DevaiCustom.
@@ -62,11 +68,10 @@ impl DevaiCustom {
 			Ok(FromValue::DevaiCustom(Self::Skip { reason }))
 		} else if kind == "BeforeAllResponse" {
 			let custom_data: Option<Value> = value.x_get("/_devai_/data").ok();
-			let (inputs, before_all) = extract_inputs_and_before_all(custom_data)?;
-			Ok(FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse {
-				inputs,
-				before_all,
-			}))
+			let before_all_response = extract_inputs_and_before_all(custom_data)?;
+			Ok(FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse(
+				before_all_response,
+			)))
 		} else {
 			Err(format!("_devai_ kind '{kind}' is not known.").into())
 		}
@@ -75,19 +80,21 @@ impl DevaiCustom {
 
 // region:    --- Support
 
-fn extract_inputs_and_before_all(custom_data: Option<Value>) -> Result<(Option<Vec<Value>>, Option<Value>)> {
+/// extract, (inputs, before_all_data, options)
+fn extract_inputs_and_before_all(custom_data: Option<Value>) -> Result<BeforeAllResponse> {
 	let Some(custom_data) = custom_data else {
-		return Ok((None, None));
+		return Ok(BeforeAllResponse::default());
 	};
 
 	const ERROR_CAUSE: &str = "devai::before_all_response(data), can only have `.input` and `.before_all`)";
 
-	let (inputs, before_all) = match custom_data {
+	let before_all_response = match custom_data {
 		Value::Object(mut obj) => {
-			let before_all_data = obj.remove("before_all");
-			let after_all_inputs = obj.remove("inputs");
+			let all_inputs = obj.remove("inputs");
+			let before_all = obj.remove("before_all");
+			let options = obj.remove("options");
 
-			let inputs = match after_all_inputs {
+			let inputs = match all_inputs {
 				Some(Value::Array(new_inputs)) => Some(new_inputs),
 				// if return inputs: Null, then will be None, which will have one input of Null below
 				// > Note to cancel run, we will allow return {_devai_: {action: "skip"}} (not supported for now)
@@ -106,12 +113,16 @@ fn extract_inputs_and_before_all(custom_data: Option<Value>) -> Result<(Option<V
 					cause: format!("{ERROR_CAUSE}. But also contained: {}", keys.join(", ")),
 				});
 			}
-			(inputs, before_all_data)
+			BeforeAllResponse {
+				inputs,
+				before_all,
+				options,
+			}
 		}
-		_ => (None, None),
+		_ => BeforeAllResponse::default(),
 	};
 
-	Ok((inputs, before_all))
+	Ok(before_all_response)
 }
 
 // endregion: --- Support

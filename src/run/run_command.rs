@@ -1,13 +1,15 @@
-use crate::agent::Agent;
+use crate::agent::{Agent, AgentOptions};
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::run_input::{run_agent_input, RunAgentInputResponse};
 use crate::run::{DirContext, RunBaseOptions, Runtime};
-use crate::script::{DevaiCustom, FromValue};
+use crate::script::{BeforeAllResponse, DevaiCustom, FromValue};
 use crate::{Error, Result};
+use genai::ModelName;
 use serde::Serialize;
 use serde_json::Value;
 use simple_fs::SPath;
+use std::sync::Arc;
 use tokio::task::JoinSet;
 use value_ext::JsonValueExt;
 
@@ -43,40 +45,20 @@ pub async fn run_command_agent(
 	let hub = get_hub();
 	let concurrency = agent.options().input_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
-	// -- Print the run info
-	let genai_info = get_genai_info(agent);
-	// display relative agent path if possible
-	let agent_path = match get_display_path(agent.file_path(), runtime.dir_context()) {
-		Ok(path) => path.to_string(),
-		Err(_) => agent.file_path().to_string(),
-	};
-
-	let model = agent.model();
-	let resolved_model = agent.resolved_model();
-	let model_name = if model as &str != resolved_model as &str {
-		format!("{model} ({resolved_model})")
-	} else {
-		resolved_model.to_string()
-	};
-
-	hub.publish(format!(
-		"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
-		agent.name(),
-		agent_path,
-		model_name
-	))
-	.await;
-
 	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
 
 	// -- Run the before all
-	let (inputs, before_all_response) = if let Some(before_all_script) = agent.before_all_script() {
+	let BeforeAllResponse {
+		inputs,
+		before_all,
+		options: options_to_merge,
+	} = if let Some(before_all_script) = agent.before_all_script() {
 		let lua_engine = runtime.new_lua_engine()?;
 		let lua_scope = lua_engine.create_table()?;
 		let lua_inputs = inputs.clone().map(Value::Array).unwrap_or_default();
 		lua_scope.set("inputs", lua_engine.serde_to_lua_value(lua_inputs)?)?;
 		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
-		lua_scope.set("options", agent.options())?;
+		lua_scope.set("options", agent.options_as_ref())?;
 
 		let lua_value = lua_engine.eval(before_all_script, Some(lua_scope), Some(&[agent.file_dir()?.to_str()]))?;
 		let before_all_res = serde_json::to_value(lua_value)?;
@@ -90,25 +72,72 @@ pub async fn run_command_agent(
 				return Ok(RunCommandResponse::default());
 			}
 
-			// it is before_all_response
-			FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse {
-				inputs: inputs_override,
+			// it is before_all_response, so, we eventually override the inputs
+			FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse(BeforeAllResponse {
+				inputs: inputs_ov,
 				before_all,
-			}) => (inputs_override.or(inputs), before_all),
+				options,
+			})) => BeforeAllResponse {
+				inputs: inputs_ov.or(inputs),
+				before_all,
+				options,
+			},
 
 			// just plane value
-			FromValue::OriginalValue(value) => (inputs, Some(value)),
+			FromValue::OriginalValue(value) => BeforeAllResponse {
+				inputs,
+				before_all: Some(value),
+				options: None,
+			},
 		}
 	} else {
-		(inputs, None)
+		BeforeAllResponse {
+			inputs,
+			before_all: None,
+			options: None,
+		}
 	};
 
 	// Normalize the inputs, so, if empty, we have one input of value Value::Null
 	let inputs = inputs.unwrap_or_else(|| vec![Value::Null]);
-	let before_all = before_all_response.unwrap_or_default();
+	// The default of
+	let before_all = before_all.unwrap_or_default();
+	let agent_options_final: Arc<AgentOptions> = match options_to_merge {
+		Some(options_to_merge) => {
+			let options_to_merge: AgentOptions = serde_json::from_value(options_to_merge)?;
+			let options_ov = agent.options_as_ref().merge_new(options_to_merge)?;
+			options_ov.into()
+		}
+		None => agent.options(),
+	};
 
-	let mut join_set = JoinSet::new();
-	let mut in_progress = 0;
+	// -- Print the run info
+	let genai_info = get_genai_info(agent);
+	// display relative agent path if possible
+	let agent_path = match get_display_path(agent.file_path(), runtime.dir_context()) {
+		Ok(path) => path.to_string(),
+		Err(_) => agent.file_path().to_string(),
+	};
+
+	let model = agent_options_final.model().ok_or("Cannot run agent, no model name specified")?;
+	let model_name_final = agent_options_final.resolve_model().unwrap_or(model);
+	let model_name_final = ModelName::from(model_name_final);
+
+	/// how the message
+	let model_name_message = if model as &str != model_name_final.as_ref() as &str {
+		format!("{model} ({model_name_final})")
+	} else {
+		model_name_final.to_string()
+	};
+	// final resolved name
+
+	hub.publish(format!(
+		"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
+		agent.name(),
+		agent_path,
+		model_name_message
+	))
+	.await;
 
 	// -- Initialize outputs for capture
 	let mut captured_outputs: Option<Vec<(usize, Value)>> =
@@ -119,9 +148,13 @@ pub async fn run_command_agent(
 		};
 
 	// -- Run the inputs
+	let mut join_set = JoinSet::new();
+	let mut in_progress = 0;
 	for (input_idx, input) in inputs.clone().into_iter().enumerate() {
 		let runtime_clone = runtime.clone();
 		let agent_clone = agent.clone();
+		let agent_options_final_clone = agent_options_final.clone();
+		let model_name_final_clone = model_name_final.clone();
 		let before_all_clone = before_all.clone();
 		let literals = literals.clone();
 
@@ -134,6 +167,8 @@ pub async fn run_command_agent(
 				input_idx,
 				&runtime_clone,
 				&agent_clone,
+				&agent_options_final_clone,
+				model_name_final_clone,
 				before_all_clone,
 				input,
 				&literals,
@@ -225,7 +260,7 @@ pub async fn run_command_agent(
 		lua_scope.set("outputs", lua_engine.serde_to_lua_value(outputs_value)?)?;
 		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all)?)?;
 		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
-		lua_scope.set("options", agent.options())?;
+		lua_scope.set("options", agent.options_as_ref())?;
 
 		let lua_value = lua_engine.eval(after_all_script, Some(lua_scope), Some(&[agent.file_dir()?.to_str()]))?;
 		Some(serde_json::to_value(lua_value)?)
@@ -238,10 +273,13 @@ pub async fn run_command_agent(
 
 /// Run the command agent input for the run_command_agent_inputs
 /// Not public by design, should be only used in the context of run_command_agent_inputs
+#[allow(clippy::too_many_arguments)]
 async fn run_command_agent_input(
 	input_idx: usize,
 	runtime: &Runtime,
 	agent: &Agent,
+	agent_options_final: &AgentOptions,
+	model_name_final: ModelName,
 	before_all: Value,
 	input: impl Serialize,
 	literals: &Literals,
@@ -257,7 +295,18 @@ async fn run_command_agent_input(
 	let label = get_input_label(&input).unwrap_or_else(|| format!("input index: {input_idx}"));
 	hub.publish(format!("\n==== Running input: {}", label)).await;
 
-	let run_response = run_agent_input(runtime, agent, before_all, &label, input, literals, run_base_options).await?;
+	let run_response = run_agent_input(
+		runtime,
+		agent,
+		agent_options_final,
+		model_name_final,
+		before_all,
+		&label,
+		input,
+		literals,
+		run_base_options,
+	)
+	.await?;
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = run_response.as_ref().and_then(|r| r.as_str()) {
@@ -281,10 +330,17 @@ pub async fn run_command_agent_input_for_test(
 	run_base_options: &RunBaseOptions,
 ) -> Result<Option<RunAgentInputResponse>> {
 	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
+	let agent_options_final = agent.options_as_ref();
+	let model = agent_options_final.model().ok_or("Cannot run agent, no model name specified")?;
+	let model_name_final = agent_options_final.resolve_model().unwrap_or(model);
+	let model_name_final = ModelName::from(model_name_final);
+
 	run_command_agent_input(
 		input_idx,
 		runtime,
 		agent,
+		agent.options_as_ref(),
+		model_name_final,
 		before_all,
 		input,
 		&literals,

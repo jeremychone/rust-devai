@@ -11,7 +11,6 @@ use std::sync::Arc;
 pub struct Agent {
 	inner: Arc<AgentInner>,
 	model: ModelName,
-	resolved_model: ModelName,
 	genai_chat_options: Arc<ChatOptions>,
 }
 
@@ -19,10 +18,6 @@ pub struct Agent {
 impl Agent {
 	pub(super) fn new(agent_inner: AgentInner) -> Result<Agent> {
 		let inner = Arc::new(agent_inner);
-
-		let resolved_model = inner.resolved_model_name.clone().ok_or_else(|| Error::ModelMissing {
-			agent_path: inner.file_path.to_string(),
-		})?;
 
 		let model = inner.model_name.clone().ok_or_else(|| Error::ModelMissing {
 			agent_path: inner.file_path.to_string(),
@@ -36,7 +31,6 @@ impl Agent {
 		Ok(Agent {
 			inner,
 			model,
-			resolved_model,
 			genai_chat_options: chat_options.into(),
 		})
 	}
@@ -47,15 +41,16 @@ impl Agent {
 	pub fn model(&self) -> &ModelName {
 		&self.model
 	}
-	pub fn resolved_model(&self) -> &ModelName {
-		&self.resolved_model
-	}
 
 	pub fn genai_chat_options(&self) -> &ChatOptions {
 		&self.genai_chat_options
 	}
 
-	pub fn options(&self) -> &AgentOptions {
+	pub fn options(&self) -> Arc<AgentOptions> {
+		self.inner.agent_options.clone()
+	}
+
+	pub fn options_as_ref(&self) -> &AgentOptions {
 		&self.inner.agent_options
 	}
 
@@ -109,11 +104,10 @@ pub(super) struct AgentInner {
 	pub file_name: String,
 	pub file_path: String,
 
-	pub agent_options: AgentOptions,
+	pub agent_options: Arc<AgentOptions>,
 
 	/// The model that came from the options
 	pub model_name: Option<ModelName>,
-	pub resolved_model_name: Option<ModelName>,
 
 	pub before_all_script: Option<String>,
 

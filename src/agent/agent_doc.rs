@@ -6,6 +6,7 @@ use crate::Result;
 use genai::ModelName;
 use simple_fs::{read_to_string, SPath};
 use std::path::Path;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct AgentDoc {
@@ -277,11 +278,10 @@ Use the '# Options' section ('# Config' is not the legacy way to provides agent 
 
 		// -- Get the model name
 		let model_name = agent_options.model().map(ModelName::from);
-		let resolved_model_name = agent_options.resolve_model().map(ModelName::from);
 
 		// -- Build the AgentInner
 		let agent_inner = AgentInner {
-			agent_options,
+			agent_options: Arc::new(agent_options),
 
 			name,
 
@@ -289,7 +289,6 @@ Use the '# Options' section ('# Config' is not the legacy way to provides agent 
 			file_path: self.spath.to_str().to_string(),
 
 			model_name,
-			resolved_model_name,
 
 			before_all_script: buffer_to_string(before_all_script),
 			data_script: buffer_to_string(data_script),
