@@ -1,5 +1,6 @@
 use crate::hub::get_hub;
 use crate::Result;
+use genai::chat::ChatOptions;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
@@ -24,6 +25,20 @@ pub struct AgentOptions {
 
 	model_aliases: Option<ModelAliases>,
 }
+
+// region:    --- Froms
+
+impl From<&AgentOptions> for ChatOptions {
+	fn from(agent_options: &AgentOptions) -> Self {
+		let mut chat_options = ChatOptions::default();
+		if let Some(temp) = agent_options.temperature() {
+			chat_options.temperature = Some(temp);
+		}
+		chat_options
+	}
+}
+
+// endregion: --- Froms
 
 // region:    --- ModelAliases
 

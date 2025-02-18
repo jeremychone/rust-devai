@@ -37,7 +37,7 @@ fn get_display_path(file_path: &str, dir_context: &DirContext) -> Result<SPath> 
 
 pub async fn run_command_agent(
 	runtime: &Runtime,
-	agent: &Agent,
+	agent: Agent,
 	inputs: Option<Vec<Value>>,
 	run_base_options: &RunBaseOptions,
 	return_output_values: bool,
@@ -45,7 +45,7 @@ pub async fn run_command_agent(
 	let hub = get_hub();
 	let concurrency = agent.options().input_concurrency().unwrap_or(DEFAULT_CONCURRENCY);
 
-	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
+	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), &agent)?;
 
 	// -- Run the before all
 	let BeforeAllResponse {
@@ -102,32 +102,30 @@ pub async fn run_command_agent(
 	let inputs = inputs.unwrap_or_else(|| vec![Value::Null]);
 	// The default of
 	let before_all = before_all.unwrap_or_default();
-	let agent_options_final: Arc<AgentOptions> = match options_to_merge {
+	let agent: Agent = match options_to_merge {
 		Some(options_to_merge) => {
 			let options_to_merge: AgentOptions = serde_json::from_value(options_to_merge)?;
 			let options_ov = agent.options_as_ref().merge_new(options_to_merge)?;
-			options_ov.into()
+			agent.new_merge(options_ov)?
 		}
-		None => agent.options(),
+		None => agent,
 	};
 
 	// -- Print the run info
-	let genai_info = get_genai_info(agent);
+	let genai_info = get_genai_info(&agent);
 	// display relative agent path if possible
 	let agent_path = match get_display_path(agent.file_path(), runtime.dir_context()) {
 		Ok(path) => path.to_string(),
 		Err(_) => agent.file_path().to_string(),
 	};
 
-	let model = agent_options_final.model().ok_or("Cannot run agent, no model name specified")?;
-	let model_name_final = agent_options_final.resolve_model().unwrap_or(model);
-	let model_name_final = ModelName::from(model_name_final);
-
 	/// how the message
-	let model_name_message = if model as &str != model_name_final.as_ref() as &str {
-		format!("{model} ({model_name_final})")
+	let model_str: &str = agent.model();
+	let model_resolved_str: &str = agent.model_resolved();
+	let model_name_message = if model_str != model_resolved_str {
+		format!("{model_str} ({model_resolved_str})")
 	} else {
-		model_name_final.to_string()
+		model_resolved_str.to_string()
 	};
 	// final resolved name
 
@@ -153,8 +151,6 @@ pub async fn run_command_agent(
 	for (input_idx, input) in inputs.clone().into_iter().enumerate() {
 		let runtime_clone = runtime.clone();
 		let agent_clone = agent.clone();
-		let agent_options_final_clone = agent_options_final.clone();
-		let model_name_final_clone = model_name_final.clone();
 		let before_all_clone = before_all.clone();
 		let literals = literals.clone();
 
@@ -167,8 +163,6 @@ pub async fn run_command_agent(
 				input_idx,
 				&runtime_clone,
 				&agent_clone,
-				&agent_options_final_clone,
-				model_name_final_clone,
 				before_all_clone,
 				input,
 				&literals,
@@ -273,13 +267,10 @@ pub async fn run_command_agent(
 
 /// Run the command agent input for the run_command_agent_inputs
 /// Not public by design, should be only used in the context of run_command_agent_inputs
-#[allow(clippy::too_many_arguments)]
 async fn run_command_agent_input(
 	input_idx: usize,
 	runtime: &Runtime,
 	agent: &Agent,
-	agent_options_final: &AgentOptions,
-	model_name_final: ModelName,
 	before_all: Value,
 	input: impl Serialize,
 	literals: &Literals,
@@ -295,18 +286,7 @@ async fn run_command_agent_input(
 	let label = get_input_label(&input).unwrap_or_else(|| format!("input index: {input_idx}"));
 	hub.publish(format!("\n==== Running input: {}", label)).await;
 
-	let run_response = run_agent_input(
-		runtime,
-		agent,
-		agent_options_final,
-		model_name_final,
-		before_all,
-		&label,
-		input,
-		literals,
-		run_base_options,
-	)
-	.await?;
+	let run_response = run_agent_input(runtime, agent, before_all, &label, input, literals, run_base_options).await?;
 
 	// if the response value is a String, then, print it
 	if let Some(response_txt) = run_response.as_ref().and_then(|r| r.as_str()) {
@@ -339,8 +319,6 @@ pub async fn run_command_agent_input_for_test(
 		input_idx,
 		runtime,
 		agent,
-		agent.options_as_ref(),
-		model_name_final,
 		before_all,
 		input,
 		&literals,

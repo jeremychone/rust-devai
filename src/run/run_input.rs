@@ -13,6 +13,9 @@ use mlua::IntoLua;
 use serde::Serialize;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::sync::Arc;
+
+// region:    --- AiResponse
 
 #[derive(Debug, Serialize)]
 pub struct AiResponse {
@@ -43,7 +46,7 @@ impl IntoLua for W<MetaUsage> {
 		let usage = self.0;
 
 		table.set("prompt_tokens", usage.prompt_tokens.into_lua(lua)?)?;
-		table.set("completion_tokens", usage.prompt_tokens.into_lua(lua)?)?;
+		table.set("completion_tokens", usage.completion_tokens.into_lua(lua)?)?;
 
 		// -- Prompt Details
 		// Note: we create the details even if None (simpler on the script side)
@@ -83,6 +86,10 @@ impl IntoLua for W<MetaUsage> {
 	}
 }
 
+// endregion: --- AiResponse
+
+// region:    --- RunAgentInputResponse
+
 #[derive(Debug)]
 pub enum RunAgentInputResponse {
 	AiReponse(AiResponse),
@@ -109,6 +116,8 @@ impl RunAgentInputResponse {
 	}
 }
 
+// endregion: --- RunAgentInputResponse
+
 /// Run the agent for one input
 /// - Build the scope
 /// - Execute Data
@@ -122,8 +131,6 @@ impl RunAgentInputResponse {
 pub async fn run_agent_input(
 	runtime: &Runtime,
 	agent: &Agent,
-	agent_options_final: &AgentOptions,
-	model_name_final: ModelName,
 	before_all_result: Value,
 	label: &str,
 	input: Value,
@@ -132,8 +139,6 @@ pub async fn run_agent_input(
 ) -> Result<Option<RunAgentInputResponse>> {
 	let hub = get_hub();
 	let client = runtime.genai_client();
-	let options = agent_options_final;
-	let resolved_model = options.resolve_model().map(ModelName::from);
 
 	// -- Build the scope
 	// Fix me: Probably need to get the engine from the arg
@@ -142,7 +147,7 @@ pub async fn run_agent_input(
 	lua_scope.set("input", lua_engine.serde_to_lua_value(input.clone())?)?;
 	lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result.clone())?)?;
 	lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
-	lua_scope.set("options", options)?;
+	lua_scope.set("options", agent.options_as_ref())?;
 
 	let agent_dir = agent.file_dir()?;
 	let agent_dir_str = agent_dir.to_str();
@@ -215,15 +220,17 @@ pub async fn run_agent_input(
 		return Ok(None);
 	}
 
-	// Now execute the instruction
+	// -- Now execute the instruction
+	let model_resolved = agent.model_resolved();
+
 	let ai_response: Option<AiResponse> = if !is_inst_empty {
 		let chat_req = ChatRequest::from_messages(chat_messages);
 
-		hub.publish(format!("-> Sending rendered instruction to {model_name_final} ..."))
+		hub.publish(format!("-> Sending rendered instruction to {model_resolved} ..."))
 			.await;
 
 		let chat_res = client
-			.exec_chat(model_name_final.as_ref(), chat_req, Some(agent.genai_chat_options()))
+			.exec_chat(model_resolved, chat_req, Some(agent.genai_chat_options()))
 			.await?;
 
 		hub.publish("<- ai_response content received").await;
@@ -277,7 +284,7 @@ pub async fn run_agent_input(
 		lua_scope.set("before_all", lua_engine.serde_to_lua_value(before_all_result)?)?;
 		lua_scope.set("ai_response", ai_response)?;
 		lua_scope.set("CTX", literals.to_lua(&lua_engine)?)?;
-		lua_scope.set("options", options)?;
+		lua_scope.set("options", agent.options_as_ref())?;
 
 		let lua_value = lua_engine.eval(output_script, Some(lua_scope), Some(&[agent_dir_str]))?;
 		let output_response = serde_json::to_value(lua_value)?;

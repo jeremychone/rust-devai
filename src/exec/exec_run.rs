@@ -195,7 +195,14 @@ async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agen
 		None
 	};
 
-	run_command_agent(runtime, agent, inputs, run_command_options.base_run_config(), false).await?;
+	run_command_agent(
+		runtime,
+		agent.clone(),
+		inputs,
+		run_command_options.base_run_config(),
+		false,
+	)
+	.await?;
 
 	Ok(())
 }
