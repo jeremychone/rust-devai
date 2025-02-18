@@ -3,7 +3,18 @@
 use crate::{Error, Result};
 use aho_corasick::AhoCorasick;
 use derive_more::derive::Display;
+use num_format::ToFormattedString;
 use std::borrow::Cow;
+use std::time::Duration;
+
+pub fn format_num(num: i64) -> String {
+	num.to_formatted_string(&num_format::Locale::en)
+}
+
+pub fn format_duration(duration: Duration) -> String {
+	let duration = Duration::from_millis(duration.as_millis() as u64);
+	humantime::format_duration(duration).to_string()
+}
 
 // region:    --- Ensure
 

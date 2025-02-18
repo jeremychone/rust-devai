@@ -50,6 +50,8 @@ html-escape = "0.2"
 strsim = "0.11"
 paste = "1.0"
 lazy-regex = "3.4.1"
+num-format = "0.4.4"
+humantime = "2.1.0"
 
 
 

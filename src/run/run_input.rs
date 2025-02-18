@@ -4,6 +4,7 @@ use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
 use crate::script::{DevaiCustom, FromValue};
 use crate::support::hbs::hbs_render;
+use crate::support::text::{format_duration, format_num};
 use crate::support::W;
 use crate::Result;
 use genai::adapter::AdapterKind;
@@ -12,8 +13,10 @@ use genai::ModelName;
 use mlua::IntoLua;
 use serde::Serialize;
 use serde_json::Value;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::time::Instant;
 
 // region:    --- AiResponse
 
@@ -24,6 +27,8 @@ pub struct AiResponse {
 	pub model_name: ModelName,
 	pub adapter_kind: AdapterKind,
 	pub usage: MetaUsage,
+	pub duration_sec: f64,
+	pub info: String,
 }
 
 impl IntoLua for AiResponse {
@@ -34,13 +39,15 @@ impl IntoLua for AiResponse {
 		table.set("reasoning_content", self.reasoning_content.into_lua(lua)?)?;
 		table.set("model_name", self.model_name.into_lua(lua)?)?;
 		table.set("adapter_kind", self.adapter_kind.as_str().into_lua(lua)?)?;
-		table.set("usage", W(self.usage).into_lua(lua)?)?;
+		table.set("usage", W(&self.usage).into_lua(lua)?)?;
+		table.set("duration_sec", self.duration_sec.into_lua(lua)?)?;
+		table.set("info", self.info.into_lua(lua)?)?;
 
 		Ok(mlua::Value::Table(table))
 	}
 }
 
-impl IntoLua for W<MetaUsage> {
+impl IntoLua for W<&MetaUsage> {
 	fn into_lua(self, lua: &mlua::Lua) -> mlua::Result<mlua::Value> {
 		let table = lua.create_table()?;
 		let usage = self.0;
@@ -51,7 +58,7 @@ impl IntoLua for W<MetaUsage> {
 		// -- Prompt Details
 		// Note: we create the details even if None (simpler on the script side)
 		let prompt_details_table = lua.create_table()?;
-		if let Some(prompt_tokens_details) = usage.prompt_tokens_details {
+		if let Some(prompt_tokens_details) = usage.prompt_tokens_details.as_ref() {
 			// Note: The leaf value can be absent (same as nil in Lua)
 			if let Some(v) = prompt_tokens_details.cached_tokens {
 				prompt_details_table.set("cached_tokens", v.into_lua(lua)?)?;
@@ -65,7 +72,7 @@ impl IntoLua for W<MetaUsage> {
 		// -- Completion Details
 		// Note: we create the details even if None (simpler on the script side)
 		let completion_details_table = lua.create_table()?;
-		if let Some(completion_tokens_details) = usage.completion_tokens_details {
+		if let Some(completion_tokens_details) = usage.completion_tokens_details.as_ref() {
 			// Note: The leaf value can be absent (same as nil in Lua)
 			if let Some(v) = completion_tokens_details.reasoning_tokens {
 				completion_details_table.set("reasoning_tokens", v.into_lua(lua)?)?;
@@ -229,11 +236,21 @@ pub async fn run_agent_input(
 		hub.publish(format!("-> Sending rendered instruction to {model_resolved} ..."))
 			.await;
 
+		let start = Instant::now();
 		let chat_res = client
 			.exec_chat(model_resolved, chat_req, Some(agent.genai_chat_options()))
 			.await?;
+		let duration = start.elapsed();
+		let duration_msg = format!("Duration: {}", format_duration(duration));
+		// this is for the duration in second with 3 digit for milli (for the AI Response)
+		let duration_sec = duration.as_secs_f64(); // Convert to f64
+		let duration_sec = (duration_sec * 1000.0).round() / 1000.0; // Round to 3 decimal places
 
-		hub.publish("<- ai_response content received").await;
+		let usage_msg = format_usage(&chat_res.usage);
+
+		let info = format!("{duration_msg} | {usage_msg}");
+
+		hub.publish(format!("<- ai_response content received - {info}")).await;
 
 		let chat_res_mode_iden = chat_res.model_iden.clone();
 		let ChatResponse {
@@ -256,12 +273,18 @@ pub async fn run_agent_input(
 			.await;
 		}
 
+		let info = format!(
+			"{info} | Model: {} | Adapter: {}",
+			chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind,
+		);
 		Some(AiResponse {
 			content: ai_response_content,
 			reasoning_content: ai_response_reasoning_content,
 			model_name: chat_res_mode_iden.model_name,
 			adapter_kind: chat_res_mode_iden.adapter_kind,
+			duration_sec,
 			usage,
+			info,
 		})
 	}
 	// if we do not have an instruction, just return null
@@ -296,3 +319,29 @@ pub async fn run_agent_input(
 
 	Ok(res)
 }
+
+// region:    --- Support
+
+fn format_usage(usage: &MetaUsage) -> String {
+	let mut buff = String::new();
+
+	buff.push_str("Prompt Tokens: ");
+	buff.push_str(&format_num(usage.prompt_tokens.unwrap_or_default() as i64));
+	if let Some(cached) = usage.prompt_tokens_details.as_ref().and_then(|v| v.cached_tokens) {
+		buff.push_str(" (cached: ");
+		buff.push_str(&format_num(cached as i64));
+		buff.push(')');
+	}
+
+	buff.push_str(" | Completion Tokens: ");
+	buff.push_str(&format_num(usage.completion_tokens.unwrap_or_default() as i64));
+	if let Some(reasoning) = usage.completion_tokens_details.as_ref().and_then(|v| v.reasoning_tokens) {
+		buff.push_str(" (reasoning: ");
+		buff.push_str(&format_num(reasoning as i64));
+		buff.push(')');
+	}
+
+	buff
+}
+
+// endregion: --- Support
