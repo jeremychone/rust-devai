@@ -276,7 +276,7 @@ if data.context_files ~= nil then
     msg = "Files updated: "
     for _, block in ipairs(blocks) do
         local first, remain = utils.text.split_first(block.content, "\n")
-        local file_path = first:match("// file:%s*(.+)")
+        local file_path = first:match(" file:%s*([^%s]+)")
         if file_path then 
             file_path = base_dir .. "/" .. file_path
             utils.file.save(file_path, remain)

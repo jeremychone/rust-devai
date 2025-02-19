@@ -1,5 +1,10 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
+## Work In Progress - `v0.5.10`
+
+- `+` Parametric Agents with support for `#!meta` prompt code blocks
+- ...
+
 ## 2025-01-27 - [v0.5.9](https://github.com/jeremychone/rust-devai/compare/v0.5.8...v0.5.9)
 
 - `^` groq - update genai to 0.1.19 for Groq deepseek-r1-distill-llama-70b
