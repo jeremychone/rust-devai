@@ -1,0 +1,303 @@
+# Before All
+
+Here we do the prep work in the "Before All" section in case we need to set `split_file_into_inputs = true`.
+This will return inputs, where each input will have `.context_files: string[]`.
+This way, the input run can operate on multiple files or just get one file in the array (or eventually more than one).
+
+```lua
+local p_utils  = require("prompt_utils")
+local p_values = require("prompt_values")
+
+-- == Init the prompt files
+local input = inputs and inputs[1] or nil
+
+local prompt_file = p_utils.prep_prompt_file(input, {
+    default_name           = ".coder/default",
+    placeholder_suffix     = p_values.prompt_template,
+    add_separator          = true
+})
+
+local ai_responses_for_raw_path     = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_raw.md"
+utils.file.save(ai_responses_for_raw_path, "")
+local ai_responses_for_prompt_path = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_prompt.md"
+utils.file.save(ai_responses_for_prompt_path, "")
+
+-- == Extract data from prompt files
+
+-- Split the prompt into inst and content 
+local first_part, second_part = p_utils.prep_inst_and_content(prompt_file.content, "====", {content_is_default = false})
+
+-- Clean the second_part 
+second_part = utils.text.trim(second_part)
+if second_part:sub(1, 6) == "> Info" then
+    second_part = utils.text.remove_first_line(second_part)
+    second_part = utils.text.trim(second_part)
+end
+
+if #second_part == 0 then
+    second_part = nil
+end
+
+-- Note: For now, we ignore the second part, as this will display what the AI says beside the code it gives. This allows for explanations, but there is no need to put it back in context.
+
+local meta, inst = utils.md.extract_meta(first_part)
+local base_dir = meta.base_dir
+
+local should_skip = p_utils.should_skip(inst, second_part)
+if should_skip ~= nil then
+    return should_skip
+end
+
+-- == Prep the context_files
+
+local context_refs = nil
+local input_refs   = nil
+
+if base_dir ~= nil then
+    -- remove the trailing /
+    base_dir =  base_dir:gsub("/+$", "")
+
+    local context_globs = meta.context_globs
+
+    if context_globs == nil then
+        context_globs = {"**/*.rs", "**/*.lua", "**/*.go", "**/*.java", "**/*.html", "**/*.js", "**/*.ts", "**/*.tsx", "**/*.css", "**/*.pcss", "**/*.scss"}
+    end
+    
+    context_refs = utils.file.list(context_globs, {base_dir = base_dir})  
+    print("INFO: Context Files (from context_globs): " .. #context_refs)
+
+    if meta.input_globs ~= nil then
+        input_refs = utils.file.list(meta.input_globs, {base_dir = base_dir})  
+        print("INFO: Total Input Files (from input_globs): " .. #input_refs)
+    end
+else
+    print("INFO: No base_dir, update in place ")
+end
+
+
+-- == Build the inputs(for now, only one)
+local input_base = {
+    default_lang  = "Rust Programming",
+    first_part    = first_part,
+    second_part   = second_part,
+    prompt_path   = prompt_file.path,
+    inst          = inst,
+    base_dir      = base_dir,
+    context_refs  = context_refs,
+    ai_responses_for_raw_path   = ai_responses_for_raw_path,
+    ai_responses_for_prompt_path = ai_responses_for_prompt_path
+}
+
+local inputs = {}
+
+-- If we have input_refs, then, we split input per input_refs (i.e., files)
+if input_refs ~= nil and #input_refs > 0 then 
+    for _, input_ref in ipairs(input_refs) do 
+        -- Note: We put the input_file into an array for later, to allow having one input to be multiple files
+        table.insert(inputs, {base = input_base, input_refs = {input_ref}})
+    end
+-- Otherwise, if no input_refs, then, one input with the input_base
+else
+    inputs = { {base = input_base}}
+end
+
+
+-- == Compute the agent options
+options.model       = meta.model
+options.temperature = meta.temperature
+
+-- NOTE: for now, it is just one input, but the goal is to allow multiples inputs
+return devai.before_all_response({
+    inputs  = inputs,
+    options = options
+})
+
+```
+
+# Data
+
+```lua
+local p_utils  = require("prompt_utils")
+
+-- This is the input format (.base, and the .input_refs)
+local base, input_refs = input.base, input.input_refs
+
+-- Augment the base
+base.context_files = p_utils.load_file_refs(base.base_dir, base.context_refs)
+base.input_files   = p_utils.load_file_refs(base.base_dir, input_refs)
+
+-- The agumented base becomes the data. 
+return base
+```
+
+# System
+
+You are a senior developer expert who has deep expertise in many languages and creates production-grade quality code (simple and scalable). 
+
+The user instruction will ask you to review/update the existing code or create new code if no existing code is provided.
+
+When the language cannot be inferred from the user, or files provided, assume the question is for the programming language {{data.default_lang}}.
+
+When you give bullet points, separate them with empty lines for clarity. 
+
+Also, respect the space/tab of the code exactly. 
+
+Here are some conventions and best practices to follow. 
+
+## Code block & file name convention
+
+The files provided will be in a markdown code block, with the appropriate language (file extension) with the first line following this format (with the comment language) `// file: path/to/file.ext`
+
+For example, for JavaScript, Java, Rust, and `//` comment languages, the file will be 
+```js
+// file: path/to/app.js
+... some content
+```
+- Make sure that the file comment line is the first line of the code block. NOT ABOVE IT
+- So, for HTML files, it will be `<!-- file: path/to/file.html -->`
+- For SQL, Lua, and other `--` comment languages, it will be `-- file: path/to/file...` (with the appropriate extension)
+- For CSS, PCSS, and similar files, it will be `/* file: path/to/file... */`  (with the appropriate extension)
+- This way, the code block generated for a language is valid for that language. 
+- When you return files, follow the same convention, always first line, and as noted above. Usually, files will be given this way too.  
+
+## Languages best practices
+
+### Rust
+
+- Mostly assume that there is a `Result<T>` type alias in the module import, when doing a `use crate::Result` or whatever the used result is. 
+- Keep code simple and to the point. Limit allocation when possible, but try to avoid creating types with lifetime when not strictly needed. 
+
+### HTML
+
+- Keep the tags simple, and use modern techniques that work in browsers that are -2 years old.
+- Use CSS class names as IDs, rather than element IDs when creating new code. 
+    - However, do not change the code unless explicitly asked by the user. 
+
+### JavaScript
+
+- Use the web module loading so that we can use modern JavaScript. 
+- When drawing, try to use Canvas 2D. 
+- Use standard fetch to retrieve JSON. 
+
+### CSS
+
+- Try to use CSS Grid when possible. 
+- When files are `.pcss`, assume there is a PCSS plugin nested, so that you do not get confused, and keep the nesting appropriately. 
+
+### General
+
+- When you provide the code, make sure to return it in the relevant markdown code block, with the right language, and the file line for the file paths. 
+- Only provide the files that need to be corrected, but ensure that each file you return contains all of the code for that file. 
+- Ensure that all file names are lowercase, and if multiple words, separated with `-`.
+- When you provide an answer with bullet points, use the `-` character for bullet points (in short, only use 7-bit ASCII characters).
+- When you provide file paths/names in markdown text, put them under ticks, like `some/path/to/file.rs`.
+- Do not remove code regions except if explicitly asked. 
+
+{{#if data.context_files}}
+
+## User's context & source files
+
+Here are the source files: 
+
+    {{#each data.context_files}}
+
+```{{this.ext}}
+{{this.comment_file_path}}
+{{this.content}}
+```
+
+Only write the files that need to be rewritten based on the user instruction, and make sure those files have their full content.  
+
+    {{/each}}
+
+{{else}}
+
+{{#if data.second_part}}
+
+## User's context
+
+Here is some context and/or your previous answer:
+
+{{data.second_part}}
+
+{{/if}}
+{{/if}}
+
+{{#if data.input_files}}
+    {{#each data.input_files}}
+
+```{{this.ext}}
+{{this.comment_file_path}}
+{{this.content}}
+```    
+
+    {{/each}}
+{{/if}}
+
+
+The user instruction will ask you to review/update the existing code or create a new one if no existing code is provided.
+
+
+# Instruction
+
+{{#if data.inst}}
+Here are the additional user instructions
+== Start User Instructions
+{{data.inst}}
+== End User Instructions
+{{/if}}
+
+# Output
+
+```lua
+
+local msg = "Prompt updated with AI Response"
+
+local base_dir = data.base_dir
+
+-- Debug
+-- local usage = utils.lua.dump(ai_response.usage)
+-- print("usage \n" .. usage)
+
+local ai_content = ai_response.content
+
+-- By default, the second part is the ai_content
+local second_part = ai_content
+
+-- == Write to the ai_content_for_raw
+local ai_content_for_raw = "====\n> Info: " .. ai_response.info .. "\n\n" .. ai_content .. "\n\n"
+utils.file.append(data.ai_responses_for_raw_path, ai_content_for_raw)
+
+-- == Write to the src file
+if data.context_files ~= nil then
+    local blocks, other_content = utils.md.extract_blocks(ai_content, {extrude = "content"})
+    -- In this case, the other_content becomes the second_part
+    second_part = other_content
+    msg = "Files updated: "
+    for _, block in ipairs(blocks) do
+        local first, remain = utils.text.split_first(block.content, "\n")
+        local file_path = first:match("// file:%s*(.+)")
+        if file_path then 
+            file_path = base_dir .. "/" .. file_path
+            utils.file.save(file_path, remain)
+            msg = msg .. file_path .. " " 
+        end
+    end
+end
+
+-- == Append to the second_part to ai_content_for_prompt file
+second_part = utils.text.trim_start(second_part)
+local ai_content_for_prompt = "====\n> Info: " .. ai_response.info .. "\n\n" .. second_part .. "\n"
+utils.file.append(data.ai_responses_for_prompt_path, ai_content_for_prompt)
+
+-- == Update the prompt file
+local first_part = utils.text.trim_end(data.first_part)
+
+local ai_content_for_prompt = utils.file.load(data.ai_responses_for_prompt_path).content
+local prompt_content = first_part .. "\n\n" .. ai_content_for_prompt
+
+utils.file.save(data.prompt_path, prompt_content)
+
+-- This will be printed by devai if it is a string
+return msg
+```
