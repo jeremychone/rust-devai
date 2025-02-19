@@ -1,19 +1,19 @@
 use crate::hub::get_hub;
-use crate::init::embedded_files::{
-	get_embedded_command_agent_files, get_embedded_doc_files, get_embedded_new_command_agent_files, EmbeddedFile,
+use crate::init::assets::{
+	extract_workspace_config_toml_zfile, extract_workspace_default_file_paths, extract_workspace_doc_file_paths,
+	extract_workspace_zfile,
 };
+
 use crate::init::migrate_devai::migrate_devai_0_5_0_if_needed;
 use crate::run::{find_workspace_dir, DevaiDir, DirContext};
 use crate::support::files::current_dir;
+use crate::support::AsStrsExt;
 use crate::Result;
 use simple_fs::{ensure_dir, list_files, SPath};
 use std::collections::HashSet;
 use std::fs::write;
 use std::io::BufRead;
 use std::path::Path;
-
-// -- Config Content
-const DEVAI_CONFIG_FILE_CONTENT: &str = include_str!("../../_init/config.toml");
 
 // -- Doc Content
 // const DEVAI_DOC_LUA_CONTENT: &str = include_str!("../../_init/doc/lua.md");
@@ -122,8 +122,10 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 
 	// -- Create the config file
 	let config_path = devai_dir.get_config_toml_path()?;
+
 	if !config_path.exists() {
-		write(&config_path, DEVAI_CONFIG_FILE_CONTENT)?;
+		let config_zfile = extract_workspace_config_toml_zfile()?;
+		write(&config_path, config_zfile.content)?;
 		hub.publish(format!(
 			"-> {:<18} '{}'",
 			"Create config file",
@@ -135,38 +137,33 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 	// -- migrate_devai_0_1_0_if_needed
 	migrate_devai_0_5_0_if_needed(devai_dir).await?;
 
-	// -- Create the default agent files
+	// -- Create the default agent dir
 	let devai_agent_default_dir = devai_dir.get_default_agent_dir()?;
 	ensure_dir(devai_agent_default_dir)?;
 	ensure_dir(devai_dir.get_custom_agent_dir()?)?;
 	ensure_dir(devai_dir.get_default_new_template_dir()?)?;
 
-	// -- Create the lua
+	// -- Create the lua dir
 	let devai_custom_lua_dir = devai_dir.get_lua_custom_dir()?;
 	ensure_dir(devai_custom_lua_dir)?;
 
-	// -- Create the default command agents if not present
-	update_devai_files(
+	// -- Create the default
+	let wks_default_paths = extract_workspace_default_file_paths()?;
+	update_wks_files(
 		workspace_dir,
-		devai_dir.get_default_agent_dir()?,
-		get_embedded_command_agent_files(),
-	)
-	.await?;
-
-	// -- Create the new-template command default
-	update_devai_files(
-		workspace_dir,
-		devai_dir.get_default_new_template_dir()?,
-		get_embedded_new_command_agent_files(),
+		devai_dir.devai_dir_full_path(),
+		&wks_default_paths.x_as_strs(),
+		false, // never force update for now
 	)
 	.await?;
 
 	// -- Create the documentation
-	update_md_files(
+	let wks_dock_paths = extract_workspace_doc_file_paths()?;
+	update_wks_files(
 		workspace_dir,
-		devai_dir.get_doc_dir()?,
-		get_embedded_doc_files(),
-		is_new_version,
+		devai_dir.devai_dir_full_path(),
+		&wks_dock_paths.x_as_strs(),
+		is_new_version, // force update if is_new_version
 	)
 	.await?;
 
@@ -175,54 +172,32 @@ async fn create_or_refresh_devai_files(devai_dir: &DevaiDir, is_new_version: boo
 
 // region:    --- Support
 
-async fn update_devai_files(
-	base_dir: &SPath,
-	agents_dir: impl AsRef<Path>,
-	embedded_agent_file: &[&EmbeddedFile],
+async fn update_wks_files(
+	wks_dir: &SPath,
+	devai_dir: &SPath,
+	wks_file_paths: &[&str],
+	force_update: bool,
 ) -> Result<()> {
-	let agents_dir = agents_dir.as_ref();
-	let existing_files = list_files(agents_dir, Some(&["**/*.devai", "**/*.lua"]), None)?;
+	let existing_files = list_files(devai_dir, Some(&["**/*.devai", "**/*.lua", "**/*.md"]), None)?;
+
 	let existing_names: HashSet<String> = existing_files
 		.iter()
-		.filter_map(|f| f.diff(agents_dir).ok().map(|p| p.to_string()))
+		.filter_map(|f| f.diff(devai_dir).ok().map(|p| p.to_string()))
 		.collect();
 
-	for e_file in embedded_agent_file {
-		let dest_rel_path = SPath::from(e_file.rel_path);
-		if !existing_names.contains(dest_rel_path.to_str()) {
-			let dest_path = SPath::new(agents_dir)?.join_str(dest_rel_path.to_str());
+	for &wks_file_path in wks_file_paths {
+		if force_update || !existing_names.contains(wks_file_path) {
+			let dest_rel_path = SPath::from(wks_file_path);
+			let dest_path = SPath::new(devai_dir)?.join_str(dest_rel_path.to_str());
 			// if the rel_path had a parent
 			if let Some(parent_dir) = dest_rel_path.parent() {
-				let parent_dir = agents_dir.join(parent_dir);
+				let parent_dir = devai_dir.join(parent_dir)?;
 				ensure_dir(parent_dir)?;
 			}
-			write(&dest_path, e_file.content)?;
+			let zfile = extract_workspace_zfile(dest_rel_path.to_str())?;
+			write(&dest_path, zfile.content)?;
 			get_hub()
-				.publish(format!("-> {:<18} '{}'", "Create file", dest_path.diff(base_dir)?))
-				.await;
-		}
-	}
-
-	Ok(())
-}
-
-async fn update_md_files(
-	base_dir: &SPath,
-	dir: impl AsRef<Path>,
-	embedded_agent_file: &[&EmbeddedFile],
-	is_new_version: bool,
-) -> Result<()> {
-	let dir = dir.as_ref();
-	ensure_dir(dir)?;
-	let existing_files = list_files(dir, Some(&["**/*.md"]), None)?;
-	let existing_names: HashSet<&str> = existing_files.iter().map(|f| f.name()).collect();
-
-	for e_file in embedded_agent_file {
-		if is_new_version || !existing_names.contains(e_file.rel_path) {
-			let path = SPath::new(dir)?.join(e_file.rel_path)?;
-			write(&path, e_file.content)?;
-			get_hub()
-				.publish(format!("-> {:<18} '{}'", "Create file", path.diff(base_dir)?))
+				.publish(format!("-> {:<18} '{}'", "Create file", dest_path.diff(wks_dir)?))
 				.await;
 		}
 	}

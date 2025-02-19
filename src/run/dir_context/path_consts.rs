@@ -17,6 +17,7 @@ pub const DEVAI_CONFIG_FILE_PATH: &str = "config.toml";
 pub const CUSTOM_AGENT_DIR: &str = "custom/agent";
 pub const CUSTOM_LUA_DIR: &str = "custom/lua";
 
+pub const DEFAULT_DIR: &str = "default";
 pub const DEFAULT_AGENT_DIR: &str = "default/agent";
 
 // -- Doc
