@@ -1,4 +1,0 @@
-namespace   = "jc"
-name        = "coder" # refer as @jc/coder
-version     = "0.1.0"
-git_repo    = "git://github.com/jeremychone/aipack/coder"
