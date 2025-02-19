@@ -1,3 +1,13 @@
+//! Defines the `lua` module for Lua.
+//!
+//! ---
+//!
+//! ## Lua Documentation
+//! The `lua` module exposes functions for inspecting Lua values.
+//!
+//! ### Functions
+//! * `utils.lua.dump(value: any) -> string`
+
 use crate::run::RuntimeContext;
 use mlua::{Lua, Result, Table, Value};
 
@@ -10,8 +20,34 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table
 	Ok(table)
 }
 
-// region:    --- Rust Lua Support
+// region: --- Rust Lua Support
 
+/// ## Lua Documentation
+///
+/// Dump a Lua value into its string representation.
+///
+/// ```lua
+/// -- API Signature
+/// utils.lua.dump(value: any) -> string
+/// ```
+///
+/// Given any Lua value, returns a string that recursively represents tables and their structure.
+/// Useful for debugging and logging purposes.
+///
+/// ### Example
+/// ```lua
+/// local tbl = { key = "value", nested = { subkey = 42 } }
+/// print(utils.lua.dump(tbl))
+/// ```
+///
+/// ### Returns
+///
+/// A string representation of the Lua value.
+///
+/// ### Exception
+///
+/// If the conversion fails, an error message is returned.
+///
 pub fn dump(lua: &Lua, value: Value) -> Result<String> {
 	fn dump_value(_lua: &Lua, value: Value, indent: usize) -> Result<String> {
 		let indent_str = "  ".repeat(indent);
@@ -53,11 +89,11 @@ pub fn dump(lua: &Lua, value: Value) -> Result<String> {
 }
 // endregion: --- Rust Lua Support
 
-// region:    --- Tests
+// region: --- Tests
 
 #[cfg(test)]
 mod tests {
-	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
 	use super::*;
 	use crate::_test_support::assert_contains;
@@ -65,23 +101,18 @@ mod tests {
 
 	#[test]
 	fn test_scripts_lua_dump() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = Lua::new();
 
-		// Create nested tables
 		let outer_table = lua.create_table().unwrap();
 		let inner_table = lua.create_table().unwrap();
 
-		// Populate inner table
 		inner_table.set("key1", "value1").unwrap();
 		inner_table.set("key2", 42).unwrap();
 
-		// Add inner table and other values to outer table
 		outer_table.set("nested", inner_table).unwrap();
 		outer_table.set("bool", true).unwrap();
 		outer_table.set("num", 3.21).unwrap();
 
-		// -- Check
 		let result = dump(&lua, Value::Table(outer_table)).unwrap();
 		assert_contains(&result, r#"  bool = true"#);
 		assert_contains(&result, r#"    key1 = "value1""#);

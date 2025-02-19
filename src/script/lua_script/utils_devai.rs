@@ -1,3 +1,14 @@
+//! Defines the `devai` module for Lua.
+//!
+//! ---
+//!
+//! ## Lua Documentation
+//! The `utils.devai` module exposes functions for generating structured responses for the devai runtime.
+//!
+//! ### Functions
+//! * `utils.devai.before_all_response(data: any) -> table`
+//! * `utils.devai.skip(reason?: string) -> table`
+
 use crate::run::RuntimeContext;
 use crate::Result;
 use mlua::{Lua, Value};
@@ -19,32 +30,22 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<()> {
 
 /// ## Lua Documentation
 ///
-/// Can be return in the `# Before All` Lua section to override the inputs.
+/// Returns a response that overrides inputs.
 ///
 /// ```lua
-/// return devai.before_all_response({
-///     -- (optional) Some data from before all (for later stage)
-///     before_all = "Some before all data",
-///     -- (optional) inputs generation
-///     inputs = {"one", "two", "three", 4, "five"}
-/// })
+/// -- API Signature
+/// utils.devai.before_all_response(data: any) -> table
 /// ```
 ///
-/// ### Internals
-///
-/// This will return a structure like this one below, which will be understood by the devai runtime.
-///
-/// ```
-/// "_devai_": {
-///     "kind": "BeforeAllResponse",
-///     "data": {
-///         "inputs": ["one", "two", "three", 4, "five"],
-///         "before_all": "Some before all data"
-///     }
+/// Returns a table with the following structure:
+/// ```lua
+/// {
+///   _devai_ = {
+///     kind = "BeforeAllResponse",
+///     data = <data passed to function>
+///   }
 /// }
-/// ``````
-///
-///
+/// ```
 fn devai_before_all_response(lua: &Lua, data: Value) -> mlua::Result<Value> {
 	let inner = lua.create_table()?;
 	inner.set("kind", "BeforeAllResponse")?;
@@ -57,25 +58,22 @@ fn devai_before_all_response(lua: &Lua, data: Value) -> mlua::Result<Value> {
 
 /// ## Lua Documentation
 ///
-/// Can be returned `# Before All`, `# Data`, `# Output` Lua sections to tell the devai runtime
-/// to skip this input or inputs cycle.
+/// Returns a response indicating a skip action for the input cycle.
 ///
 /// ```lua
-/// return devai.skip("File " .. input.path .. " already contain the documentation")
+/// -- API Signature
+/// utils.devai.skip(reason?: string) -> table
 /// ```
 ///
-/// ### Internals
-///
-/// This will return a structure like this one below, which will be understood by the devai runtime.
-///
-/// ```
-/// "_devai_": {
-///     "kind": "Skip",
-///     "data": {
-///         "reason": "Some optional reason",
-///     }
+/// Returns a table with the following structure:
+/// ```lua
+/// {
+///   _devai_ = {
+///     kind = "Skip",
+///     data = { reason = <reason passed to function, can be nil> }
+///   }
 /// }
-/// ``````
+/// ```
 fn devai_skip(lua: &Lua, reason: Option<String>) -> mlua::Result<Value> {
 	let data = lua.create_table()?;
 	data.set("reason", reason)?;

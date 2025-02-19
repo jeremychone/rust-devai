@@ -1,3 +1,13 @@
+//! Defines the `git` module, used in the lua engine.
+//!
+//! ---
+//!
+//! ## Lua Documentation
+//! The `git` module exposes functions for performing Git operations.
+//!
+//! ### Functions
+//! * `utils.git.restore(path: string) -> string | table`
+
 use crate::hub::get_hub;
 use crate::run::RuntimeContext;
 use crate::{Error, Result};
@@ -16,15 +26,28 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 
 /// ## Lua Documentation
 ///
-/// Will do a `git restore path`
+/// Execute a `git restore` command for the specified path.
 ///
 /// ```lua
-/// utils.git.restore("src/main.rs")
+/// -- API Signature
+/// utils.git.restore(path: string) -> string | table
 /// ```
 ///
-/// NOTE: The git command will be with the working dir as the workspace_dir to be consistent with the other
+/// Execute a `git restore` command in the workspace directory using the provided file path.
 ///
+/// ### Returns
 ///
+/// Returns the standard output as a string if the command is successful.
+///
+/// ### Exception
+///
+/// Throws an error if the command's stderr output is not empty.
+///
+/// ### Example
+/// ```lua
+/// local result = utils.git.restore("src/main.rs")
+/// print(result)
+/// ```
 fn git_restore(lua: &Lua, ctx: &RuntimeContext, path: String) -> mlua::Result<Value> {
 	let output = std::process::Command::new("git")
 		.current_dir(ctx.dir_context().workspace_dir())
