@@ -1,7 +1,6 @@
 use crate::run::path_consts::{
-	CUSTOM_AGENT_DIR, CUSTOM_LUA_DIR, DEFAULT_AGENT_DIR, DEFAULT_DIR, DEVAI_BASE, DEVAI_CONFIG_FILE_PATH,
-	DEVAI_DIR_NAME, DEVAI_DIR_PATH, DEVAI_DOC_DIR, DEVAI_NEW_COMMAND_DIRS, DEVAI_NEW_CUSTOM_COMMAND_DIR,
-	DEVAI_NEW_DEFAULT_COMMAND_DIR,
+	CUSTOM_AGENT_DIR, CUSTOM_LUA_DIR, DEFAULT_AGENT_DIR, DEVAI_BASE, DEVAI_CONFIG_FILE_PATH, DEVAI_DIR_NAME,
+	DEVAI_DIR_PATH, DEVAI_NEW_COMMAND_DIRS, DEVAI_NEW_CUSTOM_COMMAND_DIR, DEVAI_NEW_DEFAULT_COMMAND_DIR,
 };
 use crate::Result;
 use home::home_dir;
@@ -98,11 +97,6 @@ impl DevaiDir {
 		Ok(dirs)
 	}
 
-	pub fn get_default_dir(&self) -> Result<SPath> {
-		let dir = self.devai_dir_full_path.join(DEFAULT_DIR)?;
-		Ok(dir)
-	}
-
 	pub fn get_default_agent_dir(&self) -> Result<SPath> {
 		let dir = self.devai_dir_full_path.join(DEFAULT_AGENT_DIR)?;
 		Ok(dir)
@@ -123,15 +117,6 @@ impl DevaiDir {
 	}
 
 	// endregion: --- Lua
-
-	// region:    --- Doc
-
-	pub fn get_doc_dir(&self) -> Result<SPath> {
-		let dir = self.devai_dir_full_path.join(DEVAI_DOC_DIR)?;
-		Ok(dir)
-	}
-
-	// endregion: --- Doc
 
 	// region:    --- Template
 

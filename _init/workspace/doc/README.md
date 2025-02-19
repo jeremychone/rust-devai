@@ -215,13 +215,11 @@ devai run proof-rs-comments -f main.rs -v -w --dry res
     - `custom/` - Where user custom agents and templates are stored. These will take precedence over the `.devai/default/...` matching files.
         - `command-agent/` - The custom agents. 
         - `new-template/` - Template(s) used to create new agents, e.g., `devai new my-new-cool-agent`
-            - `command-agent/` - The folder containing the custom templates for command agents.
-            - `solo-agent/` - The folder containing custom templates for solo agents (coming later)
+            - `agent/` - The folder containing the custom templates for command agents.
     - `default/` - The default command agents and templates provided by devai (these files will only be created if missing)
         - `command-agent/` - The default command agents.
         - `new-template/` - The default template(s) used to create new agents, e.g., `devai new my-new-cool-agent`
-            - `command-agent/` - The folder containing the default templates for command agents.
-            - `solo-agent/` - The folder containing the default templates for solo agents (coming later)
+            - `agent/` - The folder containing the default templates for command agents.
 
 ## Example of a Command Agent File
 

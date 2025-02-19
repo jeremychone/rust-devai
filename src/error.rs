@@ -163,6 +163,7 @@ impl CustomDisplay for genai::Error {
 
 			genai::Error::SerdeJson(error) => format!("Serde JSON processing error: {}.", error),
 
+			#[allow(unreachable_patterns)] // in case genai::Error changes
 			other => format!("{other:?}"),
 		}
 	}

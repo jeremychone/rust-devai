@@ -52,7 +52,7 @@ fn extract_blocks(lua: &Lua, (md_content, options): (String, Option<Value>)) -> 
 			let lang = lang
 				.map(|v| {
 					v.to_string()
-						.map_err(|err| crate::Error::custom("md_extract_blocks lang options must be of type string"))
+						.map_err(|_err| crate::Error::custom("md_extract_blocks lang options must be of type string"))
 				})
 				.transpose()?;
 
@@ -79,7 +79,7 @@ fn extract_blocks(lua: &Lua, (md_content, options): (String, Option<Value>)) -> 
 		_ => (None, None),
 	};
 
-	let mut blocks_it = md::MdBlockIter::new(&md_content, lang.as_deref(), extrude);
+	let blocks_it = md::MdBlockIter::new(&md_content, lang.as_deref(), extrude);
 	let mut values = MultiValue::new();
 
 	match extrude {

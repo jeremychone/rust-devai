@@ -16,7 +16,7 @@
 //! The returned string does not include a trailing newline.
 
 use crate::Result;
-use mlua::{Lua, Table, Value};
+use mlua::{Lua, Table};
 
 pub fn init_module(lua: &Lua, _runtime_context: &crate::run::RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
@@ -59,9 +59,7 @@ fn comment_line(_lua: &Lua, (lang_ext, comment_content): (String, String)) -> ml
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::_test_support::{eval_lua, run_reflective_agent, setup_lua};
-	use value_ext::JsonValueExt;
+	use crate::_test_support::{eval_lua, setup_lua};
 
 	type TestResult<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 

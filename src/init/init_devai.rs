@@ -13,7 +13,6 @@ use simple_fs::{ensure_dir, list_files, SPath};
 use std::collections::HashSet;
 use std::fs::write;
 use std::io::BufRead;
-use std::path::Path;
 
 // -- Doc Content
 // const DEVAI_DOC_LUA_CONTENT: &str = include_str!("../../_init/doc/lua.md");

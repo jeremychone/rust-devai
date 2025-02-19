@@ -1,7 +1,5 @@
-use crate::cli::{RunArgs, SoloArgs};
+use crate::cli::RunArgs;
 use crate::Result;
-use derive_more::derive::From;
-use simple_fs::SPath;
 use std::sync::Arc;
 
 // region:    --- RunCommandOptions
@@ -92,72 +90,6 @@ impl RunCommandOptions {
 }
 
 // endregion: --- RunCommandOptions
-
-// region:    --- RunSoloOptions
-
-/// Note: need to be clonable for redctx
-#[derive(Debug, Clone, From)]
-pub struct RunSoloOptions {
-	inner: Arc<RunSoloOptionsInner>,
-}
-
-// inner
-#[derive(Debug)]
-pub struct RunSoloOptionsInner {
-	target_path: SPath,
-	base_run_config: RunBaseOptions,
-}
-
-impl From<RunSoloOptionsInner> for RunSoloOptions {
-	fn from(inner: RunSoloOptionsInner) -> Self {
-		Self { inner: Arc::new(inner) }
-	}
-}
-
-/// Getters
-impl RunSoloOptions {
-	pub fn target_path(&self) -> &SPath {
-		&self.inner.target_path
-	}
-
-	pub fn base_run_config(&self) -> &RunBaseOptions {
-		&self.inner.base_run_config
-	}
-}
-
-/// Constructors
-impl RunSoloOptions {
-	pub fn new(args: SoloArgs, target_path: SPath) -> Result<Self> {
-		let dry_mode = parse_dry_mode(args.dry_mode.as_deref());
-
-		let base_run_config = RunBaseOptions {
-			watch: args.watch,
-			verbose: args.verbose,
-			dry_mode,
-			open: args.open,
-		};
-
-		Ok(RunSoloOptionsInner {
-			target_path,
-			base_run_config,
-		}
-		.into())
-	}
-}
-
-/// For testing only
-impl RunSoloOptions {
-	#[cfg(test)]
-	pub fn from_target_path(path: &str) -> Result<Self> {
-		Ok(RunSoloOptionsInner {
-			target_path: SPath::new(path)?,
-			base_run_config: RunBaseOptions::default(),
-		}
-		.into())
-	}
-}
-
-// endregion: --- RunSoloOptions
 
 // region:    --- Common
 

@@ -9,7 +9,7 @@
 <br/>
 
 - In the `# Before All` stage
-  - `inputs` - The list of inputs given to the run command (in solo mode, only one)
+  - `inputs` - The list of inputs given to the run command
     - When `-f "**/some/glob*.*"` is used, each input will be the matching `FileMeta` object.
 <br/>
 
@@ -265,7 +265,7 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 
 - All paths are relative to `WORKSPACE_DIR`
 - The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
-- These are available in `devai run ..` as well as `devai solo ...`
+- These are available in `devai run ..` 
 
 # Common Types
 

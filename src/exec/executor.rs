@@ -4,9 +4,7 @@
 use crate::agent::Agent;
 use crate::exec::exec_command::ExecCommand;
 use crate::exec::support::open_vscode;
-use crate::exec::{
-	exec_list, exec_new, exec_run, exec_run_redo, exec_solo, exec_solo_redo, ExecEvent, RunRedoCtx, SoloRedoCtx,
-};
+use crate::exec::{exec_list, exec_new, exec_run, exec_run_redo, ExecEvent, RunRedoCtx};
 use crate::hub::get_hub;
 use crate::init::{init_base, init_devai_files};
 use crate::{Error, Result};
@@ -19,7 +17,6 @@ use tokio::sync::mpsc::{channel, Receiver, Sender};
 #[derive(From)]
 enum RedoCtx {
 	RunRedoCtx(Arc<RunRedoCtx>),
-	SoloRedoCtx(Arc<SoloRedoCtx>),
 }
 
 impl From<RunRedoCtx> for RedoCtx {
@@ -28,17 +25,10 @@ impl From<RunRedoCtx> for RedoCtx {
 	}
 }
 
-impl From<SoloRedoCtx> for RedoCtx {
-	fn from(solo_redo_ctx: SoloRedoCtx) -> Self {
-		RedoCtx::SoloRedoCtx(solo_redo_ctx.into())
-	}
-}
-
 impl RedoCtx {
 	pub fn get_agent(&self) -> Option<&Agent> {
 		match self {
 			RedoCtx::RunRedoCtx(redo_ctx) => Some(redo_ctx.agent()),
-			RedoCtx::SoloRedoCtx(redo_ctx) => Some(redo_ctx.agent()),
 		}
 	}
 }
@@ -110,13 +100,6 @@ impl Executor {
 					hub.publish(ExecEvent::RunEnd).await;
 				}
 
-				ExecCommand::RunSoloAgent(solo_args) => {
-					hub.publish(ExecEvent::RunStart).await;
-					let redo = exec_solo(solo_args, init_devai_files(None, false).await?).await?;
-					self.current_redo_ctx = Some(redo.into());
-					hub.publish(ExecEvent::RunEnd).await;
-				}
-
 				ExecCommand::Redo => {
 					let Some(redo_ctx) = self.current_redo_ctx.as_ref() else {
 						hub.publish(Error::custom("No redo available to be performed")).await;
@@ -128,12 +111,6 @@ impl Executor {
 						RedoCtx::RunRedoCtx(redo_ctx) => {
 							// if sucessul, we recapture the redo_ctx to have the latest agent.
 							if let Some(redo_ctx) = exec_run_redo(redo_ctx).await {
-								self.current_redo_ctx = Some(redo_ctx.into())
-							}
-						}
-						RedoCtx::SoloRedoCtx(redo_ctx) => {
-							// if sucessul, we recapture the redo_ctx to have the latest agent.
-							if let Some(redo_ctx) = exec_solo_redo(redo_ctx).await {
 								self.current_redo_ctx = Some(redo_ctx.into())
 							}
 						}

@@ -5,11 +5,9 @@ use crate::run::run_input::{run_agent_input, RunAgentInputResponse};
 use crate::run::{DirContext, RunBaseOptions, Runtime};
 use crate::script::{BeforeAllResponse, DevaiCustom, FromValue};
 use crate::{Error, Result};
-use genai::ModelName;
 use serde::Serialize;
 use serde_json::Value;
 use simple_fs::SPath;
-use std::sync::Arc;
 use tokio::task::JoinSet;
 use value_ext::JsonValueExt;
 
@@ -119,7 +117,7 @@ pub async fn run_command_agent(
 		Err(_) => agent.file_path().to_string(),
 	};
 
-	/// how the message
+	// Show the message
 	let model_str: &str = agent.model();
 	let model_resolved_str: &str = agent.model_resolved();
 	let model_name_message = if model_str != model_resolved_str {
@@ -310,10 +308,6 @@ pub async fn run_command_agent_input_for_test(
 	run_base_options: &RunBaseOptions,
 ) -> Result<Option<RunAgentInputResponse>> {
 	let literals = Literals::from_dir_context_and_agent_path(runtime.dir_context(), agent)?;
-	let agent_options_final = agent.options_as_ref();
-	let model = agent_options_final.model().ok_or("Cannot run agent, no model name specified")?;
-	let model_name_final = agent_options_final.resolve_model().unwrap_or(model);
-	let model_name_final = ModelName::from(model_name_final);
 
 	run_command_agent_input(
 		input_idx,

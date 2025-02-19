@@ -60,7 +60,7 @@ pub fn get_value_prop_as_string(
 			// TODO: probaby need to normalize_dir to remove the eventual end "/"
 			Ok(Some(string.to_string_lossy()))
 		}
-		Some(other) => {
+		Some(_other) => {
 			Err(crate::Error::custom("utils.file... options.base_dir must be of type string is present").into())
 		}
 		None => Ok(None),

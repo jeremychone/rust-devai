@@ -306,7 +306,7 @@ pub struct EnsureExistsOptions {
 }
 
 impl FromLua for EnsureExistsOptions {
-	fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+	fn from_lua(value: Value, _lua: &Lua) -> mlua::Result<Self> {
 		let table = value
 			.as_table()
 			.ok_or(crate::Error::custom("EnsureExistsOptions should be a table"))?;

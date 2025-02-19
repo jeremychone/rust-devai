@@ -1,6 +1,5 @@
 use simple_fs::{ensure_file_dir, SPath};
-use std::env;
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
 use walkdir::WalkDir;

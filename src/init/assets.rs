@@ -8,6 +8,7 @@ use zip::ZipArchive;
 
 #[derive(Debug)]
 pub(super) struct ZFile {
+	#[allow(unused)]
 	pub path: String,
 	pub content: Vec<u8>,
 }
@@ -38,7 +39,7 @@ pub fn extract_workspace_zfile(path: &str) -> Result<ZFile> {
 pub fn list_workspace_file_paths_start_with(prefix: &str) -> Result<Vec<String>> {
 	let workspace_dir = "workspace/";
 
-	let mut archive = new_archive_reader()?;
+	let archive = new_archive_reader()?;
 
 	let mut paths = Vec::new();
 
@@ -54,21 +55,6 @@ pub fn list_workspace_file_paths_start_with(prefix: &str) -> Result<Vec<String>>
 	}
 
 	Ok(paths)
-}
-
-fn list_assets() -> Result<Vec<String>> {
-	let mut archive = new_archive_reader()?;
-
-	let mut files = Vec::new();
-
-	for i in 0..archive.len() {
-		let file = archive
-			.by_index(i)
-			.map_err(|err| Error::custom(format!("Fail to list assets; Cause: {err}")))?;
-		files.push(file.name().to_string());
-	}
-
-	Ok(files)
 }
 
 fn extract_asset_content(path: &str) -> Result<Vec<u8>> {
@@ -88,7 +74,7 @@ fn extract_asset_content(path: &str) -> Result<Vec<u8>> {
 fn new_archive_reader() -> Result<ZipArchive<Cursor<&'static [u8]>>> {
 	let reader = Cursor::new(ASSETS_ZIP);
 
-	let mut archive = ZipArchive::new(reader)
+	let archive = ZipArchive::new(reader)
 		.map_err(|err| Error::custom(format!("Cannot create zip archive reader. Cause: {err}")))?;
 
 	Ok(archive)

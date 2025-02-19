@@ -1,4 +1,4 @@
-use crate::agent::{Agent, AgentOptions, PromptPart};
+use crate::agent::{Agent, PromptPart};
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
@@ -13,9 +13,7 @@ use genai::ModelName;
 use mlua::IntoLua;
 use serde::Serialize;
 use serde_json::Value;
-use std::borrow::Cow;
 use std::collections::HashMap;
-use std::sync::Arc;
 use tokio::time::Instant;
 
 // region:    --- AiResponse

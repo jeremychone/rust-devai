@@ -62,52 +62,6 @@ pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver
 	Err(error_msg.into())
 }
 
-pub fn load_solo_agent(solo_agent_path: impl AsRef<Path>, dir_context: &DirContext) -> Result<Agent> {
-	let base_config = load_base_agent_config(dir_context)?;
-
-	let solo_agent_name = SPath::new(solo_agent_path.as_ref())?;
-	let solo_agent_file = dir_context.current_dir().join(&solo_agent_name)?;
-
-	let solo_file = SFile::try_from(solo_agent_file).map_err(|err| format!("Solo file not found: {err}"))?;
-
-	let agent_doc = AgentDoc::from_file(&solo_file)?;
-	agent_doc.into_agent(solo_agent_name.to_str(), base_config)
-}
-
-/// Returns the (solo_path, target_path) tuple for a file path of either.
-///
-/// IMPORTANT: This just work on the path, and do not check the file system.
-///            So the path does not have to match a file system file.
-///
-/// - If the path ends with `.devai`, then it is the solo path
-///   - If the solo stem has an extension, then, the target path is the path without .devai
-///   - If the solo stem does not have an extension, then, .md is added for the target path
-/// - Otherwise, add `.devai` to the file name in the same path.
-pub fn get_solo_and_target_path(path: impl AsRef<Path>) -> Result<(SPath, SPath)> {
-	let path = SPath::from_path(path)?;
-
-	// returns (solo_path, target_path)
-	// path is the solo_path
-	let solo_and_target_path = if path.ext() == "devai" {
-		let target_file_stem = path.stem();
-		let target_file_name = if Path::new(target_file_stem).extension().is_some() {
-			target_file_stem.to_string()
-		} else {
-			format!("{target_file_stem}.md")
-		};
-
-		let target_path = path.new_sibling(target_file_name)?;
-		(path, target_path)
-	}
-	// path is the target_path
-	else {
-		let solo_path = path.new_sibling(format!("{}.devai", path.name()))?;
-		(solo_path, path)
-	};
-
-	Ok(solo_and_target_path)
-}
-
 /// Lists all agent files following the precedence rules (customs first, defaults second).
 /// Agent files already present in a higher priority directory are not included.
 pub fn list_all_agent_rels(dir_context: &DirContext) -> Result<Vec<AgentRel>> {
@@ -327,25 +281,6 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_get_solo_and_target_path() -> Result<()> {
-		let data = &[
-			// (path, expected_solo_path, expected_target_path)
-			("./some/file.md", "./some/file.md.devai", "./some/file.md"),
-			("./some/file.md.devai", "./some/file.md.devai", "./some/file.md"),
-			("./some/file.devai", "./some/file.devai", "./some/file.md"),
-		];
-
-		// -- Exec & Check
-		for (path, expected_solo_path, expected_target_path) in data {
-			let (solo_path, target_path) = get_solo_and_target_path(path)?;
-			assert_eq!(solo_path.to_str(), *expected_solo_path);
-			assert_eq!(target_path.to_str(), *expected_target_path);
-		}
-
-		Ok(())
-	}
-
-	#[tokio::test]
 	async fn test_find_command_agent_direct_and_validate_ctx() -> Result<()> {
 		// -- Setup & Fixtures
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
@@ -486,40 +421,6 @@ mod tests {
 		);
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "main.devai");
 		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "main");
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	async fn test_load_solo_agent_and_validate_ctx() -> Result<()> {
-		// -- Setup & Fixtures
-		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		let fx_agent_name = "agent-script/agent-ctx-reflect.devai";
-
-		// -- Exec
-		let agent = load_solo_agent(fx_agent_name, runtime.dir_context())?;
-		let res = run_test_agent(&runtime, &agent).await?;
-
-		// -- Check
-		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
-		assert!(
-			workspace_dir.ends_with("tests-data/sandbox-01"),
-			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
-		);
-
-		// devai dir
-		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
-
-		// agent details
-		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, fx_agent_name);
-		assert_eq!(
-			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"./agent-script/agent-ctx-reflect.devai"
-		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./agent-script");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "agent-ctx-reflect.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "agent-ctx-reflect");
 
 		Ok(())
 	}

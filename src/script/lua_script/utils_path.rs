@@ -261,7 +261,6 @@ fn is_windows_style(s: &str) -> bool {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use mlua::Lua;
 
 	// NOTE 1: Here we are testing these functions in the context of an agent to ensure they work in that context.
 	//         A more purist approach would be to test the Lua functions in a blank Lua engine, but the net value of testing
@@ -273,7 +272,6 @@ mod tests {
 	use std::path::MAIN_SEPARATOR;
 
 	use crate::_test_support::{eval_lua, run_reflective_agent, setup_lua};
-	use crate::run::Runtime;
 
 	#[tokio::test]
 	async fn test_lua_path_exists_true() -> Result<()> {

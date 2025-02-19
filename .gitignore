@@ -22,7 +22,7 @@ _*
 # !.devai/custom/
 # !.devai/custom/**
 # !.devai/Config.toml
-# Ignore the .devai (typically temporary solos)
+# Ignore the .devai
 src/**/*.devai
 
 # -- Devai for test

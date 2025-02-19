@@ -27,17 +27,6 @@ pub enum CliCommand {
 	/// and if not found will look in `.devai/default/command-agent/proof-comments.devai`
 	Run(RunArgs),
 
-	#[command(
-		about = "Run a solo agent for a <path> relative to where the devai is run.",
-		long_about = "Run a solo agent for a <path> relative to where the devai is run.\n
-For convenience, the <path> can be either:\n
-  - The target file, e.g., `devai solo ./src/main.rs`
-    This will automatically add the '.devai' to run solo as `./src/main.rs.devai`.\n
-  - Or the solo file directly, e.g., `./src/main.rs.devai`.\n
-IMPORTANT: The path should be at the parent folder of the `.devai/` directory."
-	)]
-	Solo(SoloArgs),
-
 	/// Create a New Command Agent under `.devai/custom/command-agent/`
 	New(NewArgs),
 
@@ -49,11 +38,10 @@ IMPORTANT: The path should be at the parent folder of the `.devai/` directory."
 impl CliCommand {
 	/// Returns true if this CliCommand should be in interative mode.
 	///
-	/// For now, for all Run and Solo, the interactive is on by default, regardless if it watch.
+	/// For now, for all Run, the interactive is on by default, regardless if it watch.
 	pub fn is_interactive(&self) -> bool {
 		match self {
 			CliCommand::Run(run_args) => !run_args.not_interactive,
-			CliCommand::Solo(_) => true,
 			CliCommand::Init(_) => false,
 			CliCommand::InitBase => false,
 			CliCommand::New(_) => false,
@@ -103,33 +91,6 @@ pub struct RunArgs {
 	pub not_interactive: bool,
 }
 
-/// Arguments for the `solo` subcommand
-#[derive(Parser, Debug)]
-pub struct SoloArgs {
-	/// The solo agent file path or the target file path
-	/// - if endsWith `.devai` then it is considered to be the solo agent
-	/// - if it does not end with `.devai` then it is considered to be the target file
-	///   and therefore the correct `.devai` will be created.
-	pub path: String,
-
-	/// Optional watch flag
-	#[arg(short = 'w', long = "watch")]
-	pub watch: bool,
-
-	/// Verbose mode
-	#[arg(short = 'v', long = "verbose")]
-	pub verbose: bool,
-
-	/// Attempt to open the solo agent file and the target file (if exists)
-	/// (for now use VSCode code command)
-	#[arg(short = 'o', long = "open")]
-	pub open: bool,
-
-	/// Dry mode, takes either 'req' or 'res'
-	#[arg(long = "dry", value_parser = ["req", "res"])]
-	pub dry_mode: Option<String>,
-}
-
 /// Arguments for the `run` subcommand
 #[derive(Parser, Debug)]
 pub struct NewArgs {
@@ -144,7 +105,6 @@ pub struct NewArgs {
 	pub open: bool,
 }
 
-/// Arguments for the `solo` subcommand
 #[derive(Parser, Debug)]
 pub struct InitArgs {
 	/// The optional path of were to init the .devai (relative to current directory)
@@ -163,7 +123,6 @@ impl From<CliCommand> for ExecCommand {
 			CliCommand::InitBase => ExecCommand::InitBase,
 			CliCommand::Run(run_args) => ExecCommand::RunCommandAgent(run_args),
 			CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
-			CliCommand::Solo(solo_args) => ExecCommand::RunSoloAgent(solo_args),
 			CliCommand::List => ExecCommand::List,
 		}
 	}

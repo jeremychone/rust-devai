@@ -8,14 +8,14 @@ use derive_more::derive::Display;
 ///       but status events.
 #[derive(Debug, Clone, Display)]
 pub enum ExecEvent {
-	/// Start an exec command like run, solo, init, ...
+	/// Start an exec command like run,  init, ...
 	/// Get triggers for all executor event
 	StartExec,
 
-	/// Emitted at the start of the Run/Redo of (command and solo agent)
+	/// Emitted at the start of the Run/Redo of agent
 	RunStart,
 
-	/// Emitted at the end of the Run/Redo of (command and solo agent)
+	/// Emitted at the end of the Run/Redo of agent
 	RunEnd,
 
 	/// The end of an exec command

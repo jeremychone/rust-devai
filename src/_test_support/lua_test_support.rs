@@ -1,6 +1,6 @@
 use crate::run::{Runtime, RuntimeContext};
 use crate::Result;
-use mlua::{Lua, LuaSerdeExt, Table};
+use mlua::{Lua, Table};
 use serde_json::Value;
 
 /// Sets up a Lua instance with both functions registered under `utils.` utils_name.
