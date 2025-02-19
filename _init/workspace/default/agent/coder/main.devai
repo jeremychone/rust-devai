@@ -52,8 +52,12 @@ end
 
 local context_refs = nil
 local input_refs   = nil
+-- by default we include second part if not nil
+local include_second_part = second_part ~= nil
 
 if base_dir ~= nil then
+    -- if base dir, we do not include_second_part
+    include_second_part = false
     -- remove the trailing /
     base_dir =  base_dir:gsub("/+$", "")
 
@@ -77,14 +81,15 @@ end
 
 -- == Build the inputs(for now, only one)
 local input_base = {
-    default_lang  = "Rust Programming",
-    first_part    = first_part,
-    second_part   = second_part,
-    prompt_path   = prompt_file.path,
-    inst          = inst,
-    base_dir      = base_dir,
-    context_refs  = context_refs,
-    ai_responses_for_raw_path   = ai_responses_for_raw_path,
+    default_lang                 = "Rust Programming",
+    first_part                   = first_part,
+    include_second_part          = include_second_part,
+    second_part                  = second_part,
+    prompt_path                  = prompt_file.path,
+    inst                         = inst,
+    base_dir                     = base_dir,
+    context_refs                 = context_refs,
+    ai_responses_for_raw_path    = ai_responses_for_raw_path,
     ai_responses_for_prompt_path = ai_responses_for_prompt_path
 }
 
@@ -212,7 +217,8 @@ Only write the files that need to be rewritten based on the user instruction, an
 
 {{else}}
 
-{{#if data.second_part}}
+{{!-- SECOND PART --}}
+{{#if data.include_second_part}}
 
 ## User's context
 
@@ -221,7 +227,10 @@ Here is some context and/or your previous answer:
 {{data.second_part}}
 
 {{/if}}
+{{!-- /SECOND PART --}}
+
 {{/if}}
+
 
 {{#if data.input_files}}
     {{#each data.input_files}}
