@@ -26,6 +26,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		let path = entry.path();
 		let name = path.strip_prefix(init_dir)?.to_str().unwrap();
 
+		let name = name.replace("\\", "/");
+
 		if path.is_file() {
 			zip.start_file(name, options)?;
 			let mut f = File::open(path)?;
