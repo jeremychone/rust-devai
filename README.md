@@ -6,7 +6,7 @@
 
 </div>
 
-# **devai** - **Command Agent File Runner**
+# devai - Command Agent Runner
 
 - Website: https://devai.run
 
@@ -20,10 +20,15 @@
   - 2025-01-06 (v0.5.4) - DeepSeek `deepseek-chat` support
   - 2024-12-08 (v0.5.1) - Added support for **xAI**
 
+- **WINDOWS DISCLAIMER:**
+    - This CLI uses a path scheme from Mac/Unix-like systems, which might not function correctly in the Windows `bat` command line.
+    - Full Windows local path support is in development.
+    - **RECOMMENDATION:** Use PowerShell or WSL on Linux. Please log issues if small changes can accommodate Windows PowerShell/WSL.
+
 - Thanks to
   - [David Horner](https://github.com/davehorner) for adding Windows support for Open Agent (with VSCode) ([#30](https://github.com/jeremychone/rust-devai/pull/30))
   - [Diaa Kasem](https://github.com/diaakasem) for `--non-interactive`/`--ni` mode ([#28](https://github.com/jeremychone/rust-devai/pull/28))
-  - [Stephane Philipakis](https://github.com/sphilipakis), a top **devai** collaborator.
+  - [Stephane Philipakis](https://github.com/sphilipakis), a **top** [devai](https://devai.run) collaborator.
 
 #### Install
 
