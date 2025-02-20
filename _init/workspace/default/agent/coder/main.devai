@@ -13,8 +13,7 @@ local input = inputs and inputs[1] or nil
 
 local prompt_file = p_utils.prep_prompt_file(input, {
     default_name           = ".coder/default",
-    placeholder_suffix     = p_values.prompt_template,
-    add_separator          = true
+    initial_content        = p_values.prompt_template
 })
 
 local ai_responses_for_raw_path     = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_raw.md"
@@ -25,7 +24,7 @@ utils.file.save(ai_responses_for_prompt_path, "")
 -- == Extract data from prompt files
 
 -- Split the prompt into inst and content 
-local first_part, second_part = p_utils.prep_inst_and_content(prompt_file.content, "====", {content_is_default = false})
+local first_part, second_part = p_utils.prep_inst_and_content(prompt_file.content, "====\n", {content_is_default = false})
 
 -- Clean the second_part 
 second_part = utils.text.trim(second_part)
@@ -40,8 +39,12 @@ end
 
 -- Note: For now, we ignore the second part, as this will display what the AI says beside the code it gives. This allows for explanations, but there is no need to put it back in context.
 
+-- Extract the meta and instruction
 local meta, inst = utils.md.extract_meta(first_part)
-local base_dir = meta.base_dir
+-- Remove the `> ..` lines
+local _line_blocks, inst_content = utils.text.extract_line_blocks(inst, 
+                                             {starts_with = ">", extrude = "content"})
+inst = utils.text.trim(inst_content)
 
 local should_skip = p_utils.should_skip(inst, second_part)
 if should_skip ~= nil then
@@ -49,6 +52,7 @@ if should_skip ~= nil then
 end
 
 -- == Prep the context_files
+local base_dir = meta.base_dir
 
 local context_refs = nil
 local input_refs   = nil
@@ -81,7 +85,8 @@ end
 
 -- == Build the inputs(for now, only one)
 local input_base = {
-    default_lang                 = "Rust Programming",
+    default_language             = meta.default_language or "Rust Programming",
+    prompt_template              = p_values.prompt_template,
     first_part                   = first_part,
     include_second_part          = include_second_part,
     second_part                  = second_part,
@@ -108,8 +113,10 @@ end
 
 
 -- == Compute the agent options
-options.model       = meta.model
-options.temperature = meta.temperature
+options.model             = meta.model
+options.temperature       = meta.temperature
+options.model_aliases     = meta.model_aliases
+options.input_concurrency = meta.input_concurrency
 
 -- NOTE: for now, it is just one input, but the goal is to allow multiples inputs
 return devai.before_all_response({
@@ -141,15 +148,36 @@ You are a senior developer expert who has deep expertise in many languages and c
 
 The user instruction will ask you to review/update the existing code or create new code if no existing code is provided.
 
-When the language cannot be inferred from the user, or files provided, assume the question is for the programming language {{data.default_lang}}.
+When the language cannot be inferred from the user, or files provided, assume the question is for the programming language {{data.default_language}}.
 
 When you give bullet points, separate them with empty lines for clarity. 
 
 Also, respect the space/tab of the code exactly. 
 
-Here are some conventions and best practices to follow. 
+The different knowledge/context will be marked with the `=== START: ...` and `=== END: ...` markers so you can know how to categorize them. 
 
-## Code block & file name convention
+
+=== START: Your custom/meta agent parameters
+
+Here this Agent Parameters documentation parameters. This is your parameters in a way. User give them in the `!meta` toml code block, and you have the logic to invaluate them. 
+
+So, the the users as about your parameters or the agent parameters, here is the documetation / example. 
+
+{{data.prompt_template}}
+
+
+When the user ask to list or such, answer in bullet points. Follow this format:  one bullet point per property, start quick example under tick, and then - explanation. Like below: 
+
+- `base_dir = "src"` - tell the agent to look at the files is dir. No default, if not defined, context is what is above and below the `====`. If defined, what is below the `====` won't get back to the context, and files might be updated. 
+
+IMPORTANT: When describing the `context_globs` do not show the default as quick example, but more something like `context_globs = ["**/mod.rs", "utils/**/*.rs"]` - to explain the value of being narrow and focused. And then, at the end of the bullet point, give the default. 
+
+=== END: Your custom/meta agent parameters
+
+
+=== START: Code block & file name convention
+
+Here are some conventions and best practices to follow. 
 
 The files provided will be in a markdown code block, with the appropriate language (file extension) with the first line following this format (with the comment language) `// file: path/to/file.ext`
 
@@ -198,9 +226,11 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 - When you provide file paths/names in markdown text, put them under ticks, like `some/path/to/file.rs`.
 - Do not remove code regions except if explicitly asked. 
 
+=== END: Code block & file name convention
+
 {{#if data.context_files}}
 
-## User's context & source files
+=== START: User's context & source files
 
 Here are the source files: 
 
@@ -211,28 +241,16 @@ Here are the source files:
 {{this.content}}
 ```
 
-Only write the files that need to be rewritten based on the user instruction, and make sure those files have their full content.  
-
     {{/each}}
 
-{{else}}
-
-{{!-- SECOND PART --}}
-{{#if data.include_second_part}}
-
-## User's context
-
-Here is some context and/or your previous answer:
-
-{{data.second_part}}
+Only write the files that need to be rewritten based on the user instruction, and make sure those files have their full content.      
 
 {{/if}}
-{{!-- /SECOND PART --}}
-
-{{/if}}
-
 
 {{#if data.input_files}}
+
+=== START: User's input files
+
     {{#each data.input_files}}
 
 ```{{this.ext}}
@@ -241,6 +259,24 @@ Here is some context and/or your previous answer:
 ```    
 
     {{/each}}
+
+Only write the files that need to be rewritten based on the user instruction, and make sure those files have their full content.     
+    
+=== END: User's input files
+
+{{/if}}
+
+
+{{#if data.include_second_part}}
+
+=== START: User's Context and or Previous answer
+
+Here is some context and/or your previous answer:
+
+{{data.second_part}}
+
+=== END: User's Context and or Previous answer
+
 {{/if}}
 
 
@@ -263,10 +299,6 @@ Here are the additional user instructions
 local msg = "Prompt updated with AI Response"
 
 local base_dir = data.base_dir
-
--- Debug
--- local usage = utils.lua.dump(ai_response.usage)
--- print("usage \n" .. usage)
 
 local ai_content = ai_response.content
 

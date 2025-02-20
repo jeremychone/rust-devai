@@ -1,8 +1,9 @@
 -- Returns FileRecord
 function prep_prompt_file(input, options) 
   options = options or {}
-  local default_name           = options.default_name or "_craft"
-  local placeholder_suffix     = options.placeholder_suffix or "Write your content"
+  local default_name           = options.default_name or "_default_prompt"
+  local placeholder_suffix     = options.placeholder_suffix
+  local initial_content        = options.initial_content
   local add_separator          = options.add_separator ~= nil and options.add_separator or false 
 
   -- Enter default file_stem
@@ -20,14 +21,24 @@ function prep_prompt_file(input, options)
       path = input.path
   end
 
-  -- create if needed
+  -- Get flag
   local first_time = utils.path.exists(path) ~= true
-  local placeholder_content = "placeholder - " .. placeholder_suffix
-  if add_separator then
-    placeholder_content = placeholder_content .. " \n\n====\n\n"
-  end
 
-  utils.file.ensure_exists(path, placeholder_content, {content_when_empty =  true})
+  -- Create placeholder initial content
+  -- (otherwise, the initial content will be)
+  if placeholder_suffix ~= nil then 
+    local placeholder_content = "placeholder - " .. placeholder_suffix
+    if add_separator then
+      placeholder_content = placeholder_content .. " \n\n====\n\n"
+    end
+    initial_content = placeholder_content
+  else 
+    if initial_content == nil then
+      intial_content = ""
+    end
+  end 
+
+  utils.file.ensure_exists(path, initial_content, {content_when_empty =  true})
 
   -- open if first time
   if first_time then 
