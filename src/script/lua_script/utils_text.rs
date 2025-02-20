@@ -21,7 +21,7 @@
 //! * `utils.text.replace_markers(content: string, new_sections: array) -> string`
 //! * `utils.text.ensure(content: string, opt: table) -> string`
 //! * `utils.text.ensure_single_ending_newline(content: string) -> string`
-//! * `utils.text.extract_line_blocks(content: string, options: table) -> (table, string?)`
+//! * `utils.text.extract_line_blocks(content: string, options: {starts_with: string, extrude?: "content"}) -> (table, string?)`
 
 use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::to_vec_of_strings;
@@ -350,21 +350,21 @@ fn escape_decode(_lua: &Lua, content: String) -> mlua::Result<String> {
 
 /// ## Lua Documentation
 /// ```lua
-/// local line_blocks, content = utils.text.extract_line_blocks(some_content, { prefix = ">", extrude = "content" })
+/// local line_blocks, content = utils.text.extract_line_blocks(some_content, { starts_with = ">", extrude = "content" })
 /// ```
 ///
 /// Extracts line blocks from `some_content` using the given options. The options table
 /// must include a required `prefix` field. If the optional field `extrude` is set to "content",
 /// the function returns a second value containing the extruded content (lines outside any block).
 fn extract_line_blocks(lua: &Lua, (content, options): (String, Table)) -> mlua::Result<MultiValue> {
-	let prefix: String = options.get("prefix")?;
+	let starts_with: String = options.get("starts_with")?;
 	let extrude_param: Option<String> = options.get("extrude").ok();
 	let return_extrude = matches!(extrude_param.as_deref(), Some("content"));
 
 	let extrude_option = if return_extrude { Some(Extrude::Content) } else { None };
 
 	let iter_options = LineBlockIterOptions {
-		prefix: &prefix,
+		starts_with: &starts_with,
 		extrude: extrude_option,
 	};
 
@@ -487,7 +487,7 @@ Some line A
 > 3
 The end
 ]]
-local blocks, extruded = utils.text.extract_line_blocks(content, { prefix = ">", extrude = "content" })
+local blocks, extruded = utils.text.extract_line_blocks(content, { starts_with = ">", extrude = "content" })
 return {
 blocks   = blocks, 
 extruded = extruded

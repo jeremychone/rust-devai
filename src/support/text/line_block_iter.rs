@@ -7,12 +7,12 @@ use crate::support::Extrude;
 
 /// Options for configuring the LineBlockIter.
 pub struct LineBlockIterOptions<'b> {
-	pub prefix: &'b str,
+	pub starts_with: &'b str,
 	pub extrude: Option<Extrude>,
 }
 
 pub struct LineBlockIter<'a> {
-	prefix: &'a str,
+	starts_with: &'a str,
 	extrude: Option<Extrude>,
 	/// The content lines iterator.
 	lines: std::str::Lines<'a>,
@@ -29,7 +29,7 @@ impl<'a> LineBlockIter<'a> {
 	/// * `options` - The options containing the marker prefix and extrude configuration.
 	pub fn new(content: &'a str, options: LineBlockIterOptions<'a>) -> Self {
 		LineBlockIter {
-			prefix: options.prefix,
+			starts_with: options.starts_with,
 			extrude: options.extrude,
 			lines: content.lines(),
 			extruded_content: Vec::new(),
@@ -47,7 +47,7 @@ impl<'a> LineBlockIter<'a> {
 		let mut in_block = false;
 
 		for line in self.lines.by_ref() {
-			if line.starts_with(self.prefix) {
+			if line.starts_with(self.starts_with) {
 				in_block = true;
 				current_block.push_str(line);
 				current_block.push('\n');
@@ -115,7 +115,7 @@ Some extruded line";
 		let mut iter = LineBlockIter::new(
 			content,
 			LineBlockIterOptions {
-				prefix: ">",
+				starts_with: ">",
 				extrude: None,
 			},
 		);
@@ -152,7 +152,7 @@ Some extruded line";
 		let (blocks, extruded_content) = LineBlockIter::new(
 			content,
 			LineBlockIterOptions {
-				prefix: ">",
+				starts_with: ">",
 				extrude: None,
 			},
 		)
