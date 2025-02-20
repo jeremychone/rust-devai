@@ -45,6 +45,7 @@ impl<'a> LineBlockIter<'a> {
 	fn next_block(&mut self) -> Option<String> {
 		let mut current_block = String::new();
 		let mut in_block = false;
+		let extrude_content = matches!(&self.extrude, Some(Extrude::Content));
 
 		for line in self.lines.by_ref() {
 			if line.starts_with(self.starts_with) {
@@ -52,9 +53,11 @@ impl<'a> LineBlockIter<'a> {
 				current_block.push_str(line);
 				current_block.push('\n');
 			} else {
-				// Always record extruded content.
-				self.extruded_content.push(line);
-				self.extruded_content.push("\n");
+				if extrude_content {
+					self.extruded_content.push(line);
+					self.extruded_content.push("\n");
+				}
+
 				if in_block {
 					// End the current block when a non-prefix line is encountered.
 					return Some(current_block);
@@ -153,7 +156,7 @@ Some extruded line";
 			content,
 			LineBlockIterOptions {
 				starts_with: ">",
-				extrude: None,
+				extrude: Some(Extrude::Content),
 			},
 		)
 		.collect_blocks_and_extruded_content();

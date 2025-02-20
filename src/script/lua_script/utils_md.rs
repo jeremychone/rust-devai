@@ -152,7 +152,7 @@ return utils.md.extract_blocks(file.content, {lang = "lua"})
 
 		// -- Check
 		assert!(res.is_array());
-		let blocks = res.as_array().unwrap();
+		let blocks = res.as_array().ok_or("Res should be array")?;
 		assert_eq!(blocks.len(), 4, "Should have found 4 lua blocks");
 
 		// Check first block

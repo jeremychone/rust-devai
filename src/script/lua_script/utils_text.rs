@@ -372,7 +372,7 @@ fn extract_line_blocks(lua: &Lua, (content, options): (String, Table)) -> mlua::
 	let (blocks, extruded_content) = iterator.collect_blocks_and_extruded_content();
 
 	let blocks_table = lua.create_table()?;
-	for (i, block) in blocks.iter().enumerate() {
+	for block in blocks.iter() {
 		// FIX: Use string keys so that the returned Lua table is an object with keys "1", "2", etc.
 		blocks_table.push(block.as_str())?;
 	}
@@ -396,13 +396,13 @@ fn extract_line_blocks(lua: &Lua, (content, options): (String, Table)) -> mlua::
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{assert_contains, eval_lua, run_reflective_agent, setup_lua};
-	use serde_json::Value;
+	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
 	use value_ext::JsonValueExt;
 
 	#[tokio::test]
-	async fn test_lua_text_split_first_ok() -> Result<()> {
+	async fn test_lua_utils_text_split_first_ok() -> Result<()> {
 		// -- Fixtures
+		let lua = setup_lua(super::init_module, "text")?;
 		// (content, separator, (first, second))
 		let data = [
 			// with matching
@@ -428,7 +428,7 @@ mod tests {
 			return {{first, second}}
 			"#
 			);
-			let res = run_reflective_agent(&script, None).await?;
+			let res = eval_lua(&lua, &script)?;
 
 			let values = res.as_array().ok_or("Should have returned an array")?;
 
@@ -452,8 +452,9 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_text_ensure_ok() -> Result<()> {
+	async fn test_lua_utils_text_ensure_ok() -> Result<()> {
 		// -- Fixtures
+		let lua = setup_lua(super::init_module, "text")?;
 		let data = [
 			(
 				"some- ! -path",
@@ -467,7 +468,8 @@ mod tests {
 
 		for (content, arg, expected) in data {
 			let script = format!("return utils.text.ensure(\"{content}\", {arg})");
-			let res = run_reflective_agent(&script, None).await?;
+
+			let res = eval_lua(&lua, &script)?;
 
 			assert_eq!(res, expected);
 		}
@@ -476,7 +478,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_text_extract_line_blocks_ok() -> Result<()> {
+	async fn test_lua_utils_text_extract_line_blocks_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let lua_code = r#"
@@ -495,7 +497,7 @@ extruded = extruded
 		"#;
 
 		// -- Exec
-		let mut res = eval_lua(&lua, lua_code)?;
+		let res = eval_lua(&lua, lua_code)?;
 
 		// -- Check
 		let block = res.x_get_str("/blocks/0")?;

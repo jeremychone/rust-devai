@@ -187,7 +187,7 @@ mod tests {
 	use crate::_test_support::{assert_contains, assert_not_contains};
 
 	#[test]
-	fn test_replace_markers_simple() -> Result<()> {
+	fn test_support_text_replace_markers_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		let markers = &("<<START>>", "<<END>>");
 		let content = r#"
@@ -222,7 +222,7 @@ And more content-03
 	}
 
 	#[test]
-	fn test_replace_markers_no_closing() -> Result<()> {
+	fn test_support_text_markers_no_closing() -> Result<()> {
 		// -- Setup & Fixtures
 		let markers = &("<<START>>", "<<END>>");
 		let content = r#"
