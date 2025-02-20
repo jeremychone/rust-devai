@@ -24,23 +24,18 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	Ok(table)
 }
 
+// region: --- Lua Functions
+
 /// ## Lua Documentation
-///
-/// Execute a `git restore` command for the specified path.
-///
 /// ```lua
-/// -- API Signature
 /// utils.git.restore(path: string) -> string | table
 /// ```
-///
-/// Execute a `git restore` command in the workspace directory using the provided file path.
+/// Executes a `git restore` command in the workspace directory using the given file path.
 ///
 /// ### Returns
-///
 /// Returns the standard output as a string if the command is successful.
 ///
 /// ### Exception
-///
 /// Throws an error if the command's stderr output is not empty.
 ///
 /// ### Example
@@ -66,3 +61,5 @@ fn git_restore(lua: &Lua, ctx: &RuntimeContext, path: String) -> mlua::Result<Va
 
 	stdout.into_lua(lua)
 }
+
+// endregion: --- Lua Functions

@@ -1,9 +1,9 @@
-//! Defines the `lua` module for Lua.
+//! Defines the `lua` module, used in the lua engine.
 //!
 //! ---
 //!
-//! ## Lua Documentation
-//! The `lua` module exposes functions for inspecting Lua values.
+//! ## Lua documentation
+//! The `lua` module exposes functions for inspecting and dumping Lua values.
 //!
 //! ### Functions
 //! * `utils.lua.dump(value: any) -> string`

@@ -28,6 +28,8 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<()> {
 	Ok(())
 }
 
+// region: --- Lua Functions
+
 /// ## Lua Documentation
 ///
 /// Returns a response that overrides inputs.
@@ -87,3 +89,5 @@ fn devai_skip(lua: &Lua, reason: Option<String>) -> mlua::Result<Value> {
 
 	Ok(Value::Table(outer))
 }
+
+// endregion: --- Lua Functions
