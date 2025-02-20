@@ -16,10 +16,13 @@ Ask your coding question or instructions. Remove this placeholder line and provi
 # This will put your file in the `## User's input files` as code blocks. 
 # input_globs = ["**/mod.rs"]
 
+# You can your own aliases names (will overlay the eventual .devai/config.toml defined ones)
+# Top coder: "o3-mini-high", Fastest/~Cheapest: "gemini-2.0-flash-001" 
+model_aliases = {top = "o3-mini-high", low = "o3-mini-low", fast = "gemini-2.0-flash-001"}
 
 # Here, set your model override (by default o3-mini-high)
 # Top coder: "o3-mini-high", Fastest: "gemini-2.0-flash-001" 
-# model = "gemini-2.0-flash-001"
+model = "top"
 ```
 ]]
 
