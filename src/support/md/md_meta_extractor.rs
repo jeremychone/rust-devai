@@ -106,7 +106,7 @@ fn extract_md_blocks_and_content(content: &str, extrude: bool) -> Result<(Vec<Md
 			if in_block {
 				if in_candidate_meta_block {
 					if first_block_line {
-						if line.trim() == "#!meta" {
+						if line.trim().starts_with("#!meta") {
 							first_block_line = false;
 							action = Action::CaptureInMetaBlock
 						} else {
