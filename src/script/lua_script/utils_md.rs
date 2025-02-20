@@ -11,8 +11,8 @@
 //! * `utils.md.outer_block_content_or_raw(md_content: string) -> string`
 
 use crate::run::RuntimeContext;
-use crate::support::md::{self, Extrude};
-use crate::support::W;
+use crate::support::md::{self};
+use crate::support::{Extrude, W};
 use crate::types::MdBlock;
 use crate::Result;
 use mlua::{IntoLua, Lua, LuaSerdeExt, MultiValue, Table, Value};

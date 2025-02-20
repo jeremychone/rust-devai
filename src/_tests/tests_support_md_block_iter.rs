@@ -1,4 +1,5 @@
-use crate::support::md::{Extrude, MdBlockIter};
+use crate::support::md::MdBlockIter;
+use crate::support::Extrude;
 use crate::types::MdBlock;
 
 type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.

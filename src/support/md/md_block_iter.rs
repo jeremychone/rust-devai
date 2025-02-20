@@ -1,3 +1,4 @@
+use crate::support::Extrude;
 use crate::types::MdBlock;
 
 /// Represents an iterator over Markdown code blocks with optional language filtering.
@@ -10,15 +11,6 @@ pub struct MdBlockIter<'a> {
 	lines: std::str::Lines<'a>,
 	/// The eventual extrude content
 	extruded_content: Vec<&'a str>,
-}
-
-/// The type of "extrude" to be performed
-/// - `Content`: Concatenate all lines into one string
-/// - `Segments` (NOT SUPPORTED YET): Have a vector of strings for Before, In Between, and After
-#[derive(Debug, Clone, Copy)]
-pub enum Extrude {
-	Content,
-	// Segments, // TODO
 }
 
 /// Constructor and main iterator fuction
