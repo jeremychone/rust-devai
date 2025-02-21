@@ -74,7 +74,6 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 /// ```lua
 /// path.split(path: string) -> parent, filename
 /// ```
-/// {utils.path.split("some/path/to_file.md")} to create an array.
 ///
 /// Split path into parent, filename.
 fn path_split(lua: &Lua, path: String) -> mlua::Result<MultiValue> {
@@ -128,7 +127,6 @@ fn path_is_dir(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 /// ```
 ///
 /// Returns the parent directory of the specified path, or nil if there is no parent.
-/// (follows the Rust Path::parent(&self) logic)
 fn path_parent(path: String) -> mlua::Result<Option<String>> {
 	match Path::new(&path).parent() {
 		Some(parent) => match parent.to_str() {
@@ -152,15 +150,7 @@ fn path_parent(path: String) -> mlua::Result<Option<String>> {
 ///
 /// ```
 ///
-/// Returns the path, with paths joined.
-/// (follows the Rust PathBuf::join(&self) logic)
-///
-/// Joins path components without OS normalization.
-///
-/// JC NOTE: This might be deprecated at some oint
-///
-/// This version uses Rust’s `PathBuf` join logic without altering the components (apart from ignoring empty strings).
-/// Any mixed or extra separators are preserved.
+/// Returns the path, with paths joined without OS normalization.
 pub fn path_join_non_os_normalized(lua: &Lua, paths: Variadic<Value>) -> mlua::Result<Value> {
 	let mut path_buf = PathBuf::new();
 	if paths.is_empty() {
@@ -185,10 +175,11 @@ pub fn path_join_non_os_normalized(lua: &Lua, paths: Variadic<Value>) -> mlua::R
 
 /// Joins path components with OS normalization.
 ///
-/// This version first gathers nonempty strings then “normalizes” each component by trimming extra leading
-/// and trailing slashes. If the first component looks like a Windows path (i.e. its second character is a colon,
-/// e.g. `"C:"`, or it starts with a backslash), then the join is done using backslashes (and any forward slashes
-/// in the components are converted to backslashes). Otherwise, the platform’s native separator is used.
+/// This version first gathers nonempty strings then “normalizes” each component by trimming
+/// extra leading and trailing slashes. If the first component looks like a Windows path
+/// (i.e., its second character is a colon, e.g., "C:", or it starts with a backslash),
+/// then the join is done using backslashes (and any forward slashes in the components are converted to backslashes).
+/// Otherwise, the platform’s native separator is used.
 pub fn path_join_os_normalized(lua: &Lua, paths: Variadic<Value>) -> mlua::Result<Value> {
 	let mut comps = Vec::new();
 	if paths.is_empty() {
@@ -249,7 +240,7 @@ pub fn path_join_os_normalized(lua: &Lua, paths: Variadic<Value>) -> mlua::Resul
 }
 
 /// Returns true if the given string looks like a Windows‑style path.
-/// That is, if its second character is a colon (e.g. `"C:"`) or it starts with a backslash.
+/// That is, if its second character is a colon (e.g., "C:") or it starts with a backslash.
 fn is_windows_style(s: &str) -> bool {
 	(s.len() >= 2 && s.as_bytes()[1] == b':') || s.starts_with('\\')
 }
@@ -260,18 +251,10 @@ fn is_windows_style(s: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-
-	// NOTE 1: Here we are testing these functions in the context of an agent to ensure they work in that context.
-	//         A more purist approach would be to test the Lua functions in a blank Lua engine, but the net value of testing
-	//         them in the context where they will run is higher. Height wins.
-	//
-	// NOTE 2: All the tests here are with run_reflective_agent that have the tests-data/sandbox-01 as current dir.
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
+	use crate::_test_support::{eval_lua, setup_lua};
 	use std::path::MAIN_SEPARATOR;
-
-	use crate::_test_support::{eval_lua, run_reflective_agent, setup_lua};
 
 	#[tokio::test]
 	async fn test_lua_path_exists_true() -> Result<()> {
@@ -282,7 +265,7 @@ mod tests {
 			"agent-script/agent-hello.devai",
 			"./sub-dir-a/agent-hello-2.devai",
 			"sub-dir-a/agent-hello-2.devai",
-			"sub-dir-a/",
+			"./sub-dir-a/",
 			"sub-dir-a",
 			"./sub-dir-a/",
 			"./sub-dir-a/../",
@@ -301,11 +284,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_lua_path_exists_false() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &["./no file .rs", "some/no-file.md", "./s do/", "no-dir/at/all"];
 
-		// -- Exec & Check
 		for path in paths {
 			let code = format!(r#"return utils.path.exists("{path}")"#);
 			let res = eval_lua(&lua, &code)?;
@@ -320,7 +301,6 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_lua_path_is_file_true() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &[
 			"./agent-script/agent-hello.devai",
@@ -330,7 +310,6 @@ mod tests {
 			"./sub-dir-a/../agent-script/agent-hello.devai",
 		];
 
-		// -- Exec & Check
 		for path in paths {
 			let code = format!(r#"return utils.path.is_file("{path}")"#);
 			let res = eval_lua(&lua, &code)?;
@@ -345,11 +324,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_lua_path_is_file_false() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &["./no-file", "no-file.txt", "sub-dir-a/"];
 
-		// -- Exec & Check
 		for path in paths {
 			let code = format!(r#"return utils.path.is_file("{path}")"#);
 			let res = eval_lua(&lua, &code)?;
@@ -364,11 +341,9 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_lua_path_is_dir_true() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &["./sub-dir-a", "sub-dir-a", "./sub-dir-a/.."];
 
-		// -- Exec & Check
 		for path in paths {
 			let code = format!(r#"return utils.path.is_dir("{path}")"#);
 			let res = eval_lua(&lua, &code)?;
@@ -383,7 +358,6 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_lua_path_is_dir_false() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &[
 			"./agent-hello.devai",
@@ -394,7 +368,6 @@ mod tests {
 			"./s rc/",
 		];
 
-		// -- Exec & Check
 		for path in paths {
 			let code = format!(r#"return utils.path.is_dir("{path}")"#);
 			let res = eval_lua(&lua, &code)?;
@@ -409,7 +382,6 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_lua_path_parent() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		// Fixtures: (path, expected_parent)
 		let paths = &[
@@ -422,7 +394,6 @@ mod tests {
 			("./sub-dir", "."),
 		];
 
-		// -- Exec & Check
 		for (path, expected) in paths {
 			let code = format!(r#"return utils.path.parent("{path}")"#);
 			let res = eval_lua(&lua, &code)?;
@@ -435,23 +406,21 @@ mod tests {
 
 	#[tokio::test]
 	async fn test_lua_path_split() -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &[
 			("some/path/to_file.md", "some/path", "to_file.md"),
 			("folder/file.txt", "folder", "file.txt"),
-			("justafile.md", "", "justafile.md"), // No parent directory
+			("justafile.md", "", "justafile.md"),
 			("/absolute/path/file.log", "/absolute/path", "file.log"),
 			("/file_at_root", "/", "file_at_root"),
-			("trailing/slash/", "trailing", "slash"), // Directory with no file
+			("trailing/slash/", "trailing", "slash"),
 		];
 
-		// -- Exec & Check
 		for (path, expected_parent, expected_filename) in paths {
 			let code = format!(
 				r#"
                     local parent, filename = utils.path.split("{path}")
-                    return {{ parent, filename }} -- Wrap values in a Lua table
+                    return {{ parent, filename }}
                 "#
 			);
 			let res = eval_lua(&lua, &code)?;
@@ -498,8 +467,8 @@ mod tests {
 	// region:    --- Tests Support
 
 	fn common_test_lua_path_join_non_os_normalized(join_fn_name: &str) -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
+		use std::path::PathBuf;
 		let mut expected1 = PathBuf::new();
 		expected1.push("folder");
 		expected1.push("subfolder");
@@ -521,49 +490,15 @@ mod tests {
 			),
 		];
 
-		// -- Exec & Check
 		for (input, expected) in cases {
-			let code = format!("return utils.path.{join_fn_name}({})", input);
+			let code = format!("return utils.path.{}({})", join_fn_name, input);
 			let result: String = lua.load(&code).eval()?;
 			assert_eq!(result, expected, "Non-normalized failed for input: {}", input);
 		}
-
-		Ok(())
-	}
-
-	async fn common_test_lua_path_join_os_normalized_reflective(join_fn_name: &str) -> Result<()> {
-		// -- Setup & Fixtures
-		let cases = &[
-			(
-				r#"{"folder", "subfolder", "file.txt"}"#,
-				format!("folder{}subfolder{}file.txt", MAIN_SEPARATOR, MAIN_SEPARATOR),
-			),
-			(r#"{"single"}"#, "single".to_string()),
-			(r#"{"leading", "", "trailing"}"#, "leading/trailing".to_string()),
-			(
-				r#"{"C:\\Users", "Admin", "Documents\\file.txt"}"#,
-				"C:\\Users\\Admin\\Documents\\file.txt".to_string(),
-			),
-			(
-				r#"{"C:/Users", "Admin", "Documents/file.txt"}"#,
-				"C:\\Users\\Admin\\Documents\\file.txt".to_string(),
-			),
-			(r#"{"C:/", "Windows", "System32"}"#, "C:\\Windows\\System32".to_string()),
-		];
-
-		// -- Exec & Check
-		for (lua_table, expected_path) in cases {
-			let code = format!(r#"return utils.path.{}({lua_table})"#, join_fn_name);
-			let res = run_reflective_agent(&code, None).await?;
-			let result_path = res.as_str().ok_or("Should return a string")?;
-			assert_eq!(result_path, expected_path, "Path mismatch for table input: {lua_table}");
-		}
-
 		Ok(())
 	}
 
 	fn common_test_lua_path_join_os_normalized_lua_engine(join_fn_name: &str) -> Result<()> {
-		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let sep = MAIN_SEPARATOR;
 		let cases = vec![
@@ -589,14 +524,50 @@ mod tests {
 			),
 		];
 
-		// -- Exec & Check
 		for (input, expected) in cases {
-			let code = format!("return utils.path.{join_fn_name}({})", input);
+			let code = format!("return utils.path.{}({})", join_fn_name, input);
 			let result: String = lua.load(&code).eval()?;
 			assert_eq!(result, expected, "Normalized failed for input: {}", input);
 		}
 		Ok(())
 	}
+
+	async fn common_test_lua_path_join_os_normalized_reflective(join_fn_name: &str) -> Result<()> {
+		let lua = setup_lua(super::init_module, "path")?;
+		let cases = &[
+			(
+				r#"{"folder", "subfolder", "file.txt"}"#,
+				format!("folder{}subfolder{}file.txt", MAIN_SEPARATOR, MAIN_SEPARATOR),
+			),
+			(r#"{"single"}"#, "single".to_string()),
+			(
+				r#"{"leading", "", "trailing"}"#,
+				format!("leading{}trailing", MAIN_SEPARATOR),
+			),
+			(
+				r#"{"C:\\Users", "Admin", "Documents\\file.txt"}"#,
+				"C:\\Users\\Admin\\Documents\\file.txt".to_string(),
+			),
+			(
+				r#"{"C:/Users", "Admin", "Documents/file.txt"}"#,
+				"C:\\Users\\Admin\\Documents\\file.txt".to_string(),
+			),
+			(r#"{"C:/", "Windows", "System32"}"#, "C:\\Windows\\System32".to_string()),
+		];
+
+		for (lua_table, expected_path) in cases {
+			let code = format!(r#"return utils.path.{}({})"#, join_fn_name, lua_table);
+			let res = eval_lua(&lua, &code)?;
+			let result_path = res.as_str().ok_or("Should return a string")?;
+			assert_eq!(
+				result_path, expected_path,
+				"Path mismatch for table input: {}",
+				lua_table
+			);
+		}
+		Ok(())
+	}
+
 	// endregion: --- Tests Support
 }
 

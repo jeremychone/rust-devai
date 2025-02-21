@@ -42,16 +42,16 @@ fn prune_to_content_lua(_lua: &Lua, html_content: String) -> mlua::Result<String
 }
 
 // region:    --- Tests
-
 #[cfg(test)]
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
-	use crate::_test_support::run_reflective_agent;
+	use crate::_test_support::{setup_lua, eval_lua};
 
-	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-	async fn test_lua_html_prune_to_content() -> Result<()> {
+	#[tokio::test]
+	async fn test_lua_html_prune_to_content_ok() -> Result<()> {
 		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "html")?;
 		let fx_script = r#"
 local html_content = [[
 <!DOCTYPE html>
@@ -68,19 +68,15 @@ local html_content = [[
 ]]
 return utils.html.prune_to_content(html_content)
         "#;
-
 		// -- Exec
-		let res = run_reflective_agent(fx_script, None).await?;
-
+		let res = eval_lua(&lua, fx_script)?;
 		// -- Check
 		let cleaned_html = res.as_str().unwrap();
 		assert!(!cleaned_html.contains("<script>"));
 		assert!(!cleaned_html.contains("<style>"));
 		assert!(!cleaned_html.contains("<!-- comment -->"));
 		assert!(cleaned_html.contains(r#"<div class="content">Hello World</div>"#));
-
 		Ok(())
 	}
 }
-
 // endregion: --- Tests

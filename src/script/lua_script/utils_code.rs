@@ -57,14 +57,16 @@ fn comment_line(_lua: &Lua, (lang_ext, comment_content): (String, String)) -> ml
 	Ok(comment)
 }
 
+// region:    --- Tests
+
 #[cfg(test)]
 mod tests {
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+
 	use crate::_test_support::{eval_lua, setup_lua};
 
-	type TestResult<T> = core::result::Result<T, Box<dyn std::error::Error>>;
-
 	#[test]
-	fn test_lua_code_comment_line() -> TestResult<()> {
+	fn test_code_comment_line_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "code")?;
 		// Define test cases as tuples: (language extension, comment content, expected result)
@@ -83,9 +85,9 @@ mod tests {
 		for (lang, content, expected) in test_cases.iter() {
 			let script = format!("return utils.code.comment_line({:?}, {:?})", lang, content);
 			let res = eval_lua(&lua, &script)?;
-			let res = res.as_str().ok_or("Expected a string result")?;
+			let res_str = res.as_str().ok_or("Expected a string result")?;
 			assert_eq!(
-				res, *expected,
+				res_str, *expected,
 				"Failed for lang_ext: {} with content: {}",
 				lang, content
 			);
@@ -93,3 +95,5 @@ mod tests {
 		Ok(())
 	}
 }
+
+// endregion: --- Tests

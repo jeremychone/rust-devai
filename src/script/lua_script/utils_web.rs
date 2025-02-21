@@ -225,19 +225,20 @@ fn get_content_type(response: &Response) -> Option<String> {
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{assert_contains, run_reflective_agent};
+	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
 	use value_ext::JsonValueExt;
 
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_lua_web_get_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let fx_script = r#"
+		let lua = setup_lua(super::init_module, "web")?;
+		let script = r#"
 local url = "https://phet-dev.colorado.edu/html/build-an-atom/0.0.0-3/simple-text-only-test-page.html"
 return utils.web.get(url)
 		"#;
 
 		// -- Exec
-		let res = run_reflective_agent(fx_script, None).await?;
+		let res = eval_lua(&lua, script)?;
 
 		// -- Check
 		let content = res.x_get_str("content")?;
@@ -251,20 +252,17 @@ return utils.web.get(url)
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_lua_web_post_json_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		// see: https://stackoverflow.com/a/9770981 for test urls
-		let fx_script = r#"
+		let lua = setup_lua(super::init_module, "web")?;
+		let script = r#"
 local url = "https://httpbin.org/post"
 return utils.web.post(url, {some = "stuff"})
 		"#;
 
 		// -- Exec
-		let res = run_reflective_agent(fx_script, None).await?;
-
-		// println!("{}", res.x_pretty()?);
+		let res = eval_lua(&lua, script)?;
 
 		// -- Check
 		let content = res.pointer("/content").ok_or("Should have content")?;
-
 		assert_eq!(content.x_get_str("/json/some")?, "stuff");
 
 		Ok(())
@@ -273,24 +271,22 @@ return utils.web.post(url, {some = "stuff"})
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_lua_web_get_invalid_url() -> Result<()> {
 		// -- Setup & Fixtures
-		let fx_script = r#"
+		let lua = setup_lua(super::init_module, "web")?;
+		let script = r#"
 local url = "https://this-cannot-go/anywhere-or-can-it.devai"
-utils.web.get(url)
-
+return utils.web.get(url)
 		"#;
 
 		// -- Exec
-		let Err(err) = run_reflective_agent(fx_script, None).await else {
-			return Err("Should have been error".into());
+		let err = match eval_lua(&lua, script) {
+			Ok(_) => return Err("Should have returned an error".into()),
+			Err(e) => e,
 		};
 
-		// TODO: need to have full object here.
-		let err = err.to_string();
-
 		// -- Check
-		// TODO: Need to have better way to capture structured lua error
-		assert_contains(&err, "Fail to do utils.web.get"); // success = false
-		assert_contains(&err, "https://this-cannot-go/anywhere-or-can-it.devai"); // error message
+		let err_str = err.to_string();
+		assert_contains(&err_str, "Fail to do utils.web.get");
+		assert_contains(&err_str, "https://this-cannot-go/anywhere-or-can-it.devai");
 
 		Ok(())
 	}

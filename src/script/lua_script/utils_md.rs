@@ -130,6 +130,7 @@ fn outer_block_content_or_raw(_lua: &Lua, md_content: String) -> mlua::Result<St
 }
 
 // region:    --- Tests
+
 #[cfg(test)]
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
@@ -345,4 +346,5 @@ return utils.md.outer_block_content_or_raw(content)
 		Ok(())
 	}
 }
+
 // endregion: --- Tests

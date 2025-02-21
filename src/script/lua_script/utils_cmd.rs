@@ -124,6 +124,8 @@ Cause:\n{err}"
 	}
 }
 
+// region:    --- Tests
+
 #[cfg(test)]
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
@@ -199,10 +201,11 @@ mod tests {
 
 		// -- Check
 		let err = err.to_string();
-		// Ensure the error message contains relevant information
 		assert_contains(&err, "nonexistentcommand");
 		assert_contains(&err, "No such file or directory");
 
 		Ok(())
 	}
 }
+
+// endregion: --- Tests

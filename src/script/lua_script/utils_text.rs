@@ -396,13 +396,12 @@ fn extract_line_blocks(lua: &Lua, (content, options): (String, Table)) -> mlua::
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
-	use value_ext::JsonValueExt as _;
+    use crate::_test_support::{assert_contains, eval_lua, setup_lua};
+    use value_ext::JsonValueExt as _;
 
-	// Renamed test functions to follow the best practice: test_lua_text_...
-	#[tokio::test]
-	async fn test_lua_text_split_first_ok() -> Result<()> {
-		// -- Fixtures
+    #[tokio::test]
+	async fn test_lua_script_utils_text_split_first_simple() -> Result<()> {
+		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		// (content, separator, (first, second))
 		let data = [
@@ -414,7 +413,7 @@ mod tests {
 			),
 			// no matching
 			("some first content\n", "===", ("some first content\n", None)),
-			// no matching
+			// matching but nothing after separator
 			("some first content\n===", "===", ("some first content\n", Some(""))),
 		];
 
@@ -427,6 +426,7 @@ mod tests {
 			);
 			let res = eval_lua(&lua, &script)?;
 
+			// -- Check
 			let values = res.as_array().ok_or("Should have returned an array")?;
 
 			let first = values
@@ -449,8 +449,8 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_text_ensure_ok() -> Result<()> {
-		// -- Fixtures
+	async fn test_lua_script_utils_text_ensure_simple() -> Result<()> {
+		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let data = [
 			(
@@ -464,10 +464,11 @@ mod tests {
 		];
 
 		for (content, arg, expected) in data {
+			// -- Exec
 			let script = format!("return utils.text.ensure(\"{content}\", {arg})");
 
+			// -- Check
 			let res = eval_lua(&lua, &script)?;
-
 			assert_eq!(res, expected);
 		}
 
@@ -475,7 +476,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_text_extract_line_blocks_ok() -> Result<()> {
+	async fn test_lua_script_utils_text_extract_line_blocks_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let lua_code = r#"
@@ -493,8 +494,10 @@ extruded = extruded
 }
 		"#;
 
+		// -- Exec
 		let res = eval_lua(&lua, lua_code)?;
 
+		// -- Check
 		let block = res.x_get_str("/blocks/0")?;
 		assert_eq!(block, "> one\n> two\n");
 		let block = res.x_get_str("/blocks/1")?;

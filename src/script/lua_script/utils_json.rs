@@ -155,54 +155,66 @@ fn stringify_to_line(_lua: &Lua, content: Value) -> mlua::Result<String> {
 	}
 }
 
+// region:    --- Tests
+
 #[cfg(test)]
 mod tests {
-	use crate::_test_support::{assert_contains, assert_not_contains, run_reflective_agent};
-	use value_ext::JsonValueExt;
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+
+	use crate::_test_support::{assert_contains, assert_not_contains, eval_lua, setup_lua};
+	use value_ext::JsonValueExt as _;
 
 	#[tokio::test]
-	async fn test_lua_json_parse() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_json_parse_simple() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "json")?;
 		let script = r#"
             local content = '{"name": "John", "age": 30}'
             return utils.json.parse(content)
         "#;
+		// -- Exec
+		let res = eval_lua(&lua, script)?;
 
-		let res = run_reflective_agent(script, None).await?;
-
+		// -- Check
 		assert_eq!(res.x_get_str("name")?, "John");
 		assert_eq!(res.x_get_i64("age")?, 30);
-
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn test_lua_json_parse_invalid() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_json_parse_invalid() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "json")?;
 		let script = r#"
             local ok, err = pcall(function()
                 local content = "{invalid_json}"
                 return utils.json.parse(content)
             end)
-            if not ok then
+            if ok then
+                return "should not reach here"
+            else
                 return err
             end
-            return "should not reach here"
         "#;
+		// -- Exec
+		let res = eval_lua(&lua, script);
 
-		let Err(err) = run_reflective_agent(script, None).await else {
-			return Err("Should have been an Error".into());
+		// -- Check
+		let Err(err) = res else {
+			panic!("Expected error, got {:?}", res);
 		};
 
-		let err = format!("{err}");
-		assert!(
-			err.contains("json.parse failed"),
-			"err should contain json.parse failed"
-		);
+		// -- Check
+		let err_str = err.to_string();
 
+		assert_contains(&err_str, "json.parse failed");
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn test_lua_json_stringify() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_json_stringify_pretty() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "json")?;
 		let script = r#"
             local obj = {
                 name = "John",
@@ -210,21 +222,22 @@ mod tests {
             }
             return utils.json.stringify(obj)
         "#;
-
-		let res = run_reflective_agent(script, None).await?;
-		let result = res.as_str().unwrap();
-
+		// -- Exec
+		let res = eval_lua(&lua, script)?;
+		// -- Check
+		let result = res.as_str().ok_or("Expected string result")?;
 		let parsed: serde_json::Value = serde_json::from_str(result)?;
 		assert_eq!(parsed["name"], "John");
 		assert_eq!(parsed["age"], 30);
-		assert!(result.contains("\n"));
-		assert!(result.contains("  "));
-
+		assert!(result.contains("\n"), "Expected pretty formatting with newlines");
+		assert!(result.contains("  "), "Expected pretty formatting with indentation");
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn test_lua_json_stringify_complex() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_json_stringify_complex() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "json")?;
 		let script = r#"
             local obj = {
                 name = "John",
@@ -237,23 +250,24 @@ mod tests {
             }
             return utils.json.stringify(obj)
         "#;
-
-		let res = run_reflective_agent(script, None).await?;
-		let result = res.as_str().ok_or("should be string")?;
-
+		// -- Exec
+		let res = eval_lua(&lua, script)?;
+		// -- Check
+		let result = res.as_str().ok_or("Expected string result")?;
 		let parsed: serde_json::Value = serde_json::from_str(result)?;
 		assert_eq!(parsed["name"], "John");
 		assert_eq!(parsed["age"], 30);
 		assert_eq!(parsed["address"]["street"], "123 Main St");
 		assert_eq!(parsed["hobbies"][0], "reading");
-		assert!(result.contains("\n"));
-		assert!(result.contains("  "));
-
+		assert!(result.contains("\n"), "Expected pretty formatting with newlines");
+		assert!(result.contains("  "), "Expected pretty formatting with indentation");
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn test_lua_json_stringify_to_line() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_json_stringify_to_line() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "json")?;
 		let script = r#"
             local obj = {
                 name = "John",
@@ -266,14 +280,15 @@ mod tests {
             }
             return utils.json.stringify_to_line(obj)
         "#;
-
-		let res = run_reflective_agent(script, None).await?;
-		let res = res.as_str().ok_or("should be string")?;
-
-		assert_contains(res, r#""name":"John""#);
-		assert_not_contains(res, "\n");
-		assert_not_contains(res, "  ");
-
+		// -- Exec
+		let res = eval_lua(&lua, script)?;
+		// -- Check
+		let result = res.as_str().ok_or("Expected string result")?;
+		assert_contains(result, r#""name":"John""#);
+		assert_not_contains(result, "\n");
+		assert_not_contains(result, "  ");
 		Ok(())
 	}
 }
+
+// endregion: --- Tests

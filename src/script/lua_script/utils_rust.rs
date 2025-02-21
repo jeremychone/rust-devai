@@ -50,12 +50,12 @@ fn prune_to_declarations(lua: &Lua, code: String) -> mlua::Result<Value> {
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::run_reflective_agent;
-	use serde_json::Value;
+	use crate::_test_support::{setup_lua, eval_lua, assert_contains};
 
 	#[tokio::test]
 	async fn test_lua_rust_prune_to_declarations() -> Result<()> {
 		// -- Fixtures
+		let lua = setup_lua(super::init_module, "rust")?;
 		let data_script = r#"
 //! Some top comment 
 
@@ -73,31 +73,16 @@ fn some_normal() {
 		// some fn stuff
 }	 
 		"#;
-
 		// -- Exec
-		let res = run_reflective_agent(
-			r#"return utils.rust.prune_to_declarations(input)"#,
-			Some(Value::String(data_script.to_string())),
-		)
-		.await?;
-
+		let script = format!("return utils.rust.prune_to_declarations({:?})", data_script);
+		let res = eval_lua(&lua, &script)?;
 		// -- Check
 		let res = res.as_str().ok_or("Should be str")?;
-		assert!(
-			res.contains("use some::module; // and comment "),
-			"should contain use ..."
-		);
-		assert!(
-			res.contains("async some_async_fn(some_arg: String) -> i32"),
-			"should contain some_async_fn"
-		);
-		assert!(res.contains("fn some_normal()"), "should contain some_normal");
-		assert!(
-			!res.contains(r#"let some = "code";"#),
-			"should NOT contain let some ..."
-		);
+		assert_contains(res, "use some::module; // and comment ");
+		assert_contains(res, "async some_async_fn(some_arg: String) -> i32");
+		assert_contains(res, "fn some_normal()");
+		assert!(!res.contains(r#"let some = "code";"#), "should NOT contain let some ...");
 		assert!(!res.contains("// DOING SOME STUFF"), "DOING SOME STUFF");
-
 		Ok(())
 	}
 }
