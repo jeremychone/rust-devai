@@ -128,7 +128,7 @@ pub async fn run_command_agent(
 	// final resolved name
 
 	hub.publish(format!(
-		"Running agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
+		"\nRunning agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
 		agent.name(),
 		agent_path,
 		model_name_message
