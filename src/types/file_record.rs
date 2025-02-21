@@ -1,4 +1,4 @@
-use crate::Result;
+use crate::{Error, Result};
 use mlua::{IntoLua, Lua};
 use serde::Serialize;
 use simple_fs::SPath;
@@ -24,8 +24,13 @@ pub struct FileRecord {
 /// Constructors
 impl FileRecord {
 	pub fn load(base_path: &SPath, rel_path: &SPath) -> Result<Self> {
-		let full_path = base_path.join(rel_path)?;
-		let content = read_to_string(&full_path)?;
+		let full_path = if rel_path.path().is_absolute() {
+			rel_path
+		} else {
+			&base_path.join(rel_path)?
+		};
+
+		let content = read_to_string(full_path).map_err(|err| Error::cc(format!("Fail to read {full_path}"), err))?;
 		let dir = rel_path.parent().map(|p| p.to_string()).unwrap_or_default();
 
 		Ok(FileRecord {

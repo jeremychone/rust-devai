@@ -182,7 +182,16 @@ pub(super) fn file_list(
 	// Now, we put back the paths found relative to base_path
 	let sfiles = sfiles
 		.into_iter()
-		.map(|f| f.diff(&base_path))
+		.map(|f| {
+			//
+			let diff = f.diff(&base_path)?;
+			// if the diff goes back from base_path, then, we put the absolute path
+			if diff.to_str().starts_with("..") {
+				Ok(SPath::from(f))
+			} else {
+				Ok(diff)
+			}
+		})
 		.collect::<simple_fs::Result<Vec<SPath>>>()
 		.map_err(|err| crate::Error::cc("Cannot list files to base", err))?;
 
@@ -234,7 +243,15 @@ pub(super) fn file_list_load(
 	let file_records = sfiles
 		.into_iter()
 		.map(|sfile| -> Result<FileRecord> {
-			let rel_path = sfile.diff(&base_path)?;
+			//
+			let diff = sfile.diff(&base_path)?;
+			// if the diff goes back from base_path, then, we put the absolute path
+			// TODO: need to double check this
+			let (base_path, rel_path) = if diff.to_str().starts_with("..") {
+				(SPath::from(""), SPath::from(sfile))
+			} else {
+				(base_path.clone(), diff)
+			};
 			let file_record = FileRecord::load(&base_path, &rel_path)?;
 			Ok(file_record)
 		})

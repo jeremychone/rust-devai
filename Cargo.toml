@@ -38,7 +38,7 @@ handlebars = "6"
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 # -- Files
-simple-fs = { version = "0.4.0" }
+simple-fs = { version = "0.5.0" }
 home = "0.5.11"
 zip = "0.6"
 # -- Web
@@ -55,7 +55,7 @@ num-format = "0.4.4"
 humantime = "2.1.0"
 
 [build-dependencies]
-simple-fs = { version = "0.4.0" }
+simple-fs = { version = "0.5.0" }
 zip = "0.6"
 walkdir = "2.4"
 
