@@ -1,0 +1,96 @@
+# config
+
+```toml
+[genai]
+model = "test_model_for_demo"
+```
+
+# Before All 
+
+```lua
+-- let before_all = "before_all";
+```
+
+# Data
+
+```lua
+-- let some_data = "Some Data";
+-- return some_data;
+print("dave")
+-- Define the save_path variable as needed.
+-- For example:
+local save_path = "."
+
+-- Test 1: Simple Rendering
+local tmpl1 = "Hello, {{name}}!"
+local data1 = { name = "Alice" }
+local result1 = utils.hbs.render(tmpl1, data1)
+assert(result1 == "Hello, Alice!", "Test 1 Failed: Expected 'Hello, Alice!', got " .. tostring(result1))
+local test1 = utils.path.join(save_path, "tests", "test1.txt")
+utils.file.save(test1, result1)
+print("Test 1 Passed: Simple rendering.")
+
+-- Test 2: Missing Field
+local tmpl2 = "Hello, {{name}}! Your age is {{age}}."
+local data2 = { name = "Bob" }
+-- In Handlebars, missing fields typically render as an empty string.
+local result2 = utils.hbs.render(tmpl2, data2)
+assert(result2 == "Hello, Bob! Your age is .", "Test 2 Failed: Expected 'Hello, Bob! Your age is .', got " .. tostring(result2))
+local test2 = utils.path.join(save_path, "tests", "test2.txt")
+utils.file.save(test2, result2)
+print("Test 2 Passed: Missing field handled correctly.")
+
+-- Test 3: Nested Data
+local tmpl3 = "Name: {{name}}, City: {{address.city}}"
+local data3 = { name = "Charlie", address = { city = "Wonderland" } }
+local result3 = utils.hbs.render(tmpl3, data3)
+assert(result3 == "Name: Charlie, City: Wonderland", "Test 3 Failed: Expected 'Name: Charlie, City: Wonderland', got " .. tostring(result3))
+local test3 = utils.path.join(save_path, "tests", "test3.txt")
+utils.file.save(test3, result3)
+print("Test 3 Passed: Nested data rendering.")
+
+-- Test 4: Using Multiple Fields
+local tmpl4 = "User: {{name}}, Email: {{email}}"
+local data4 = { name = "Dana", email = "dana@example.com" }
+local result4 = utils.hbs.render(tmpl4, data4)
+assert(result4 == "User: Dana, Email: dana@example.com", "Test 4 Failed: Expected 'User: Dana, Email: dana@example.com', got " .. tostring(result4))
+local test4 = utils.path.join(save_path, "tests", "test4.txt")
+utils.file.save(test4, result4)
+print("Test 4 Passed: Multiple fields rendered correctly.")
+
+-- Test 5: Error Handling (Invalid Data)
+local tmpl5 = "Hello, {{name}}!"
+local bad_data = "this should be a table"
+local success, err = pcall(function()
+    utils.hbs.render(tmpl5, bad_data)
+end)
+assert(not success, "Test 5 Failed: Expected failure when passing non-table data.")
+print("Test 5 Passed: Properly failed when given invalid data.")
+
+-- Test 6: Automatic Table Conversion
+-- Here, we pass a table for the 'body' field that contains a "content" field.
+local tmpl6 = "Body: {{body}}"
+local data6 = { body = { content = "<p>This HTML comes from a table</p>" } }
+local result6 = utils.hbs.render(tmpl6, data6)
+assert(result6 == "Body: <p>This HTML comes from a table</p>", "Test 6 Failed: Expected 'Body: <p>This HTML comes from a table</p>', got " .. tostring(result6))
+local test6 = utils.path.join(save_path, "tests", "test6.txt")
+utils.file.save(test6, result6)
+print("Test 6 Passed: Automatic table conversion for 'body' field.")
+
+print("All tests passed!")
+```
+
+# Instruction
+
+Some instruction
+
+# Output
+
+```lua
+```
+
+# After All
+
+```lua
+let after_all = "after_all";
+```
