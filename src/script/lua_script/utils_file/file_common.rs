@@ -333,7 +333,7 @@ fn base_dir_and_globs(
 }
 
 fn compute_base_dir(dir_context: &DirContext, options: Option<&Value>) -> Result<SPath> {
-	// the default base_phat is the workspace dir.
+	// the default base_path is the workspace dir.
 	let workspace_path = dir_context.resolve_path("", PathResolver::WorkspaceDir)?;
 
 	// if options, try to resolve the options.base_dir
@@ -436,6 +436,28 @@ mod tests {
 		assert_eq!(res_paths.len(), 2, "result length");
 		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.devai");
 		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.devai");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_file_list_glob_abs_with_wild() -> Result<()> {
+		// -- Fixtures
+		let lua = setup_lua(super::super::init_module, "file")?;
+		let dir = Path::new("./tests-data/config");
+		let dir = dir
+			.canonicalize()
+			.map_err(|err| format!("Cannot canonicalize {dir:?} cause: {err}"))?;
+
+		// This is the rust Path logic
+		let glob = format!("{}/*.*", dir.to_string_lossy());
+		let code = format!(r#"return utils.file.list("{glob}");"#);
+
+		// -- Exec
+		let _res = eval_lua(&lua, &code)?;
+
+		// -- Check
+		// TODO:
 
 		Ok(())
 	}

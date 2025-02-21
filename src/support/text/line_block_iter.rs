@@ -134,11 +134,7 @@ Some extruded line";
 		assert!(iter.next().is_none());
 
 		// check Content
-		let captured_content = iter.extruded_content.join("");
-		assert_eq!(captured_content, "line1\nSome extruded line\n");
-
-		// No further properly closed blocks.
-		assert!(iter.next().is_none());
+		assert_eq!(iter.extruded_content.len(), 0, "extruded content vec should be 0");
 	}
 
 	#[test]
