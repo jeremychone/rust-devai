@@ -397,10 +397,11 @@ mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
-	use value_ext::JsonValueExt;
+	use value_ext::JsonValueExt as _;
 
+	// Renamed test functions to follow the best practice: test_lua_text_...
 	#[tokio::test]
-	async fn test_lua_utils_text_split_first_ok() -> Result<()> {
+	async fn test_lua_text_split_first_ok() -> Result<()> {
 		// -- Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		// (content, separator, (first, second))
@@ -418,10 +419,6 @@ mod tests {
 		];
 
 		for (content, sep, expected) in data {
-			// -- Exec
-			// Note 1: Here the content is in debug mode, so the \n does not get "rendered" causing a wrong script.
-			// Note 2: Here we get the multi-value result from split_first, but return a table, since the run_command_agent
-			//         underneath requires returning a single value (which is the correct approach).
 			let script = format!(
 				r#"
 			local first, second = utils.text.split_first({content:?}, "{sep}")
@@ -452,7 +449,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_utils_text_ensure_ok() -> Result<()> {
+	async fn test_lua_text_ensure_ok() -> Result<()> {
 		// -- Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let data = [
@@ -478,7 +475,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_utils_text_extract_line_blocks_ok() -> Result<()> {
+	async fn test_lua_text_extract_line_blocks_ok() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let lua_code = r#"
@@ -496,15 +493,12 @@ extruded = extruded
 }
 		"#;
 
-		// -- Exec
 		let res = eval_lua(&lua, lua_code)?;
 
-		// -- Check
 		let block = res.x_get_str("/blocks/0")?;
 		assert_eq!(block, "> one\n> two\n");
 		let block = res.x_get_str("/blocks/1")?;
 		assert_eq!(block, "> 3\n");
-		// check content
 		let content = res.x_get_str("/extruded")?;
 		assert_contains(content, "Some line A");
 		assert_contains(content, "The end");
