@@ -27,15 +27,18 @@ utils.file.save(ai_responses_for_prompt_path, "")
 local first_part, second_part = p_utils.prep_inst_and_content(prompt_file.content, "====\n", {content_is_default = false})
 
 -- Clean the second_part 
-second_part = utils.text.trim(second_part)
-if second_part:sub(1, 6) == "> Info" then
-    second_part = utils.text.remove_first_line(second_part)
+if second_part ~= nil then
     second_part = utils.text.trim(second_part)
+    if second_part:sub(1, 6) == "> Info" then
+        second_part = utils.text.remove_first_line(second_part)
+        second_part = utils.text.trim(second_part)
+    end
+    if #second_part == 0 then
+        second_part = nil
+    end    
 end
 
-if #second_part == 0 then
-    second_part = nil
-end
+
 
 -- Note: For now, we ignore the second part, as this will display what the AI says beside the code it gives. This allows for explanations, but there is no need to put it back in context.
 
@@ -46,12 +49,20 @@ local _line_blocks, inst_content = utils.text.extract_line_blocks(inst,
                                              {starts_with = ">", extrude = "content"})
 inst = utils.text.trim(inst_content)
 
+
 local should_skip = p_utils.should_skip(inst, second_part)
 if should_skip ~= nil then
     return should_skip
 end
 
--- == Prep the context_files
+-- == Prep knowledge_refs
+local knowledge_refs = nil
+if meta.knowledge_globs then
+    knowledge_refs = utils.file.list(meta.knowledge_globs, {base_dir = base_dir})
+    print("INFO: Knowledge Files (from knowledge_globs): " .. #knowledge_refs)
+end
+
+-- == Prep context_refs and input_refs
 local base_dir = meta.base_dir
 
 local context_refs = nil
@@ -82,10 +93,10 @@ else
     print("INFO: No base_dir, update in place ")
 end
 
-
 -- == Build the inputs(for now, only one)
 local input_base = {
     default_language             = meta.default_language or "Rust Programming",
+    knowledge_refs               = knowledge_refs,
     prompt_template              = p_values.prompt_template,
     first_part                   = first_part,
     include_second_part          = include_second_part,
@@ -94,6 +105,7 @@ local input_base = {
     inst                         = inst,
     base_dir                     = base_dir,
     context_refs                 = context_refs,
+    knowledge_refs               = knowledge_refs,
     ai_responses_for_raw_path    = ai_responses_for_raw_path,
     ai_responses_for_prompt_path = ai_responses_for_prompt_path
 }
@@ -110,7 +122,6 @@ if input_refs ~= nil and #input_refs > 0 then
 else
     inputs = { {base = input_base}}
 end
-
 
 -- == Compute the agent options
 options.model             = meta.model
@@ -135,8 +146,9 @@ local p_utils  = require("prompt_utils")
 local base, input_refs = input.base, input.input_refs
 
 -- Augment the base
-base.context_files = p_utils.load_file_refs(base.base_dir, base.context_refs)
-base.input_files   = p_utils.load_file_refs(base.base_dir, input_refs)
+base.knowledge_files = p_utils.load_file_refs(base.base_dir, base.knowledge_refs)
+base.context_files   = p_utils.load_file_refs(base.base_dir,  base.context_refs)
+base.input_files     = p_utils.load_file_refs(base.base_dir,  input_refs)
 
 -- The agumented base becomes the data. 
 return base
@@ -154,10 +166,11 @@ When you give bullet points, separate them with empty lines for clarity.
 
 Also, respect the space/tab of the code exactly. 
 
-The different knowledge/context will be marked with the `=== START: ...` and `=== END: ...` markers so you can know how to categorize them. 
+The different knowledge/context/sectoins will be marked with the `<SECTION title="...">` and `</SECTION>` markers so you can know how to categorize them. 
 
+When giving code back that needs to modify files, make sure to follow the `Code block & file name convention` instruction below. 
 
-=== START: Your custom/meta agent parameters
+<SECTION title="THIS AGENT CUSTOM PARAMETERS">
 
 Here this Agent Parameters documentation parameters. This is your parameters in a way. User give them in the `!meta` toml code block, and you have the logic to invaluate them. 
 
@@ -165,17 +178,15 @@ So, the the users as about your parameters or the agent parameters, here is the 
 
 {{data.prompt_template}}
 
-
 When the user ask to list or such, answer in bullet points. Follow this format:  one bullet point per property, start quick example under tick, and then - explanation. Like below: 
 
 - `base_dir = "src"` - tell the agent to look at the files is dir. No default, if not defined, context is what is above and below the `====`. If defined, what is below the `====` won't get back to the context, and files might be updated. 
 
 IMPORTANT: When describing the `context_globs` do not show the default as quick example, but more something like `context_globs = ["**/mod.rs", "utils/**/*.rs"]` - to explain the value of being narrow and focused. And then, at the end of the bullet point, give the default. 
 
-=== END: Your custom/meta agent parameters
+</SECTION>
 
-
-=== START: Code block & file name convention
+<SECTION title="CODE BLOCK AND FILE CONVENTION">
 
 Here are some conventions and best practices to follow. 
 
@@ -226,11 +237,29 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 - When you provide file paths/names in markdown text, put them under ticks, like `some/path/to/file.rs`.
 - Do not remove code regions except if explicitly asked. 
 
-=== END: Code block & file name convention
+</SECTION>
+
+{{#if data.knowledge_files}}
+
+<SECTION title="USER KNOWLEDGE, GUIDELINES, BEST PRACTICES">
+
+Here are some of the knowledge, guidelines, best practices, that the user like to follow. Make sure you respect them when provding code. 
+
+{{#each data.knowledge_files}}
+
+{{this.content}}
+
+{{/each}}
+
+
+</SECTION>
+
+{{/if}}
+
 
 {{#if data.context_files}}
 
-=== START: User's context & source files
+<SECTION title="USER CONTEXT SOURCE FILES">
 
 Here are the source files: 
 
@@ -245,11 +274,14 @@ Here are the source files:
 
 Only write the files that need to be rewritten based on the user instruction, and make sure those files have their full content.      
 
+</SECTION>
+
 {{/if}}
+
 
 {{#if data.input_files}}
 
-=== START: User's input files
+<SECTION title="USER INPUT SOURCE FILES">
 
     {{#each data.input_files}}
 
@@ -262,21 +294,20 @@ Only write the files that need to be rewritten based on the user instruction, an
 
 Only write the files that need to be rewritten based on the user instruction, and make sure those files have their full content.     
     
-=== END: User's input files
+</SECTION>
 
 {{/if}}
 
 
 {{#if data.include_second_part}}
 
-=== START: User's Context and or Previous answer
+<SECTION title="USER'S CONTET AND/OR PREVIOUS ANSWER">
 
 Here is some context and/or your previous answer:
 
 {{data.second_part}}
 
-=== END: User's Context and or Previous answer
-
+</SECTION>
 {{/if}}
 
 
@@ -291,6 +322,9 @@ Here are the additional user instructions
 {{data.inst}}
 == End User Instructions
 {{/if}}
+
+
+Make sure that if you give code file content, you put them in markdown code block as described in the `=== START Code block & file name convention` system instruction. 
 
 # Output
 
@@ -319,7 +353,7 @@ if data.context_files ~= nil then
         local first, remain = utils.text.split_first(block.content, "\n")
         local file_path = first:match(" file:%s*([^%s]+)")
         if file_path then 
-            file_path = base_dir .. "/" .. file_path
+            file_path = utils.path.join(base_dir,file_path)
             utils.file.save(file_path, remain)
             msg = msg .. file_path .. " " 
         end
