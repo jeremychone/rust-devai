@@ -31,14 +31,17 @@ pub enum Error {
 	// -- TokioSync
 	TokioTryCurrent(TryCurrentError),
 
-	// -- Externals
+	// -- Externals / custom
+	#[display("LUA ERROR - {_0}")]
 	Lua(String),
+
+	// -- Externals auto froms
+	#[from]
+	Serde(serde_json::Error),
 	#[from]
 	Toml(toml::de::Error),
 	#[from]
 	JsonValueExt(value_ext::JsonValueExtError),
-	#[from]
-	Serde(serde_json::Error),
 	#[from]
 	Handlebars(handlebars::RenderError),
 	#[from]

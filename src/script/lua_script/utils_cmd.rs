@@ -10,10 +10,11 @@
 
 use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::to_vec_of_strings;
+use crate::Result;
 use mlua::{Lua, Table, Value};
 use std::process::Command;
 
-pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> mlua::Result<Table> {
+pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
 
 	let exec_fn = lua.create_function(cmd_exec)?;
@@ -67,7 +68,7 @@ pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> mlua::Result
 /// }
 /// ```
 fn cmd_exec(lua: &Lua, (cmd_name, args): (String, Option<Value>)) -> mlua::Result<Value> {
-	let mut command = Command::new(cmd_name);
+	let mut command = Command::new(&cmd_name);
 
 	// Handle optional arguments
 	if let Some(args) = args {
@@ -101,7 +102,7 @@ fn cmd_exec(lua: &Lua, (cmd_name, args): (String, Option<Value>)) -> mlua::Resul
 Fail to execute: {cmd} {args}
 stdout:\n{stdout}\n
 stderr:\n{stderr}\n
-exit code: exit_code\n"
+exit code: {exit_code}\n"
 				))
 				.into())
 			}
@@ -125,17 +126,21 @@ Cause:\n{err}"
 
 #[cfg(test)]
 mod tests {
-	use crate::_test_support::run_reflective_agent;
-	use value_ext::JsonValueExt;
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+
+	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
+	use value_ext::JsonValueExt as _;
 
 	#[tokio::test]
-	async fn test_lua_cmd_exec_echo_single_arg() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_cmd_exec_echo_single_arg() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "cmd")?;
 		let script = r#"
-            return utils.cmd.exec("echo", "hello world")
-        "#;
+			return utils.cmd.exec("echo", "hello world")
+		"#;
+		let res = eval_lua(&lua, script)?;
 
-		let res = run_reflective_agent(script, None).await?;
-
+		// -- Check
 		assert_eq!(res.x_get_str("stdout")?.trim(), "hello world");
 		assert_eq!(res.x_get_str("stderr")?, "");
 		assert_eq!(res.x_get_i64("exit")?, 0);
@@ -144,13 +149,15 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_cmd_exec_echo_multiple_args() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_cmd_exec_echo_multiple_args() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "cmd")?;
 		let script = r#"
-            return utils.cmd.exec("echo", {"hello", "world"})
-        "#;
+			return utils.cmd.exec("echo", {"hello", "world"})
+		"#;
+		let res = eval_lua(&lua, script)?;
 
-		let res = run_reflective_agent(script, None).await?;
-
+		// -- Check
 		assert_eq!(res.x_get_str("stdout")?.trim(), "hello world");
 		assert_eq!(res.x_get_str("stderr")?, "");
 		assert_eq!(res.x_get_i64("exit")?, 0);
@@ -159,32 +166,42 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_cmd_exec_invalid_command() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_cmd_exec_invalid_command_pcall() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "cmd")?;
 		let script = r#"
-            local ok, err = pcall(function()
-                return utils.cmd.exec("nonexistentcommand")
-            end)
-            return err
-        "#;
-
-		let Err(err) = run_reflective_agent(script, None).await else {
+			local ok, err = pcall(function()
+				return utils.cmd.exec("nonexistentcommand")
+			end)
+			return err -- to trigger the error on the rust side
+		"#;
+		let Err(err) = eval_lua(&lua, script) else {
 			return Err("Should have returned an error".into());
 		};
 
-		assert!(format!("{err}").contains("No such file or directory"));
+		// -- Check
+		let err = err.to_string();
+		assert_contains(&err, "nonexistentcommand");
+		assert_contains(&err, "No such file or directory");
 
 		Ok(())
 	}
 
 	#[tokio::test]
-	async fn test_lua_cmd_exec_invalid_no_handle() -> Result<(), Box<dyn std::error::Error>> {
+	async fn test_lua_cmd_exec_invalid_command_direct() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "cmd")?;
 		let script = r#"return utils.cmd.exec("nonexistentcommand")"#;
 
-		let Err(err) = run_reflective_agent(script, None).await else {
+		let Err(err) = eval_lua(&lua, script) else {
 			return Err("Should have returned an error".into());
 		};
 
-		assert!(format!("{err}").contains("No such file or directory"));
+		// -- Check
+		let err = err.to_string();
+		// Ensure the error message contains relevant information
+		assert_contains(&err, "nonexistentcommand");
+		assert_contains(&err, "No such file or directory");
 
 		Ok(())
 	}

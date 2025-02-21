@@ -1,5 +1,40 @@
 use crate::support::W;
-use mlua::{IntoLua, Value};
+use crate::{Error, Result};
+use mlua::{IntoLua, Lua, LuaSerdeExt as _, Value};
+
+// region:    --- mlua::Value utils
+
+/// Process correctly the lua eval result
+pub fn process_lua_eval_result(_lua: &Lua, res: mlua::Result<Value>, script: &str) -> Result<Value> {
+	let res = match res {
+		Ok(res) => res,
+		Err(err) => return Err(Error::from_error_with_script(&err, script)),
+	};
+
+	let res = match res {
+		// This is when we d with pcall(...), see test_lua_json_parse_invalid
+		Value::Error(err) => {
+			return Err(Error::from_error_with_script(&err, script));
+			// return Err(Error::from(&*err));
+		}
+		res => res,
+	};
+
+	Ok(res)
+}
+
+/// Convert a json value to a lua value.
+///
+/// IMPORTANT: Use this to covert JSON Value to Lua Value, as the default mlua to_value,
+///            converts serde_json::Value::Null to Lua user data, and not mlua::Value::Nil,
+///            and we want it for devai.
+pub fn serde_to_lua_value(lua: &Lua, val: serde_json::Value) -> Result<Value> {
+	let res = match val {
+		serde_json::Value::Null => Value::Nil,
+		other => lua.to_value(&other)?,
+	};
+	Ok(res)
+}
 
 // Return a Vec<String> from a lua Value which can be String or Array of strings
 pub fn to_vec_of_strings(value: Value, err_prefix: &'static str) -> mlua::Result<Vec<String>> {
@@ -78,3 +113,5 @@ impl IntoLua for W<String> {
 		Ok(Value::String(lua.create_string(&self.0)?))
 	}
 }
+
+// endregion: --- mlua::Value utils
