@@ -1,18 +1,18 @@
-use simple_fs::{ensure_file_dir, SPath};
+use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
 use zip::write::FileOptions;
 use zip::CompressionMethod;
 
-const INIT_ASSETS_PATH: &str = ".assets/init_assets.zip";
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-	let zip_path = SPath::from(INIT_ASSETS_PATH);
-	ensure_file_dir(&zip_path)?;
-	// Determine output directory and zip file path
-	let zip_file = File::create(zip_path)?;
+	// Get the output directory for build artifacts
+	let out_dir = PathBuf::from(env::var("OUT_DIR")?);
+	let zip_path = out_dir.join("init_assets.zip");
+
+	// Create zip file
+	let zip_file = File::create(&zip_path)?;
 	let mut zip = zip::ZipWriter::new(zip_file);
 	let options = FileOptions::default()
 		.compression_method(CompressionMethod::Deflated)
@@ -20,12 +20,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	let init_dir = Path::new("_init");
 	let mut buffer = Vec::new();
 
-	// Recursively add files from the _init folder
+	// Recursively add files from _init directory
 	for entry in WalkDir::new(init_dir) {
 		let entry = entry?;
 		let path = entry.path();
 		let name = path.strip_prefix(init_dir)?.to_str().unwrap();
-
 		let name = name.replace("\\", "/");
 
 		if path.is_file() {
@@ -39,6 +38,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 		}
 	}
 	zip.finish()?;
+
+	// Tell Cargo to watch _init for changes
+	println!("cargo:rerun-if-changed=_init");
+
+	// Export the path so it can be used in Rust code
+	println!("cargo:rustc-env=INIT_ASSETS_ZIP={}", zip_path.display());
 
 	Ok(())
 }

@@ -1,7 +1,7 @@
 // Auto-generated file. Do not edit.
 use crate::{Error, Result};
 
-pub const ASSETS_ZIP: &[u8] = include_bytes!("../../.assets/init_assets.zip");
+pub const ASSETS_ZIP: &[u8] = include_bytes!(env!("INIT_ASSETS_ZIP"));
 
 use std::io::{Cursor, Read};
 use zip::ZipArchive;
