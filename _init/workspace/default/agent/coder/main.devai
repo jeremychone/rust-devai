@@ -301,13 +301,14 @@ Only write the files that need to be rewritten based on the user instruction, an
 
 {{#if data.include_second_part}}
 
-<SECTION title="USER'S CONTET AND/OR PREVIOUS ANSWER">
+<SECTION title="USER'S CONTENT AND/OR PREVIOUS ANSWER">
 
 Here is some context and/or your previous answer:
 
 {{data.second_part}}
 
 </SECTION>
+
 {{/if}}
 
 
