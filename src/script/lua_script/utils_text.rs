@@ -21,7 +21,7 @@
 //! * `utils.text.replace_markers(content: string, new_sections: array) -> string`
 //! * `utils.text.ensure(content: string, opt: table) -> string`
 //! * `utils.text.ensure_single_ending_newline(content: string) -> string`
-//! * `utils.text.extract_line_blocks(content: string, options: {starts_with: string, extrude?: "content"}) -> (table, string?)`
+//! * `utils.text.extract_line_blocks(content: string, options: {starts_with: string, extrude?: "content", first?: number}) -> (table, string|nil)`
 
 use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::to_vec_of_strings;
@@ -350,42 +350,63 @@ fn escape_decode(_lua: &Lua, content: String) -> mlua::Result<String> {
 
 /// ## Lua Documentation
 /// ```lua
-/// local line_blocks, content = utils.text.extract_line_blocks(some_content, { starts_with = ">", extrude = "content" })
+/// local blocks, extruded = utils.text.extract_line_blocks(content, { starts_with = ">", extrude = "content", first = number })
 /// ```
 ///
-/// Extracts line blocks from `some_content` using the given options. The options table
-/// must include a required `prefix` field. If the optional field `extrude` is set to "content",
-/// the function returns a second value containing the extruded content (lines outside any block).
+/// Extracts line blocks from `content` using the given options. The options table
+/// must include a required `starts_with` field.
+///
+/// Optionally, you can provide a `first` field as a number, which limits the number
+/// of blocks returned by performing that many `next()` iterations. If `extrude` is set to "content",
+/// the remaining lines (after extracting the specified number of blocks) are captured via `collect_remains`.
+/// If the `extrude` option is not set, the extruded content is returned as `nil`.
 fn extract_line_blocks(lua: &Lua, (content, options): (String, Table)) -> mlua::Result<MultiValue> {
 	let starts_with: String = options.get("starts_with")?;
 	let extrude_param: Option<String> = options.get("extrude").ok();
 	let return_extrude = matches!(extrude_param.as_deref(), Some("content"));
-
-	let extrude_option = if return_extrude { Some(Extrude::Content) } else { None };
+	let first_opt: Option<i64> = options.get("first").ok();
+	let first_count: Option<usize> = first_opt.map(|n| n as usize);
 
 	let iter_options = LineBlockIterOptions {
 		starts_with: &starts_with,
-		extrude: extrude_option,
+		extrude: if return_extrude { Some(Extrude::Content) } else { None },
 	};
 
-	let iterator = LineBlockIter::new(content.as_str(), iter_options);
-	let (blocks, extruded_content) = iterator.collect_blocks_and_extruded_content();
+	let mut iterator = LineBlockIter::new(content.as_str(), iter_options);
+
+	let (blocks, extruded_content) = if let Some(n) = first_count {
+		let mut limited_blocks = Vec::new();
+		for _ in 0..n {
+			if let Some(block) = iterator.next() {
+				limited_blocks.push(block);
+			} else {
+				break;
+			}
+		}
+		let remains = if return_extrude {
+			let (_ignored, extruded) = iterator.collect_remains();
+			extruded
+		} else {
+			String::new()
+		};
+		(limited_blocks, remains)
+	} else {
+		iterator.collect_blocks_and_extruded_content()
+	};
 
 	let blocks_table = lua.create_table()?;
 	for block in blocks.iter() {
-		// FIX: Use string keys so that the returned Lua table is an object with keys "1", "2", etc.
+		// Use table.push so that the returned Lua table is an array-like table.
 		blocks_table.push(block.as_str())?;
 	}
 
-	if return_extrude {
-		let extruded_str = lua.create_string(&extruded_content)?;
-		Ok(MultiValue::from_vec(vec![
-			Value::Table(blocks_table),
-			Value::String(extruded_str),
-		]))
+	let extruded_value = if return_extrude {
+		Value::String(lua.create_string(&extruded_content)?)
 	} else {
-		Ok(MultiValue::from_vec(vec![Value::Table(blocks_table)]))
-	}
+		Value::Nil
+	};
+
+	Ok(MultiValue::from_vec(vec![Value::Table(blocks_table), extruded_value]))
 }
 
 // endregion: --- Extract Line Blocks
@@ -396,10 +417,10 @@ fn extract_line_blocks(lua: &Lua, (content, options): (String, Table)) -> mlua::
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-    use crate::_test_support::{assert_contains, eval_lua, setup_lua};
-    use value_ext::JsonValueExt as _;
+	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
+	use value_ext::JsonValueExt as _;
 
-    #[tokio::test]
+	#[tokio::test]
 	async fn test_lua_script_utils_text_split_first_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
@@ -487,11 +508,8 @@ Some line A
 > 3
 The end
 ]]
-local blocks, extruded = utils.text.extract_line_blocks(content, { starts_with = ">", extrude = "content" })
-return {
-blocks   = blocks, 
-extruded = extruded
-}
+local a, b = utils.text.extract_line_blocks(content, { starts_with = ">", extrude = "content" })
+return {blocks = a, extruded = b}
 		"#;
 
 		// -- Exec
@@ -505,6 +523,75 @@ extruded = extruded
 		let content = res.x_get_str("/extruded")?;
 		assert_contains(content, "Some line A");
 		assert_contains(content, "The end");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_script_utils_text_extract_line_blocks_with_first_extrude() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "text")?;
+		let lua_code = r#"
+local content = [[
+> one
+> two
+line1
+> three
+line2
+> four
+line3
+]]
+local a, b = utils.text.extract_line_blocks(content, { starts_with = ">", extrude = "content", first = 2 })
+return { blocks = a, extruded = b }
+		"#;
+
+		// -- Exec
+		let res = eval_lua(&lua, lua_code)?;
+
+		// -- Check
+		let block1 = res.x_get_str("/blocks/0")?;
+		assert_eq!(block1, "> one\n> two\n");
+		let block2 = res.x_get_str("/blocks/1")?;
+		assert_eq!(block2, "> three\n");
+		let extruded = res.x_get_str("/extruded")?;
+		assert_eq!(extruded, "line1\nline2\n> four\nline3\n");
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_script_utils_text_extract_line_blocks_with_first_no_extrude() -> Result<()> {
+		// -- Setup & Fixtures
+		let lua = setup_lua(super::init_module, "text")?;
+		let lua_code = r#"
+local content = [[
+> one
+> two
+line1
+> three
+line2
+> four
+line3
+]]
+local a, b = utils.text.extract_line_blocks(content, { starts_with = ">", first = 2 })
+return { blocks = a, extruded = b }
+		"#;
+
+		// -- Exec
+		let res = eval_lua(&lua, lua_code)?;
+
+		// -- Check
+		let blocks = res.x_get_as::<Vec<&str>>("blocks")?;
+		assert_eq!(blocks.len(), 2, "should have only 2 blocks");
+		let block1 = res.x_get_str("/blocks/0")?;
+		assert_eq!(block1, "> one\n> two\n");
+		let block2 = res.x_get_str("/blocks/1")?;
+		assert_eq!(block2, "> three\n");
+		let extruded = res.get("extruded");
+		assert!(
+			extruded.is_none(),
+			"extruded should be nil when extrude option is not set"
+		);
 
 		Ok(())
 	}
