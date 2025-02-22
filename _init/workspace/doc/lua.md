@@ -1,42 +1,59 @@
 # APIs / Context Summary
 
+## Convention and Flow
+
 **devai** injects the following modules/variables into the various script stages:
 
 - In all scripts (`# Before All`, `# Data`, `# Output`, `# After All`)
   - [utils](#utils) - A set of utility functions and submodules.
   - [devai](#devai) - A module to control the devai flow (e.g., `return devai.skip("No need to perform this input")`)
   - [CTX](#ctx) - A set of constants mostly related to the various paths used for this execution (e.g., `CTX.AGENT_FILE_PATH`)
-<br/>
+  <br/>
 
 - In the `# Before All` stage
   - `inputs` - The list of inputs given to the run command
     - When `-f "**/some/glob*.*"` is used, each input will be the matching `FileMeta` object.
-<br/>
+    <br/>
 
 - In the `# Data` stage
   - `input` - The individual input given from the devai run
     - In the case of `-f ...`, it will be the [FileMeta](#filemeta) structure for each file.
-<br/>
+    <br/>
 
 - In the `# Output` stage
   - `data` - Whatever is returned by the `# Data` script.
   - `ai_response` - The [AiResponse](#airesponse)
-<br/>
+  <br/>
 
 - In the `# After All` stage
   - `inputs` - The inputs sent or modified by `# Before All`
   - `outputs` - The outputs returned by the `# Output` stage
     - The same order as `inputs`, and `nil` when an item has been skipped or the output did not return anything.
 
+Note that Lua types in the devai documentation are expressed in a simplified TypeScript notation as it is clear and concise.
+
+For example:
+
+- `options?: {starts_with: string, extrude?: "content" | "fragments", first?: number | bool}`
+- Would mean:
+  - The `options` property is optional, and when present, should be a "table object" (Lua Dictionary Table).
+  - `starts_with` is required and can only be a string.
+  - `extrude` is optional and can be either "content" or "fragments".
+  - `first` is optional and can be a number or boolean.
+- Obviously, all of those will map to the appropriate Lua type which has a good mapping.
+- For functions that return multiple values, a characteristic of Lua, the return will be expressed like:
+  - `some_fun(name: string, options?: {...}): table, string | nil`
+    - This means that the function will return a value of type table, and then, a string or nil.
+
 ## utils
 
-The utils top module is comprised of the following submodules.
+The `utils` top module is comprised of the following submodules.
 
 ### utils.file
 
 See [FileRecord](#filerecord), [FileMeta](#filemeta), [MdSection](#mdsection) for return types.
 
-All relative paths are relative to the workspace dir, which is the parent dir of the `.devai/` folder. 
+All relative paths are relative to the workspace directory, which is the parent directory of the `.devai/` folder.
 
 ```lua
 -- Load file text content and return its FileRecord (See below), with `.content`
@@ -45,16 +62,16 @@ local file = utils.file.load("doc/some-file.md")                -- FileRecord
 -- Save file content (will create directories as needed)
 utils.file.save("doc/some-file.md", "some new content")         -- void (no return for now)
 
--- Append content to file (create file and directoris as needed) 
+-- Append content to file (create file and directories as needed)
 utils.file.append("doc/some-file.md", "some new content")       -- void (no return for now)
 
 -- List files matching a glob pattern
---   (file.path will be relative to devai workspace dir)
+--   (file.path will be relative to devai workspace directory)
 local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileMeta, ...}
 
 -- List files matching a glob pattern and options (for now only base_dir)
---   (file.path will be relative to base dir, which is relative to workspace dir)
-local all_doc_files = utils.file.list("**/*.md", {base_dir: "doc/})            -- {FileMeta, ...}
+--   (file.path will be relative to base directory, which is relative to workspace directory)
+local all_doc_files = utils.file.list("**/*.md", {base_dir: "doc/"})            -- {FileMeta, ...}
 
 -- List files and load their content (or with the options as well)
 local all_files = utils.file.list_load({"doc/**/*.md", "src/**/*.rs"})           -- {FileRecord, ...}
@@ -63,18 +80,18 @@ local all_files = utils.file.list_load({"doc/**/*.md", "src/**/*.rs"})          
 local first_doc_file = utils.file.first("doc/**/*.md")          -- FileMeta | Nil
 
 -- Ensure a file exists by creating it if not found
-local file_meta = utils.file.ensure_exists("./some/file.md", "optional content") 
+local file_meta = utils.file.ensure_exists("./some/file.md", "optional content")
                                                                 -- FileMeta
 
 -- Load markdown sections from a file
 -- If the second argument is absent, then all sections will be returned (nested as items as well)
-local sections = utils.file.load_md_sections("doc/readme.md", "# Summary")  
+local sections = utils.file.load_md_sections("doc/readme.md", "# Summary")
                                                                  -- {MdSection, ...}
 ```
 
 ### utils.path
 
-All relative paths are relative to the workspace dir, which is the parent dir of the `.devai/` folder. 
+All relative paths are relative to the workspace directory, which is the parent directory of the `.devai/` folder.
 
 ```lua
 -- Check if a path exists
@@ -93,8 +110,7 @@ local path = utils.path.join("path", "to", "some-file.md")   -- string
 -- "path/to/some-file.md"
 ```
 
-
-## utils.text
+### utils.text
 
 ```lua
 local trimmed = utils.text.trim(content)        -- string
@@ -106,7 +122,7 @@ local trimmed = utils.text.trim_end(content)    -- string
 local truncated_content = utils.text.truncate(content, 100, "...")        -- string
 
 -- Ensure
--- - second argument of type `{prefix = string, suffix = string}` both optional
+-- - second argument of type `{prefix?: string, suffix?: string}` both optional
 -- - if defined, it will add the prefix and suffix if they are not present
 utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
 
@@ -119,7 +135,7 @@ local content = "some first content\n===\nsecond content"
 local first, second = utils.text.split_first(content,"===")
 -- first  = "some first content\n"
 -- second = "\nsecond content"
--- NOTE: When no match, second is nil. 
+-- NOTE: When no match, second is nil.
 --       If matched, but nothing after, second is ""
 
 -- Remove the first line from content
@@ -131,7 +147,6 @@ local content_without_last_line = utils.text.remove_last_line(content)    -- str
 --   - Markers for now are in between `<<START>>` and `<<END>>`
 local updated_content = utils.text.replace_markers(content, new_sections) -- string
 ```
-
 
 ### utils.md
 
@@ -193,12 +208,12 @@ See [WebResponse](#webresponse).
 
 ```lua
 -- Fetch web_response from a URL (see WebResponse object)
-local web_response = utils.web.get("https://example.com")   -- WebResponse 
+local web_response = utils.web.get("https://example.com")   -- WebResponse
 -- Return an exception when a web request cannot be executed (e.g., bad URL, remote server not available)
 
--- Do a post 
+-- Do a post
 local web_response = utils.web.post("https://httpbin.org/post", { some = "stuff"})
--- if data is table, will be serialize as json, and content_type `application/json` 
+-- if data is table, will be serialized as json, and content_type `application/json`
 -- If data is string, then, just as is, and `plain/text`
 ```
 
@@ -211,20 +226,20 @@ The `WebResponse`
  success = true,
  status = number,
  url = string,
- content = string | table, 
+ content = string | table,
 }
 -- .content will be Lua Table if response content_type is application/json
---          otherwie, just string
+--          otherwise, just string
 ```
 
-
-## utils.html
+### utils.html
 
 ```lua
 -- Prune HTML content to remove some empty tags, comments, and such
 local cleaned_html = utils.html.prune_to_content(html_content)  -- string
 ```
-## utils.cmd
+
+### utils.cmd
 
 See [CmdResponse](#cmdresponse)
 
@@ -233,9 +248,9 @@ See [CmdResponse](#cmdresponse)
 local result = utils.cmd.exec("ls", {"-ll", "./**/*.md"})  -- CmdResponse
 ```
 
-## devai
+### devai
 
-devai also provides the `devai` module in the context of all scripts, which allows control over the devai flow.
+`devai` also provides the `devai` module in the context of all scripts, which allows control over the devai flow.
 
 ```lua
 -- Return a before all response structure
@@ -263,15 +278,15 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 | CTX.AGENT_FILE_NAME | `my-agent.devai`                       |
 | CTX.AGENT_FILE_STEM | `my-agent`                             |
 
-- All paths are relative to `WORKSPACE_DIR`
-- The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `devai::run(CTX.AGENT_NAME, [])`
-- These are available in `devai run ..` 
+- All paths are relative to `WORKSPACE_DIR`.
+- The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `devai::run(CTX.AGENT_NAME, [])`.
+- These are available in `devai run ..`
 
 # Common Types
 
 ## AIResponse
 
-In the `# Output` section, the `ai_response` is injected in the scope with the following structure: 
+In the `# Output` section, the `ai_response` is injected into the scope with the following structure:
 
 ```lua
 -- ai_response in '# Output' lua section
@@ -289,7 +304,7 @@ ai_response: {
       audio_token:                number | nil,
       reasoning_tokens:           number | nil,
     },
-    
+
     prompt_tokens_details: {     -- won't be nil
       cached_tokens: number | nil,
       audio_tokens:  number | nil,
@@ -337,7 +352,7 @@ The `MdSection` is a markdown section with the following representation:
   heading_content = "# Summary",    -- can be "" if there is no heading (top section)
   heading_name    = "Summary",      -- can be "" if there is no heading
   heading_level   = 1,              -- Will be 0 when there is no heading
-  heading_raw     = "# Summary\n",  -- Will be "" when there is no heading. Simplifies reconstitution logic     
+  heading_raw     = "# Summary\n",  -- Will be "" when there is no heading. Simplifies reconstitution logic
 }
 ```
 
@@ -348,7 +363,7 @@ The `MdBlock` is a markdown section with the following representation:
 ```lua
 {
   content = "_block_content_",     -- The content of the block
-  lang = "js",                     -- string | nil 
+  lang = "js",                     -- string | nil
 }
 ```
 

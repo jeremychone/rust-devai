@@ -6,22 +6,22 @@
 //! This module exposes functions that process text.
 //!
 //! ### Functions
-//! * `utils.text.escape_decode(content: string) -> string`
-//! * `utils.text.escape_decode_if_needed(content: string) -> string`
-//! * `utils.text.split_first(content: string, sep: string) -> (string, string|nil)`
-//! * `utils.text.remove_first_line(content: string) -> string`
-//! * `utils.text.remove_first_lines(content: string, n: int) -> string`
-//! * `utils.text.remove_last_line(content: string) -> string`
-//! * `utils.text.remove_last_lines(content: string, n: int) -> string`
-//! * `utils.text.trim(content: string) -> string`
-//! * `utils.text.trim_start(content: string) -> string`
-//! * `utils.text.trim_end(content: string) -> string`
-//! * `utils.text.truncate(content: string, max_len: int) -> string`
-//! * `utils.text.truncate(content: string, max_len: int, ellipsis: string) -> string`
-//! * `utils.text.replace_markers(content: string, new_sections: array) -> string`
-//! * `utils.text.ensure(content: string, opt: table) -> string`
-//! * `utils.text.ensure_single_ending_newline(content: string) -> string`
-//! * `utils.text.extract_line_blocks(content: string, options: {starts_with: string, extrude?: "content", first?: number}) -> (table, string|nil)`
+//! * `utils.text.escape_decode(content: string): string`
+//! * `utils.text.escape_decode_if_needed(content: string): string`
+//! * `utils.text.split_first(content: string, sep: string): (string, string|nil)`
+//! * `utils.text.remove_first_line(content: string): string`
+//! * `utils.text.remove_first_lines(content: string, n: int): string`
+//! * `utils.text.remove_last_line(content: string): string`
+//! * `utils.text.remove_last_lines(content: string, n: int): string`
+//! * `utils.text.trim(content: string): string`
+//! * `utils.text.trim_start(content: string): string`
+//! * `utils.text.trim_end(content: string): string`
+//! * `utils.text.truncate(content: string, max_len: int): string`
+//! * `utils.text.truncate(content: string, max_len: int, ellipsis: string): string`
+//! * `utils.text.replace_markers(content: string, new_sections: array): string`
+//! * `utils.text.ensure(content: string, opt: table): string`
+//! * `utils.text.ensure_single_ending_newline(content: string): string`
+//! * `utils.text.extract_line_blocks(content: string, options: {starts_with: string, extrude?: "content", first?: number}): table, string | nil`
 
 use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::to_vec_of_strings;
