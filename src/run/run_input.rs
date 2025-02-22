@@ -192,6 +192,7 @@ pub async fn run_agent_input(
 
 	// -- Execute genai if we have an instruction
 	let mut chat_messages: Vec<ChatMessage> = Vec::new();
+	let data_scope = serde_json::to_value(data_scope)?;
 	for prompt_part in agent.prompt_parts() {
 		let PromptPart { kind, content } = prompt_part;
 		let content = hbs_render(content, &data_scope)?;

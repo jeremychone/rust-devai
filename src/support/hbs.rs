@@ -3,7 +3,6 @@
 use crate::Result;
 use handlebars::Handlebars;
 use serde_json::Value;
-use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
 
 // endregion: --- Modules
@@ -16,7 +15,7 @@ static HANDLEBARS: LazyLock<Arc<Handlebars>> = LazyLock::new(|| {
 	Arc::new(handlebars)
 });
 
-pub fn hbs_render(hbs_tmpl: &str, data_root: &HashMap<String, Value>) -> Result<String> {
+pub fn hbs_render(hbs_tmpl: &str, data_root: &Value) -> Result<String> {
 	let handlebars = &*HANDLEBARS;
 	let res = handlebars.render_template(hbs_tmpl, &data_root)?;
 	Ok(res)
@@ -31,7 +30,7 @@ mod tests {
 	use crate::_test_support::assert_contains;
 	use crate::run::Runtime;
 	use crate::support::hbs::hbs_render;
-	use std::collections::HashMap;
+	use serde_json::json;
 
 	#[tokio::test]
 	async fn test_hbs_with_lua_ok() -> Result<()> {
@@ -53,9 +52,11 @@ The files are:
 		let lua_engine = runtime.new_lua_engine()?;
 		let data = lua_engine.eval(script, None, None)?;
 		let data = serde_json::to_value(data)?;
+		let value = json!({
+			"data": data
+		});
 		// Execute the template
-		let data = HashMap::from([("data".to_string(), data)]);
-		let res = hbs_render(tmpl, &data)?;
+		let res = hbs_render(tmpl, &value)?;
 
 		// // -- Check
 		assert_contains(&res, "- file-01.txt");
