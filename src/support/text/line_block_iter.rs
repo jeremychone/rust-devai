@@ -88,6 +88,23 @@ impl<'a> LineBlockIter<'a> {
 		let extruded_content = self.extruded_content.join("");
 		(blocks, extruded_content)
 	}
+
+	/// Consumes the iterator and collects all remaining lines as extruded content.
+	///
+	/// Unlike `collect_blocks_and_extruded_content`, this method does not form new text blocks,
+	/// even if the lines start with the marker prefix; all remaining lines are treated as extruded content.
+	///
+	/// This is useful when the user wants to capture only the first block (via a prior call to `next()`)
+	/// and then obtain everything else as extruded content.
+	pub fn collect_remains(mut self) -> (Vec<String>, String) {
+		for line in self.lines.by_ref() {
+			if let Some(Extrude::Content) = self.extrude {
+				self.extruded_content.push(line);
+				self.extruded_content.push("\n");
+			}
+		}
+		(Vec::new(), self.extruded_content.join(""))
+	}
 }
 
 impl<'a> Iterator for LineBlockIter<'a> {
@@ -164,6 +181,34 @@ Some extruded line";
 
 		// -- Check that the extruded content is as expected.
 		assert_eq!(extruded_content, "line1\nSome extruded line\n");
+	}
+
+	#[test]
+	fn test_support_text_line_block_iter_collect_remains() {
+		// -- Setup & Fixtures
+		let content = "\
+> one
+> two
+non-block line
+> three
+another remain";
+		let mut iter = LineBlockIter::new(
+			content,
+			LineBlockIterOptions {
+				starts_with: ">",
+				extrude: Some(Extrude::Content),
+			},
+		);
+
+		// -- Exec: Capture the first block.
+		let first_block = iter.next().expect("Expected a block");
+		assert_eq!(first_block, "> one\n> two\n");
+
+		// Now, collect all remaining lines as extruded content.
+		let (blocks, remains) = iter.collect_remains();
+		assert!(blocks.is_empty(), "Remaining blocks should be empty");
+		let expected = "non-block line\n> three\nanother remain\n";
+		assert_eq!(remains, expected);
 	}
 }
 
