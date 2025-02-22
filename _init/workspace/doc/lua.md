@@ -146,6 +146,12 @@ local content_without_last_line = utils.text.remove_last_line(content)    -- str
 -- (Advanced) Replace markers in content with new sections
 --   - Markers for now are in between `<<START>>` and `<<END>>`
 local updated_content = utils.text.replace_markers(content, new_sections) -- string
+
+-- Returns blocks of strings for all consecutive lines that match a pattern (starts_with only for now)
+-- Options: {starts_with: string, extrude?: "content", first?: number}
+--     - where `extrude = "content"` will return the remaining content
+--     - and `first = 2` will return the first 2 blocks, and then the remaining content regardless of matches.
+local line_blocks, remain = utils.text.extract_line_blocks(content: string, options: Options): table, string | nil
 ```
 
 ### utils.md
