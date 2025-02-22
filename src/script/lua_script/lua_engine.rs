@@ -3,8 +3,8 @@ use crate::run::path_consts::CUSTOM_LUA_DIR;
 use crate::run::{get_devai_base_dir, RuntimeContext};
 use crate::script::lua_script::helpers::{process_lua_eval_result, serde_to_lua_value};
 use crate::script::lua_script::{
-	utils_cmd, utils_code, utils_devai, utils_file, utils_git, utils_html, utils_json, utils_lua, utils_md, utils_path,
-	utils_rust, utils_text, utils_web,
+	utils_cmd, utils_code, utils_devai, utils_file, utils_git, utils_hbs, utils_html, utils_json, utils_lua, utils_md,
+	utils_path, utils_rust, utils_text, utils_web,
 };
 use crate::Result;
 use mlua::{IntoLua, Lua, Table, Value};
@@ -214,7 +214,8 @@ fn init_utils(lua_vm: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
 		html,
 		cmd,
 		lua,
-		code
+		code,
+		hbs
 	);
 
 	let globals = lua_vm.globals();

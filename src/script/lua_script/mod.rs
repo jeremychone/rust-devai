@@ -14,7 +14,7 @@ mod utils_path;
 mod utils_rust;
 mod utils_text;
 mod utils_web;
-
+mod utils_hbs;
 mod lua_engine;
 
 pub use lua_engine::*;

@@ -421,7 +421,7 @@ mod tests {
 	use value_ext::JsonValueExt as _;
 
 	#[tokio::test]
-	async fn test_lua_script_utils_text_split_first_simple() -> Result<()> {
+	async fn test_lua_text_split_first_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		// (content, separator, (first, second))
@@ -470,7 +470,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_script_utils_text_ensure_simple() -> Result<()> {
+	async fn test_lua_text_ensure_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let data = [
@@ -497,7 +497,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_script_utils_text_extract_line_blocks_simple() -> Result<()> {
+	async fn test_lua_text_extract_line_blocks_simple() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let lua_code = r#"
@@ -528,7 +528,7 @@ return {blocks = a, extruded = b}
 	}
 
 	#[tokio::test]
-	async fn test_lua_script_utils_text_extract_line_blocks_with_first_extrude() -> Result<()> {
+	async fn test_lua_text_extract_line_blocks_with_first_extrude() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let lua_code = r#"
@@ -560,7 +560,7 @@ return { blocks = a, extruded = b }
 	}
 
 	#[tokio::test]
-	async fn test_lua_script_utils_text_extract_line_blocks_with_first_no_extrude() -> Result<()> {
+	async fn test_lua_text_extract_line_blocks_with_first_no_extrude() -> Result<()> {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "text")?;
 		let lua_code = r#"
