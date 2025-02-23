@@ -1,3 +1,36 @@
+# IMPORTANT NOTICE - MIGRATING TO AIPACK
+
+- This project is rebranding to [aipack](https://aipack.ai), a more suitable name for its future development.
+
+- This repo is now `https://github.com/aipack-ai/aipack`.
+
+- **same codebase**, **same feature set**, **same licenses (MIT or Apache)**
+
+- But it will be `aipack` centric, which is going to bring huge value for the users and community.
+
+- Key Differences:
+    - Agent file extension `.aip` (was `.devai`)
+        - Exact same format, just the extension has changed.
+    - `~/.aipack-base/` and `.aipack/` will be created accordingly (now always create `~/.aipack-base/`)
+    - Agents are organized in `packs` and addressed as `namespace@pack_name`; each pack can have a `main.aip` (formerly `.devai`).
+    - Custom/User packs will be taken from `pack/custom/namespace/packname`
+
+- The `devai` crate will remain on `v0.5.12` (or `v0.5.x` as needed), and the devai conventions.
+
+- `v0.6.x` and up will be the new `aipack` logic and be in the `main` branch. We will probably have some `v0.6.0-alpha.x` releases.
+
+Please do **not send any PRs** during this week of transition (2025-02-23), as there will be a lot of changes.
+
+The new aipack `v0.6.x` will have a superset of the old `devai` `v0.5.x` functionalities, so we will only accept PRs on `v0.6.x` or later.
+
+A little pain for so much gain...
+
+You can find more information in the following [discussion #51](https://github.com/aipack-ai/aipack/discussions/51)
+
+Below is the legacy README.
+
+# devai - Command Agent Runner
+
 <div align="center">
 
 <a href="https://crates.io/crates/devai"><img src="https://img.shields.io/crates/v/devai.svg" /></a>
@@ -5,8 +38,6 @@
 <a href="https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj"><img alt="Static Badge" src="https://img.shields.io/badge/YouTube_devai_Intro-Video?style=flat&logo=youtube&color=%23ff0000"></a>
 
 </div>
-
-# devai - Command Agent Runner
 
 - Website: https://devai.run
 
