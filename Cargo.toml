@@ -1,6 +1,6 @@
 [package]
 name = "devai"
-version = "0.5.11"
+version = "0.5.12-WIP"
 edition = "2021"
 rust-version = "1.82"
 license = "MIT OR Apache-2.0"
@@ -8,7 +8,7 @@ description = "Command Agent runner to accelerate production coding with genai."
 categories = ["command-line-utilities"]
 keywords = ["generative-ai","openai","genai","ai-coding"]
 homepage = "https://devai.run"
-repository = "https://github.com/jeremychone/rust-devai"
+repository = "https://github.com/aipack-ai/aipack"
 
 [lints.rust]
 unsafe_code = "forbid"
