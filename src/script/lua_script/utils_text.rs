@@ -23,14 +23,14 @@
 //! * `utils.text.ensure_single_ending_newline(content: string): string`
 //! * `utils.text.extract_line_blocks(content: string, options: {starts_with: string, extrude?: "content", first?: number}): table, string | nil`
 
-use crate::run::RuntimeContext;
-use crate::script::lua_script::helpers::to_vec_of_strings;
-use crate::script::lua_script::DEFAULT_MARKERS;
-use crate::support::html::decode_html_entities;
-use crate::support::text::{self, truncate_with_ellipsis, EnsureOptions};
-use crate::support::text::{LineBlockIter, LineBlockIterOptions};
-use crate::support::Extrude;
 use crate::Result;
+use crate::run::RuntimeContext;
+use crate::script::lua_script::DEFAULT_MARKERS;
+use crate::script::lua_script::helpers::to_vec_of_strings;
+use crate::support::Extrude;
+use crate::support::html::decode_html_entities;
+use crate::support::text::{self, EnsureOptions, truncate_with_ellipsis};
+use crate::support::text::{LineBlockIter, LineBlockIterOptions};
 use mlua::{FromLua, Lua, MultiValue, String as LuaString, Table, Value};
 use std::borrow::Cow;
 
@@ -79,7 +79,9 @@ impl FromLua for EnsureOptions {
 		for (key, _value) in table.pairs::<Value, Value>().flatten() {
 			if let Some(key) = key.as_str() {
 				if key != "prefix" && key != "suffix" {
-					let msg = format!("Ensure argument contains invalid table property `{key}`. Can only contain `prefix` and/or `suffix`");
+					let msg = format!(
+						"Ensure argument contains invalid table property `{key}`. Can only contain `prefix` and/or `suffix`"
+					);
 					return Err(mlua::Error::RuntimeError(msg));
 				}
 			}
@@ -361,7 +363,13 @@ fn escape_decode(_lua: &Lua, content: String) -> mlua::Result<String> {
 /// the remaining lines (after extracting the specified number of blocks) are captured via `collect_remains`.
 /// If the `extrude` option is not set, the extruded content is returned as `nil`.
 fn extract_line_blocks(lua: &Lua, (content, options): (String, Table)) -> mlua::Result<MultiValue> {
-	let starts_with: String = options.get("starts_with")?;
+	let starts_with: Option<String> = options.get("starts_with")?;
+	let Some(starts_with) = starts_with else {
+		return Err(crate::Error::custom(
+			r#"utils.text.extract_line_blocks requires to options with {starts_with = ".."} "#,
+		)
+		.into());
+	};
 	let extrude_param: Option<String> = options.get("extrude").ok();
 	let return_extrude = matches!(extrude_param.as_deref(), Some("content"));
 	let first_opt: Option<i64> = options.get("first").ok();

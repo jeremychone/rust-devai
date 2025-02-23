@@ -81,7 +81,7 @@ fn remove_non_content_tags(handle: &Handle) -> Result<()> {
 
 	for (index, child) in handle.children.borrow().iter().enumerate() {
 		match &child.data {
-			NodeData::Element { ref name, .. } => {
+			NodeData::Element { name, .. } => {
 				let tag = name.local.as_ref();
 				if tags_to_remove.contains(&tag) || !has_text_content(child) {
 					indices_to_remove.push(index);

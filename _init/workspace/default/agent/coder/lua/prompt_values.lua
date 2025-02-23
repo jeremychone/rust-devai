@@ -13,6 +13,9 @@ model = "high"
 # try asking: "List agent parameters, and explain them." to get the parameters documentation. 
 ```
 
+
+====
+
 > Ask your coding questions above the `====` delimiter, and press `r` in the terminal to replay.
 > 
 > `coder` Agent parameters supported for this `coder` agent: 
@@ -43,8 +46,6 @@ model = "high"
 > You can ask "Can you explain the coder agent parameters?" to get some documentation about it. 
 >
 > Happy Coding!
-
-====
 ]]
 
 return {

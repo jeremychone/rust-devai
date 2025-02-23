@@ -1,8 +1,8 @@
 [package]
 name = "devai"
 version = "0.5.12-WIP"
-edition = "2021"
-rust-version = "1.82"
+edition = "2024"
+rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 description = "Command Agent runner to accelerate production coding with genai."
 categories = ["command-line-utilities"]
@@ -12,7 +12,7 @@ repository = "https://github.com/aipack-ai/aipack"
 
 [lints.rust]
 unsafe_code = "forbid"
-unused = { level = "allow", priority = -1 } # For exploratory dev.
+# unused = { level = "allow", priority = -1 } # For exploratory dev.
 
 [dependencies]
 # -- Async

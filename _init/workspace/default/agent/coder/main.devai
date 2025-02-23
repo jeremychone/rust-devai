@@ -29,15 +29,13 @@ local first_part, second_part = p_utils.prep_inst_and_content(prompt_file.conten
 -- Clean the second_part 
 if second_part ~= nil then
     second_part = utils.text.trim(second_part)
-    if second_part:sub(1, 6) == "> Info" then
-        second_part = utils.text.remove_first_line(second_part)
-        second_part = utils.text.trim(second_part)
-    end
+    -- now remove the first line block with ">"
+    local _note_blocks, remain = utils.text.extract_line_blocks(second_part, {starts_with = ">", extrude = "content", first = 1})
+    second_part = utils.text.trim(remain)
     if #second_part == 0 then
         second_part = nil
     end    
 end
-
 
 
 -- Note: For now, we ignore the second part, as this will display what the AI says beside the code it gives. This allows for explanations, but there is no need to put it back in context.
