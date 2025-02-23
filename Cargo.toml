@@ -1,6 +1,6 @@
 [package]
 name = "devai"
-version = "0.5.12-WIP"
+version = "0.5.12"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"

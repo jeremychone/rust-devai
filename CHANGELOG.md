@@ -1,4 +1,11 @@
-`.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
+`.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
+
+## 2025-02-23 - [v0.5.12](https://github.com/jeremychone/rust-devai/compare/v0.5.11...v0.5.12)
+
+- `*` readme - NOTICE about AIPACK migration
+- `.` rust - update to 2024 edition, rust-version 1.85
+- `^` lua - utils.text.extract_line_blocks error handling when options.starts_with is missing
+- `^` agent - coder - move the initial doc below the ====
 
 ## 2025-02-22 - [v0.5.11](https://github.com/jeremychone/rust-devai/compare/v0.5.9...v0.5.11)
 
