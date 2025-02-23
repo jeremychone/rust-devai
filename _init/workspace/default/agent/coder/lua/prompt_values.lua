@@ -2,13 +2,15 @@ local prompt_template = [[
 ```toml
 #!meta - parametric agent block
 
+# knowledge_globs = ["/some/path/to/knowledge.md"] # can be relative to base_dir, or absolute
+
 # base_dir = "src"
 # context_globs = ["**/*.rs", "**/*.lua", "**/*.go", "**/*.java", "**/*.html", "**/*.js", "**/*.ts", "**/*.tsx", "**/*.css", "**/*.pcss", "**/*.scss"]
 # input_globs = ["**/mod.rs"]
 
 model_aliases = {high = "o3-mini-high", low = "o3-mini-low", fast = "gemini-2.0-flash"}
 
-model = "high"
+model = "low" # "low" code faster, "high" better, "fast" so so but super fast.
 
 # try asking: "List agent parameters, and explain them." to get the parameters documentation. 
 ```
