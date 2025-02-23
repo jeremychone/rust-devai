@@ -1,8 +1,9 @@
-use crate::agent::agent_options::AgentOptions;
 use crate::agent::PromptPart;
+use crate::agent::agent_options::AgentOptions;
+use crate::agent::agent_ref::AgentRef;
 use crate::{Error, Result};
-use genai::chat::ChatOptions;
 use genai::ModelName;
+use genai::chat::ChatOptions;
 use simple_fs::SPath;
 use std::sync::Arc;
 
@@ -137,6 +138,9 @@ impl Agent {
 #[derive(Debug, Clone)]
 pub(super) struct AgentInner {
 	pub name: String,
+
+	#[allow(unused)]
+	pub agent_ref: AgentRef,
 
 	pub file_name: String,
 	pub file_path: String,

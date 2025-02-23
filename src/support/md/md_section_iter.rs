@@ -1,6 +1,6 @@
-use crate::support::md::md_section_split::MdSectionSplit;
-use crate::support::md::InBlockState;
 use crate::support::CowLines;
+use crate::support::md::InBlockState;
+use crate::support::md::md_section_split::MdSectionSplit;
 use crate::types::{MdHeading, MdSection, ParseResponse};
 use crate::{Error, Result};
 use std::borrow::{BorrowMut, Cow};

@@ -1,10 +1,11 @@
+use crate::Result;
 use crate::agent::agent_options::AgentOptions;
+use crate::agent::agent_ref::AgentRef;
 use crate::agent::{Agent, AgentInner, PartKind, PromptPart};
 use crate::support::md::InBlockState;
 use crate::support::tomls::parse_toml;
-use crate::Result;
 use genai::ModelName;
-use simple_fs::{read_to_string, SPath};
+use simple_fs::{SPath, read_to_string};
 use std::path::Path;
 use std::sync::Arc;
 
@@ -22,15 +23,15 @@ impl AgentDoc {
 		Ok(Self { spath, raw_content })
 	}
 
-	pub fn into_agent(self, name: impl Into<String>, config: AgentOptions) -> Result<Agent> {
-		let agent_inner = self.into_agent_inner(name.into(), config)?;
+	pub fn into_agent(self, name: &str, agent_ref: AgentRef, options: AgentOptions) -> Result<Agent> {
+		let agent_inner = self.into_agent_inner(name, agent_ref, options)?;
 		let agent = Agent::new(agent_inner)?;
 		Ok(agent)
 	}
 
 	/// Internal method to create the first part of the agent inner
 	/// This is sort of a Lexer, but very customize to extracting the Agent parts
-	fn into_agent_inner(self, name: String, agent_options: AgentOptions) -> Result<AgentInner> {
+	fn into_agent_inner(self, name: &str, agent_ref: AgentRef, agent_options: AgentOptions) -> Result<AgentInner> {
 		#[derive(Debug)]
 		enum CaptureMode {
 			None,
@@ -264,10 +265,10 @@ impl AgentDoc {
 			(Some(config_toml), None) => Some(AgentOptions::from_config_value(parse_toml(&config_toml)?)?),
 			(Some(_), Some(_)) => {
 				return Err("\
-Agent .devai file cannot have a '# Config' and '# Options' section.
+Agent .aipack file cannot have a '# Config' and '# Options' section.
 Use the '# Options' section ('# Config' is not the legacy way to provides agent options)
 "
-				.into())
+				.into());
 			}
 		};
 
@@ -283,7 +284,8 @@ Use the '# Options' section ('# Config' is not the legacy way to provides agent 
 		let agent_inner = AgentInner {
 			agent_options: Arc::new(agent_options),
 
-			name,
+			name: name.to_string(),
+			agent_ref,
 
 			file_name: self.spath.name().to_string(),
 			file_path: self.spath.to_str().to_string(),
@@ -357,140 +359,3 @@ fn buffer_to_string(content: Vec<&str>) -> Option<String> {
 		Some(content.join(""))
 	}
 }
-
-// endregion: --- Support
-
-// region:    --- Tests
-
-#[cfg(test)]
-mod tests {
-	type Error = Box<dyn std::error::Error>;
-	type Result<T> = core::result::Result<T, Error>; // For tests.
-
-	use super::*;
-	use crate::_test_support::{assert_contains, default_agent_config_for_test};
-
-	#[test]
-	fn test_agent_doc_demo_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let agent_doc_path = "./tests-data/agent-doc/agent-demo.md";
-
-		// -- Exec
-		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
-
-		// -- Check
-		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
-		let inst = &first_prompt_part.content;
-		assert_contains(inst, "Some paragraph for instruction");
-		assert_contains(inst, "- Two");
-		assert_contains(inst, "block-01");
-		assert_contains(inst, "block-02");
-		assert_contains(inst, "# block-03");
-		assert_contains(inst, "# Instruction");
-		let data_script = agent.data_script().ok_or("Should have data_script")?;
-		assert_contains(data_script, "-- Some scripts that load the data");
-		let output_script = agent.output_script().ok_or("Should have output_script")?;
-		assert_contains(output_script, "-- Optional output processing.");
-
-		Ok(())
-	}
-
-	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-	async fn test_agent_doc_options_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let agent_doc_path = "./tests-data/agent-doc/agent-demo.md";
-
-		// -- Exec
-		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
-
-		// -- Check config
-		assert_eq!(agent.options().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.options().input_concurrency(), Some(12), "concurrency");
-
-		// -- Check Other
-		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
-		let inst = &first_prompt_part.content;
-		assert_contains(inst, "Some paragraph for instruction");
-		let data_script = agent.data_script().ok_or("Should have data_script")?;
-		assert_contains(data_script, "-- Some scripts that load the data");
-		let output_script = agent.output_script().ok_or("Should have output_script")?;
-		assert_contains(output_script, "-- Optional output processing.");
-
-		Ok(())
-	}
-
-	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-	async fn test_agent_doc_legacy_config_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let agent_doc_path = "./tests-data/agent-doc/agent-legacy-config.md";
-
-		// -- Exec
-		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
-
-		// -- Check config
-		assert_eq!(agent.options().model(), Some("test_model_for_legacy_config"));
-		assert_eq!(agent.options().input_concurrency(), Some(8), "concurrency");
-
-		// -- Check Other
-		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
-		let inst = &first_prompt_part.content;
-		assert_contains(inst, "Some paragraph for instruction");
-		let data_script = agent.data_script().ok_or("Should have data_script")?;
-		assert_contains(data_script, "-- Some scripts that load the data");
-		let output_script = agent.output_script().ok_or("Should have output_script")?;
-		assert_contains(output_script, "-- Optional output processing.");
-
-		Ok(())
-	}
-
-	#[test]
-	fn test_agent_doc_all_sections_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let agent_doc_path = "./tests-data/agent-doc/agent-all-sections.md";
-
-		// -- Exec
-		let doc = AgentDoc::from_file(agent_doc_path)?;
-		let agent = doc.into_agent(agent_doc_path, default_agent_config_for_test())?;
-
-		// -- Check config
-		assert_eq!(agent.options().model(), Some("test_model_for_demo"));
-		assert_eq!(agent.options().input_concurrency(), None);
-
-		let &first_prompt_part = agent.prompt_parts().first().ok_or("Should have a prompt part")?;
-
-		// -- Check Sections
-		assert_contains(
-			agent.before_all_script().ok_or("No before_all script")?,
-			"let before_all = \"before_all\";\n",
-		);
-
-		assert_contains(
-			agent.data_script().ok_or("No data script")?,
-			"let some_data = \"Some Data\";\nreturn some_data;\n",
-		);
-
-		assert_contains(&first_prompt_part.content, "\nSome instruction\n\n");
-
-		assert_contains(
-			agent.data_script().ok_or("Data Script missing")?,
-			"let some_data = \"Some Data\";\nreturn some_data;\n",
-		);
-
-		assert_contains(
-			agent.output_script().ok_or("No output script")?,
-			"let some_output = \"Some Output\";\n",
-		);
-
-		assert_contains(
-			agent.after_all_script().ok_or("No after all script")?,
-			"let after_all = \"after_all\";\n",
-		);
-
-		Ok(())
-	}
-}
-
-// endregion: --- Tests

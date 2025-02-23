@@ -1,6 +1,6 @@
-use crate::run::{get_genai_client, DirContext, RuntimeContext};
-use crate::script::LuaEngine;
 use crate::Result;
+use crate::run::{DirContext, RuntimeContext, get_genai_client};
+use crate::script::LuaEngine;
 use genai::Client;
 
 #[derive(Clone)]
@@ -23,11 +23,23 @@ impl Runtime {
 
 	#[cfg(test)]
 	pub fn new_test_runtime_sandbox_01() -> Result<Self> {
-		use crate::_test_support::SANDBOX_01_DIR;
+		use crate::_test_support::{SANDBOX_01_BASE_AIPACK_DIR, SANDBOX_01_WKS_DIR};
+		use crate::run::AipackPaths;
 		use simple_fs::SPath;
+		use std::path::Path;
 
-		let dir_context =
-			DirContext::from_parent_dir_and_current_dir_for_test(SANDBOX_01_DIR, SPath::new(SANDBOX_01_DIR)?)?;
+		let current_dir = Path::new(SANDBOX_01_WKS_DIR).canonicalize()?;
+		let current_dir = SPath::new(current_dir)?;
+
+		let wks_aipack_dir = current_dir.join_str(".aipack");
+
+		let base_aipack_dir = Path::new(SANDBOX_01_BASE_AIPACK_DIR).canonicalize()?;
+		let base_aipack_dir = SPath::new(base_aipack_dir)?;
+
+		let aipack_paths = AipackPaths::from_aipack_base_and_wks_dirs(base_aipack_dir, wks_aipack_dir)?;
+
+		let dir_context = DirContext::from_current_and_aipack_paths(current_dir, aipack_paths)?;
+
 		Self::new(dir_context)
 	}
 }

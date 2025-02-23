@@ -1,18 +1,25 @@
+cargo-features = ["edition2024"]
+
 [package]
-name = "devai"
-version = "0.5.12"
+name = "aipack"
+version = "0.6.0-alpha.1-WIP"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
 description = "Command Agent runner to accelerate production coding with genai."
 categories = ["command-line-utilities"]
 keywords = ["generative-ai","openai","genai","ai-coding"]
-homepage = "https://devai.run"
+homepage = "https://aipack.ai"
 repository = "https://github.com/aipack-ai/aipack"
+
 
 [lints.rust]
 unsafe_code = "forbid"
 # unused = { level = "allow", priority = -1 } # For exploratory dev.
+
+[[bin]]
+name = "aip"
+path = "src/main.rs"
 
 [dependencies]
 # -- Async
@@ -38,9 +45,10 @@ handlebars = "6"
 clap =  {version = "4.5.17", features = ["cargo", "derive"]}
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 # -- Files
-simple-fs = { version = "0.5.0" }
+simple-fs = { version = "0.5.1" }
 home = "0.5.11"
 zip = "0.6"
+walkdir = "2.4"
 # -- Web
 reqwest = {version = "0.12", default-features = false, features = ["json", "rustls-tls"]}
 
@@ -56,8 +64,8 @@ num-format = "0.4.4"
 humantime = "2.1.0"
 
 [build-dependencies]
-simple-fs = { version = "0.5.0" }
-zip = "0.6"
+simple-fs = { version = "0.5.1" }
+zip = "2"
 walkdir = "2.4"
 
 

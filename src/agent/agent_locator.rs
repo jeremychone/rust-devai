@@ -1,245 +1,133 @@
-use crate::agent::agent_options::AgentOptions;
-use crate::agent::{Agent, AgentDoc};
-use crate::run::{DirContext, PathResolver};
+//! Locate agent from
+//!
+
+use crate::agent::agent_ref::{AgentRef, PackRef, PartialAgentRef};
+use crate::agent::{Agent, AgentDoc, AgentOptions};
+use crate::run::{DirContext, PathResolver, find_pack_dirs};
 use crate::support::tomls::parse_toml;
 use crate::{Error, Result};
-use simple_fs::{list_files, read_to_string, SFile, SPath};
-use std::collections::HashSet;
-use std::path::Path;
-use strsim::levenshtein;
+use simple_fs::{SPath, read_to_string};
 
-/// - `from_cli` Used to decide which "reference dir" should be used.
-///              If from cli, the current_dir will be used, otherwise, the workspace_dir
-pub fn find_agent(agent_name: &str, dir_context: &DirContext, mode: PathResolver) -> Result<Agent> {
-	let base_config = load_base_agent_config(dir_context)?;
+pub fn find_agent(name: &str, dir_context: &DirContext) -> Result<Agent> {
+	let partial_agent_ref = PartialAgentRef::new(name);
 
-	let devai_dir = dir_context.devai_dir();
+	let base_options = load_and_merge_configs_agent_options(dir_context)?;
 
-	// -- For now, if end with .devai, we try to find direct
-	let agent_sname = SPath::new(agent_name)?;
-	if agent_sname.ext() == "devai" {
-		let agent_file = dir_context.resolve_path(&agent_sname, mode)?;
-		let agent_file =
-			SFile::try_from(agent_file).map_err(|_| Error::CommandAgentNotFound(agent_sname.to_string()))?;
-		let doc = AgentDoc::from_file(agent_file)?;
-		return doc.into_agent(agent_sname, base_config);
-	}
+	// -- For now, if end with .aip, we try to find direct
+	let agent = match partial_agent_ref {
+		PartialAgentRef::LocalPath(local_path) => {
+			let path = dir_context.resolve_path(&local_path, PathResolver::CurrentDir)?;
+			let possible_paths = possible_aip_paths(path.clone(), false);
+			let found_path = possible_paths.into_iter().find(|p| p.exists()).ok_or_else(|| {
+				Error::custom(format!(
+					"No agent found for local path: '{}'\n   (full path: {})",
+					local_path,
+					path.to_str()
+				))
+			})?;
+			let doc = AgentDoc::from_file(found_path)?;
 
-	// -- Otherwise, look in the command-agent dirs
-	let dirs = devai_dir.get_agent_dirs()?;
-	let dirs = dirs.iter().map(|dir| dir.path()).collect::<Vec<_>>();
+			let agent_ref = AgentRef::LocalPath(local_path.to_string());
 
-	// Attempt to find the agent in the specified directories
-	if let Some(agent_doc) = find_agent_doc_in_dir(agent_name, &dirs)? {
-		return agent_doc.into_agent(agent_name, base_config);
-	}
+			doc.into_agent(name, agent_ref, base_options)?
+		}
+		PartialAgentRef::PackRef(pack_ref) => {
+			let pack_dirs = find_pack_dirs(dir_context, pack_ref.namespace.as_deref(), Some(&pack_ref.pack_name))?;
 
-	// If not found, return an error with potential similar agents
-	let similar_paths = find_similar_agent_paths(agent_name, &dirs)?;
-	let error_msg = if !similar_paths.is_empty() {
-		format!(
-			"Agent '{}' not found.\nDid you mean one of these?\n{}",
-			agent_name,
-			similar_paths
-				.iter()
-				.map(agent_agent_rel_as_bullet)
-				.collect::<Vec<String>>()
-				.join("\n")
-		)
-	} else {
-		let agent_rels = list_all_agent_rels(dir_context)?;
-		format!(
-			"Agent '{}' not found.\nHere is the list of available command agents:\n{}",
-			agent_name,
-			agent_rels
-				.iter()
-				.map(agent_agent_rel_as_bullet)
-				.collect::<Vec<String>>()
-				.join("\n")
-		)
-	};
+			// -- in case > 1, for now, no support
+			if pack_dirs.len() > 1 {
+				return Err(Error::custom(format!(
+					"Multiple aipack matches for {pack_ref}. Name choose directly:\n{}\n",
+					pack_dirs.iter().map(|p| p.to_string()).collect::<Vec<String>>().join("\n")
+				)));
+			}
 
-	Err(error_msg.into())
-}
-
-/// Lists all agent files following the precedence rules (customs first, defaults second).
-/// Agent files already present in a higher priority directory are not included.
-pub fn list_all_agent_rels(dir_context: &DirContext) -> Result<Vec<AgentRel>> {
-	let dirs = dir_context.devai_dir().get_agent_dirs()?;
-	let mut agent_rels = Vec::new();
-
-	let mut file_stems: HashSet<String> = HashSet::new();
-
-	for dir in dirs {
-		let files = list_files(&dir, Some(&["**/*.devai"]), None)?;
-		for file in files.into_iter() {
-			let Some(agent_rel) = AgentRel::new(&dir, &file) else {
-				continue;
+			// -- Get the pack dir
+			let Some(pack_dir) = pack_dirs.into_iter().next() else {
+				return Err(Error::custom(format!("No aipack matches for {pack_ref}.")));
 			};
 
-			let rel_stem = agent_rel.rel_path_stem().to_string();
-			if file_stems.contains(&rel_stem) {
-				continue;
-			}
-			agent_rels.push(agent_rel);
-			file_stems.insert(rel_stem);
+			// -- Find the aip path
+			// Note: if it is None, the pack_dir, then, we have the as_dir to avoid do the dir.aip
+			let (aip_path, as_dir) = match pack_ref.sub_path.as_deref() {
+				Some(sub_path) => (pack_dir.abs_path.join_str(sub_path), false),
+				None => (pack_dir.abs_path, true),
+			};
+
+			let possible_aip_paths = possible_aip_paths(aip_path, as_dir);
+			let Some(found_path) = possible_aip_paths.into_iter().find(|p| p.exists()) else {
+				return Err(Error::custom(format!("No agent files  matches for {pack_ref}")));
+			};
+
+			// -- Buid the final agent_ref with the resolved namespace
+			// TODO: Need to cleanup this strategy. Perhaps have PartialPackRef, and PackRef with namespace and pack_name
+			let ns = pack_dir.namespace;
+			let agent_ref = AgentRef::PackRef(PackRef::from_partial(ns, pack_ref));
+
+			// -- Build and return the agent
+			let doc = AgentDoc::from_file(found_path)?;
+			doc.into_agent(name, agent_ref, base_options)?
 		}
-	}
+	};
 
-	Ok(agent_rels)
-}
-
-/// Note: For now, needs to be public because of `exec_list`
-pub fn agent_agent_rel_as_bullet(agent_rel: &AgentRel) -> String {
-	let rel_stem = agent_rel.rel_path_stem();
-	let initials = agent_rel.initials();
-	let path = agent_rel.sfile.to_str();
-	let msg = format!("- {rel_stem} ({initials})");
-	let msg = format!("{msg:<37} - for '{path}'");
-
-	msg
+	Ok(agent)
 }
 
 // region:    --- Support
-/// Finds the first matching AgentDoc in the provided directories.
-fn find_agent_doc_in_dir(name: &str, dirs: &[&Path]) -> Result<Option<AgentDoc>> {
-	for &dir in dirs {
-		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
 
-		let mut main_files: Vec<SFile> = Vec::new();
-
-		// First try to find the full path name like `my-agent`/`ma`, `my-mod/super`/`mm/s`
-		if let Some(found_file) = files.into_iter().find(|f| {
-			// Note: here we capture if the f.stem is "main" so that we can quickly match it below.
-			if f.stem() == "main" {
-				main_files.push(f.clone())
-			}
-			match_agent(dir, name, f)
-		}) {
-			// NOTE: Because the dirs are form the DevaiDir and might not be absolute, and relative to working dir
-			//       But later, need to remove from the current_dir of the DirContext, so, needs full path
-			let found_file = found_file.canonicalize()?;
-			let doc = AgentDoc::from_file(found_file)?;
-			return Ok(Some(doc));
-		}
-
-		// if not found, then, perhaps is the just mode agent and want to have a main
-		let name = format!("{name}/main");
-		for sfile in main_files {
-			if match_agent(dir, &name, &sfile) {
-				// NOTE: See above
-				let found_file = sfile.canonicalize()?;
-				let doc = AgentDoc::from_file(found_file)?;
-				return Ok(Some(doc));
-			}
-		}
-	}
-	Ok(None)
-}
-
-fn match_agent(base_dir: &Path, name: &str, sfile: &SFile) -> bool {
-	let Some(agent_rel) = AgentRel::new(base_dir, sfile) else {
-		return false;
-	};
-	name == agent_rel.rel_path_stem() || name == agent_rel.initials()
-}
-
-/// The structure that represent the agent and relative path
-#[derive(Debug)]
-pub struct AgentRel {
-	sfile: SFile,
-	rel_path: SPath,
-}
-
-impl AgentRel {
-	fn new(base_dir: impl AsRef<Path>, sfile: &SFile) -> Option<Self> {
-		let rel_path = sfile.diff(base_dir).ok()?;
-		Some(AgentRel {
-			rel_path,
-			sfile: sfile.clone(),
-		})
+/// Returns the ossible .aip path for a given path
+///
+/// - `as_dir` allows to treat the path as dir even if it does not end with /
+///
+/// NOTE: This does not test if the files or path exists
+///       Just give the possible path, which then need to be tested
+pub fn possible_aip_paths(path: SPath, as_dir: bool) -> Vec<SPath> {
+	let path_str = path.to_str();
+	// if end with .aip, then, direct path, so, this is it
+	if path_str.ends_with(".aip") {
+		return vec![path];
 	}
 
-	/// Return the rel_path (with `.devai` extension) as str
-	fn to_str(&self) -> &str {
-		self.rel_path.to_str()
+	// if a dir, then, just add `main.aip` per convention
+	if as_dir || path_str.ends_with('/') {
+		vec![path.join_str("main.aip")]
 	}
-
-	/// Remove the `.devai` suffix
-	fn rel_path_stem(&self) -> &str {
-		let rel_path_str = self.to_str();
-		rel_path_str.strip_suffix(".devai").unwrap_or(rel_path_str)
+	// otherwise, we have to possible paths add .aip and another with /main.aip
+	else {
+		vec![SPath::from(format!("{path_str}.aip")), path.join_str("main.aip")]
 	}
-
-	fn initials(&self) -> String {
-		get_initials(self.to_str())
-	}
-}
-
-fn get_initials(input: &str) -> String {
-	input
-		.split('/') // Split by '/'
-		.map(|segment| {
-			segment
-				.split('-') // Split by '-'
-				.filter_map(|part| {
-					let part = part.strip_prefix("_").unwrap_or(part);
-					part.chars().next()
-				}) // Get the first character of each part
-				.collect::<String>() // Collect into a String
-		})
-		.collect::<Vec<String>>() // Collect segments into a Vec
-		.join("/") // Join segments with '/'
-}
-
-/// Finds the top 3 most similar agent file paths based on Levenshtein distance.
-fn find_similar_agent_paths(name: &str, dirs: &[&Path]) -> Result<Vec<AgentRel>> {
-	let mut candidates = Vec::new();
-
-	for dir in dirs {
-		let files = list_files(dir, Some(&["**/*.devai"]), None)?;
-		for file in files {
-			if let Some(agent_rel) = AgentRel::new(dir, &file) {
-				candidates.push(agent_rel);
-			};
-		}
-	}
-
-	let mut scored_candidates: Vec<(AgentRel, usize)> = candidates
-		.into_iter()
-		.filter_map(|agent_rel| {
-			let agent_rel_stem = agent_rel.rel_path_stem();
-			let distance = levenshtein(name, agent_rel_stem);
-
-			// note might need to change this one, seems to work ok
-			const MAX_DISTANCE: usize = 5;
-			if distance > MAX_DISTANCE {
-				None
-			} else {
-				Some((agent_rel, distance))
-			}
-		})
-		.collect();
-
-	// Sort by ascending distance
-	scored_candidates.sort_by_key(|&(_, distance)| distance);
-
-	// Take the top 3
-	let top_three = scored_candidates.into_iter().take(3).map(|(path, _)| path).collect();
-
-	Ok(top_three)
 }
 
 /// Loads the base agent configuration.
-pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentOptions> {
-	let config_path = dir_context.devai_dir().get_config_toml_path()?;
-	let config_content = read_to_string(&config_path)?;
-	let config_value = parse_toml(&config_content)?;
+///
+/// FIXME: ->> Will need to merge the .aipack-base/config.toml with the .aipack/config.toml
+pub fn load_and_merge_configs_agent_options(dir_context: &DirContext) -> Result<AgentOptions> {
+	let config_paths = dir_context.aipack_paths().get_wks_config_toml_paths()?;
 
-	let options = AgentOptions::from_config_value(config_value).map_err(|err| Error::Config {
-		path: config_path.to_string(),
-		reason: err.to_string(),
-	})?;
+	let mut all_options = Vec::new();
+
+	for config_path in config_paths {
+		let config_content = read_to_string(&config_path)?;
+		let config_value = parse_toml(&config_content)?;
+
+		let options = AgentOptions::from_config_value(config_value).map_err(|err| Error::Config {
+			path: config_path.to_string(),
+			reason: err.to_string(),
+		})?;
+		all_options.push(options);
+	}
+	let mut options: Option<AgentOptions> = None;
+	for item_options in all_options {
+		options = match options {
+			Some(options) => Some(options.merge(item_options)?),
+			None => Some(item_options),
+		}
+	}
+
+	let Some(options) = options else {
+		return Err(Error::custom("No agent options found"));
+	};
+
 	Ok(options)
 }
 
@@ -249,181 +137,167 @@ pub fn load_base_agent_config(dir_context: &DirContext) -> Result<AgentOptions> 
 
 #[cfg(test)]
 mod tests {
-	use super::*;
-	use crate::_test_support::{run_test_agent, SANDBOX_01_DIR};
-	use crate::run::Runtime;
-	use simple_fs::ensure_dir;
-	use value_ext::JsonValueExt;
+	type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
+	use super::*;
+	use crate::_test_support::assert_contains;
+	use crate::run::Runtime;
+	use simple_fs::SPath;
+
+	// region:    --- find_agent
 
 	#[test]
-	fn test_get_initials() -> Result<()> {
-		let test_cases: &[(&str, &str)] = &[
-			("proof-read", "pr"),
-			("proof-comment", "pc"),
-			("proof", "p"),
-			("_proof-comment", "pc"),
-			("proof-_comment-read", "pcr"),
-			("_proof-_comment-_read", "pcr"),
-			("a-b-c", "abc"),
-			("hello/world", "h/w"),
-			("hello/big-world", "h/bw"),
-			("nice-hello/big-world", "nh/bw"),
-			("nice-hello/_big-world", "nh/bw"),
+	fn test_agent_locator_find_agent_ns_with_ns_pack_repo_wks() -> Result<()> {
+		// -- Setup & Fixtures
+		// agent name, file_path contains
+		let data = &[
+			(
+				"ns_a@pack_a_1",
+				"/sandbox-01/.aipack/pack/custom/ns_a/pack_a_1/main.aip",
+			),
+			(
+				"ns_a@pack_a_1/sub/agent",
+				"/sandbox-01/.aipack/pack/custom/ns_a/pack_a_1/sub/agent.aip",
+			),
+			(
+				"ns_a@pack_a_1/sub/agent.aip",
+				"/sandbox-01/.aipack/pack/custom/ns_a/pack_a_1/sub/agent.aip",
+			),
+			(
+				"ns_a@pack_a_1/sub",
+				"/sandbox-01/.aipack/pack/custom/ns_a/pack_a_1/sub/main.aip",
+			),
+			(
+				"ns_a@pack_a_2/another-agent",
+				"/sandbox-01/.aipack/pack/custom/ns_a/pack_a_2/another-agent.aip",
+			),
+			(
+				"ns_b@pack_b_1",
+				"/sandbox-01/.aipack/pack/custom/ns_b/pack_b_1/main.aip",
+			),
 		];
+		let runtime = Runtime::new_test_runtime_sandbox_01()?;
+		let dir_context = runtime.dir_context();
 
-		for &(content, expected) in test_cases {
-			assert_eq!(get_initials(content), expected);
+		// -- Check & Exec
+		for (name, fx_file_path) in data {
+			let agent = find_agent(name, dir_context)?;
+
+			// -- Check
+			assert_eq!(agent.name(), *name);
+			assert_contains(agent.file_path(), fx_file_path);
 		}
 
 		Ok(())
 	}
 
-	#[tokio::test]
-	async fn test_find_command_agent_direct_and_validate_ctx() -> Result<()> {
+	#[test]
+	fn test_agent_locator_find_agent_ns_with_ns_pack_repo_base_custom() -> Result<()> {
 		// -- Setup & Fixtures
+		// agent name, file_path contains
+		let data = &[
+			("ns_b@pack_b_2", ".aipack-base/pack/custom/ns_b/pack_b_2/main.aip"),
+			("ns_d@pack_d_1", ".aipack-base/pack/installed/ns_d/pack_d_1/main.aip"),
+		];
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		let fx_agent_name = "./agent-script/agent-ctx-reflect.devai";
+		let dir_context = runtime.dir_context();
 
-		// -- Exec
-		let agent = find_agent(fx_agent_name, runtime.dir_context(), PathResolver::CurrentDir)?;
-		let res = run_test_agent(&runtime, &agent).await?;
+		// -- Check & Exec
+		for (name, fx_file_path) in data {
+			let agent = find_agent(name, dir_context)?;
 
-		// -- Check
-		// workspace_dir
-		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
-		assert!(
-			workspace_dir.ends_with("tests-data/sandbox-01"),
-			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
-		);
-
-		// devai dir
-		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
-
-		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, fx_agent_name);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_PATH")?, fx_agent_name);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./agent-script");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "agent-ctx-reflect.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "agent-ctx-reflect");
+			// -- Check
+			assert_eq!(agent.name(), *name);
+			assert_contains(agent.file_path(), fx_file_path);
+		}
 
 		Ok(())
 	}
 
-	#[tokio::test]
-	async fn test_find_command_agent_custom_and_validate_ctx() -> Result<()> {
+	#[test]
+	fn test_agent_locator_find_agent_local_path() -> Result<()> {
 		// -- Setup & Fixtures
-		// TODO: Probably need to run the init in sandbox_01
+		// agent name, file_path contains
+		let data = &[
+			//
+			("sub-dir-a/agent-hello-2.aip", "agent-hello-2.aip"),
+			("sub-dir-a/agent-hello-2", "agent-hello-2.aip"),
+			("sub-dir-a/sub-sub-dir", "main.aip"),
+		];
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		ensure_dir("tests-data/sandbox-01/.devai/custom/agent")?;
-		std::fs::copy(
-			Path::new(SANDBOX_01_DIR).join("agent-script/agent-ctx-reflect.devai"),
-			"tests-data/sandbox-01/.devai/custom/agent/command-ctx-reflect.devai",
-		)?;
-		// -- Exec
-		let agent = find_agent("command-ctx-reflect", runtime.dir_context(), PathResolver::CurrentDir)?;
-		let res = run_test_agent(&runtime, &agent).await?;
+		let dir_context = runtime.dir_context();
 
-		// -- Check
-		// workspace_dir
-		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
-		assert!(
-			workspace_dir.ends_with("tests-data/sandbox-01"),
-			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
-		);
+		// -- Check & Exec
+		for (name, fx_file_path) in data {
+			let agent = find_agent(name, dir_context)?;
 
-		// devai dir
-		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "command-ctx-reflect");
-		assert_eq!(
-			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"./.devai/custom/agent/command-ctx-reflect.devai"
-		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/agent");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "command-ctx-reflect.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "command-ctx-reflect");
+			// -- Check
+			assert_eq!(agent.name(), *name);
+			assert_contains(agent.file_path(), fx_file_path);
+		}
 
 		Ok(())
 	}
 
-	#[tokio::test]
-	async fn test_find_command_agent_nested_full_name() -> Result<()> {
+	// endregion: --- find_agent
+
+	// region:    --- possiple_aip_paths
+
+	#[test]
+	fn test_agent_locator_possible_aip_paths_direct_aip() -> Result<()> {
 		// -- Setup & Fixtures
-		// TODO: Probably need to run the init in sandbox_01
-		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		ensure_dir("tests-data/sandbox-01/.devai/custom/agent/sub-dir/")?;
-		std::fs::copy(
-			Path::new(SANDBOX_01_DIR).join("agent-script/agent-ctx-reflect.devai"),
-			"tests-data/sandbox-01/.devai/custom/agent/sub-dir/sub-agent.devai",
-		)?;
+		let path_str = "agent.aip";
+		let path = SPath::from(path_str);
+
 		// -- Exec
-		let agent = find_agent("sub-dir/sub-agent", runtime.dir_context(), PathResolver::CurrentDir)?;
-		let res = run_test_agent(&runtime, &agent).await?;
+		let paths = possible_aip_paths(path, false);
 
 		// -- Check
-		// workspace_dir
-		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
-		assert!(
-			workspace_dir.ends_with("tests-data/sandbox-01"),
-			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
-		);
-
-		// devai dir
-		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "sub-dir/sub-agent");
-		assert_eq!(
-			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"./.devai/custom/agent/sub-dir/sub-agent.devai"
-		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./.devai/custom/agent/sub-dir");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "sub-agent.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "sub-agent");
+		// When the input ends with ".aip", it should return the direct path.
+		assert_eq!(paths.len(), 1);
+		assert_eq!(paths[0].to_str(), path_str);
 
 		Ok(())
 	}
 
-	#[tokio::test]
-	async fn test_find_command_agent_nested_main() -> Result<()> {
+	#[test]
+	fn test_agent_locator_possible_aip_paths_dir() -> Result<()> {
 		// -- Setup & Fixtures
-		// TODO: Probably need to run the init in sandbox_01
-		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		ensure_dir("tests-data/sandbox-01/.devai/custom/agent/mod-agent/")?;
-		std::fs::copy(
-			Path::new(SANDBOX_01_DIR).join("agent-script/agent-ctx-reflect.devai"),
-			"tests-data/sandbox-01/.devai/custom/agent/mod-agent/main.devai",
-		)?;
+		let path_str = "directory/";
+		let path = SPath::from(path_str);
+
 		// -- Exec
-		let agent = find_agent("mod-agent", runtime.dir_context(), PathResolver::CurrentDir)?;
-		let res = run_test_agent(&runtime, &agent).await?;
+		let paths = possible_aip_paths(path, false);
 
 		// -- Check
-		// workspace_dir
-		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
-		assert!(
-			workspace_dir.ends_with("tests-data/sandbox-01"),
-			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
-		);
-
-		// devai dir
-		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_NAME")?, "mod-agent");
-		assert_eq!(
-			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"./.devai/custom/agent/mod-agent/main.devai"
-		);
-		assert_eq!(
-			res.x_get_as::<&str>("AGENT_FILE_DIR")?,
-			"./.devai/custom/agent/mod-agent"
-		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "main.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "main");
+		// When the input is a directory (ends with '/'), it should return a single path with "main.aip" appended.
+		assert_eq!(paths.len(), 1);
+		assert_eq!(paths[0].to_str(), "directory/main.aip");
 
 		Ok(())
 	}
+
+	#[test]
+	fn test_agent_locator_possible_aip_paths_regular() -> Result<()> {
+		// -- Setup & Fixtures
+		let path_str = "regular_path";
+		let path = SPath::from(path_str);
+
+		// -- Exec
+		let paths = possible_aip_paths(path, false);
+
+		// -- Check
+		// Should return two possibilities:
+		// 1. Append .aip to the path: "regular_path.aip"
+		// 2. Append "/main.aip": "regular_path/main.aip"
+		assert_eq!(paths.len(), 2);
+		assert_eq!(paths[0].to_str(), "regular_path.aip");
+		assert_eq!(paths[1].to_str(), "regular_path/main.aip");
+
+		Ok(())
+	}
+
+	// endregion: --- possiple_aip_paths
 }
 
 // endregion: --- Tests

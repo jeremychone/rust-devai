@@ -38,7 +38,7 @@ mod tests {
 		let runtime = Runtime::new_test_runtime_sandbox_01()?;
 		let script = r#"
         local file1 = utils.file.load("file-01.txt")
-        local file2 = utils.file.load("agent-script/agent-before-all.devai")
+        local file2 = utils.file.load("agent-script/agent-before-all.aip")
         return {file1,file2}  -- Return an array of File structs
     "#;
 		let tmpl = r#"
@@ -60,7 +60,7 @@ The files are:
 
 		// // -- Check
 		assert_contains(&res, "- file-01.txt");
-		assert_contains(&res, "- agent-script/agent-before-all.devai");
+		assert_contains(&res, "- agent-script/agent-before-all.aip");
 
 		Ok(())
 	}

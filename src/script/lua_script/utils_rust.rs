@@ -8,9 +8,9 @@
 //! ### Functions
 //! * `utils.rust.prune_to_declarations(code: string) -> string`
 
+use crate::Result;
 use crate::run::RuntimeContext;
 use crate::support::code::run_prune_to_declarations;
-use crate::Result;
 use mlua::{Lua, Table, Value};
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
@@ -50,7 +50,7 @@ fn prune_to_declarations(lua: &Lua, code: String) -> mlua::Result<Value> {
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{setup_lua, eval_lua, assert_contains};
+	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
 
 	#[tokio::test]
 	async fn test_lua_rust_prune_to_declarations() -> Result<()> {
@@ -81,7 +81,10 @@ fn some_normal() {
 		assert_contains(res, "use some::module; // and comment ");
 		assert_contains(res, "async some_async_fn(some_arg: String) -> i32");
 		assert_contains(res, "fn some_normal()");
-		assert!(!res.contains(r#"let some = "code";"#), "should NOT contain let some ...");
+		assert!(
+			!res.contains(r#"let some = "code";"#),
+			"should NOT contain let some ..."
+		);
 		assert!(!res.contains("// DOING SOME STUFF"), "DOING SOME STUFF");
 		Ok(())
 	}

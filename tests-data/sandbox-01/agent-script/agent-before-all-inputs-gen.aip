@@ -1,0 +1,56 @@
+# Before All
+
+```lua
+
+return aipack.before_all_response({
+    -- Some data for before all
+    before_all = inputs,
+    -- inputs generation
+    inputs = {"one", "two", "three", 4, "five"}
+})
+
+```
+
+# Data 
+
+```lua
+
+if input == "two" then
+    return aipack.skip("Skip the 'two' at data stage")
+end
+
+return "Data with input: '" .. input .. "'"
+
+```
+
+# Output
+
+```lua
+
+if input == "five" then
+    return aipack.skip("Don't output process 'five'")
+end
+
+if input == 4 then
+    return
+else
+    return {
+        before_all_data_was = before_all,
+        data = data
+    }
+end
+
+
+
+```
+
+# After All
+
+```lua
+
+return {
+ message = "this is after all data: inputs: " ,
+ rexported_inputs = inputs,
+}
+
+```

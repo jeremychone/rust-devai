@@ -45,7 +45,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 /// ```
 fn git_restore(lua: &Lua, ctx: &RuntimeContext, path: String) -> mlua::Result<Value> {
 	let output = std::process::Command::new("git")
-		.current_dir(ctx.dir_context().workspace_dir())
+		.current_dir(ctx.dir_context().wks_dir())
 		.arg("restore")
 		.arg(&path)
 		.output()

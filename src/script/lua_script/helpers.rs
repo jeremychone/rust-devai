@@ -27,7 +27,7 @@ pub fn process_lua_eval_result(_lua: &Lua, res: mlua::Result<Value>, script: &st
 ///
 /// IMPORTANT: Use this to covert JSON Value to Lua Value, as the default mlua to_value,
 ///            converts serde_json::Value::Null to Lua user data, and not mlua::Value::Nil,
-///            and we want it for devai.
+///            and we want it for aipack.
 pub fn serde_to_lua_value(lua: &Lua, val: serde_json::Value) -> Result<Value> {
 	let res = match val {
 		serde_json::Value::Null => Value::Nil,
@@ -58,7 +58,7 @@ pub fn to_vec_of_strings(value: Value, err_prefix: &'static str) -> mlua::Result
 							from: "table",
 							to: "Vec<String>".to_string(),
 							message: Some(format!("{err_prefix} - Table contains non-string values")),
-						})
+						});
 					}
 				}
 			}

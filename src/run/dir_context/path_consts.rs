@@ -1,30 +1,22 @@
-//! All Paths for devai
+//! All Paths for Aipack
 
-// -- Devai Base
+// -- Aipack Base
 
 // Will be from the home dir
-pub const DEVAI_BASE: &str = ".devai-base";
+pub const AIPACK_BASE: &str = ".aipack-base";
 
-// -- .devai/
+// -- .aipack/
 
-pub const DEVAI_DIR_NAME: &str = ".devai";
-pub const DEVAI_DIR_PATH: &str = "./.devai";
+pub const AIPACK_DIR_NAME: &str = ".aipack";
 
-pub const DEVAI_CONFIG_FILE_PATH: &str = "config.toml";
+pub const CONFIG_FILE_NAME: &str = "config.toml";
 
-// -- Common Path (for .devai/ and ~/.devai-base/)
+// -- Common Path (for .aipack/ and ~/.aipack-base/)
 
-pub const CUSTOM_AGENT_DIR: &str = "custom/agent";
-pub const CUSTOM_LUA_DIR: &str = "custom/lua";
+// TODO: probably need to add a common lua, or perhaps allow `require("jc@utils/lua/somefile")`
+// pub const CUSTOM_LUA_DIR: &str = "custom/lua";
 
-pub const DEFAULT_AGENT_DIR: &str = "default/agent";
+pub const PACK_CUSTOM: &str = "pack/custom";
+pub const PACK_INSTALLED: &str = "pack/installed";
 
 // -- New Agent Templates
-
-pub const DEVAI_NEW_CUSTOM_COMMAND_DIR: &str = "custom/new-template/agent";
-pub const DEVAI_NEW_DEFAULT_COMMAND_DIR: &str = "default/new-template/agent";
-pub const DEVAI_NEW_COMMAND_DIRS: &[&str] = &[
-	// by priority
-	DEVAI_NEW_CUSTOM_COMMAND_DIR,
-	DEVAI_NEW_DEFAULT_COMMAND_DIR,
-];

@@ -1,12 +1,11 @@
-use crate::hub::{get_hub, HubEvent};
-use crate::run::path_consts::CUSTOM_LUA_DIR;
-use crate::run::{get_devai_base_dir, RuntimeContext};
+use crate::Result;
+use crate::hub::{HubEvent, get_hub};
+use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::{process_lua_eval_result, serde_to_lua_value};
 use crate::script::lua_script::{
-	utils_cmd, utils_code, utils_devai, utils_file, utils_git, utils_hbs, utils_html, utils_json, utils_lua, utils_md,
+	utils_aipack, utils_cmd, utils_code, utils_file, utils_git, utils_hbs, utils_html, utils_json, utils_lua, utils_md,
 	utils_path, utils_rust, utils_text, utils_web,
 };
-use crate::Result;
 use mlua::{IntoLua, Lua, Table, Value};
 
 pub struct LuaEngine {
@@ -23,11 +22,8 @@ impl LuaEngine {
 		// -- init utils
 		init_utils(&lua, &runtime_context)?;
 
-		// -- init devai
-		utils_devai::init_module(&lua, &runtime_context)?;
-
-		// -- Init package.path
-		init_package_path(&lua, &runtime_context)?;
+		// -- init aipack
+		utils_aipack::init_module(&lua, &runtime_context)?;
 
 		// -- Init print
 		init_print(&lua)?;
@@ -70,7 +66,7 @@ impl LuaEngine {
 	///
 	/// IMPORTANT: Use this to covert JSON Value to Lua Value, as the default mlua to_value,
 	///            converts serde_json::Value::Null to Lua user data, and not mlua::Value::Nil,
-	///            and we want it for devai.
+	///            and we want it for aipack.
 	pub fn serde_to_lua_value(&self, val: serde_json::Value) -> Result<Value> {
 		serde_to_lua_value(&self.lua, val)
 	}
@@ -117,34 +113,6 @@ impl LuaEngine {
 }
 
 // region:    --- Init Globals
-
-fn init_package_path(lua: &Lua, runtime_context: &RuntimeContext) -> Result<()> {
-	let globals = lua.globals();
-
-	let package: Table = globals.get("package")?;
-	// example of a default: "/usr/local/share/lua/5.4/?.lua;/usr/local/share/lua/5.4/?/init.lua;/usr/local/lib/lua/5.4/?.lua;/usr/local/lib/lua/5.4/?/init.lua;./?.lua;./?/init.lua"
-	let path: String = package.get("path")?;
-
-	let devai_dir = runtime_context.dir_context().devai_dir();
-
-	// compute the additional paths
-
-	// The .devai/custom/lua
-	let custom_lua_dir = devai_dir.get_lua_custom_dir()?;
-	let mut addl_paths = format!("{custom_lua_dir}/?.lua;{custom_lua_dir}/?/init.lua");
-
-	// The eventual ~/.devai-base/custom/lua
-	if let Some(base_lua_dir) = get_devai_base_dir().and_then(|base_dir| base_dir.join(CUSTOM_LUA_DIR).ok()) {
-		if base_lua_dir.exists() {
-			addl_paths = format!("{addl_paths};{base_lua_dir}/?.lua;{base_lua_dir}/?/init.lua");
-		}
-	}
-
-	let new_path = format!("{addl_paths};{path}");
-	package.set("path", new_path)?;
-
-	Ok(())
-}
 
 fn init_print(lua: &Lua) -> Result<()> {
 	let globals = lua.globals();
@@ -232,10 +200,7 @@ mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
 	use super::*;
-	use crate::_test_support::SANDBOX_01_DIR;
 	use crate::run::Runtime;
-	use simple_fs::ensure_dir;
-	use std::path::Path;
 
 	/// Test if custom scope and global lua utils `math` work.
 	#[tokio::test]
@@ -257,57 +222,6 @@ return "Hello " .. my_name .. " - " .. square_root
 		let res = serde_json::to_value(res)?;
 		let res = res.as_str().ok_or("Should be string")?;
 		assert_eq!(res, "Hello Lua World - 5.0");
-		Ok(())
-	}
-
-	/// Test if the `utils.file.load` works
-	#[tokio::test]
-	async fn test_lua_engine_eval_file_load_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		let engine = LuaEngine::new(runtime.context().clone())?;
-		let fx_script = r#"
-local file = utils.file.load("other/hello.txt")
-return "Hello " .. my_name .. " - " .. file.content		
-		"#;
-
-		// -- Exec
-		let scope = engine.create_table()?;
-		scope.set("my_name", "Lua World")?;
-		let res = engine.eval(fx_script, Some(scope), None)?;
-
-		// -- Check
-		let res = serde_json::to_value(res)?;
-		let res = res.as_str().ok_or("Should be string")?;
-		assert_eq!(res, "Hello Lua World - hello from the other/hello.txt");
-
-		Ok(())
-	}
-
-	/// Test if the `utils.file.load` works
-	#[tokio::test]
-	async fn test_lua_engine_eval_require_ok() -> Result<()> {
-		// -- Setup & Fixtures
-		let runtime = Runtime::new_test_runtime_sandbox_01()?;
-		ensure_dir("tests-data/sandbox-01/.devai/custom/lua")?;
-		std::fs::copy(
-			Path::new(SANDBOX_01_DIR).join("other/demo.lua"),
-			"tests-data/sandbox-01/.devai/custom/lua/demo.lua",
-		)?;
-		let engine = LuaEngine::new(runtime.context().clone())?;
-		let fx_script = r#"
-local demo = require("demo")
-return "demo.name_one is " .. "'" .. demo.name_one .. "'"
-		"#;
-
-		// -- Exec
-		let res = engine.eval(fx_script, None, None)?;
-
-		// -- Check
-		let res = serde_json::to_value(res)?;
-		let res = res.as_str().ok_or("Should be string")?;
-		assert_eq!(res, "demo.name_one is 'Demo One'");
-
 		Ok(())
 	}
 }

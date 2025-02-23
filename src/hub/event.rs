@@ -1,5 +1,5 @@
-use crate::exec::ExecEvent;
 use crate::Error;
+use crate::exec::ExecEvent;
 use derive_more::derive::From;
 use std::sync::Arc;
 

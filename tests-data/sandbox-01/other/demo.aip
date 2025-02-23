@@ -1,0 +1,6 @@
+# Output
+
+```lua
+local demo = require("demo")
+return "demo.name_one is " .. "'" .. demo.name_one .. "'"
+```

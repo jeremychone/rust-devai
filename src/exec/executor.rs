@@ -4,13 +4,13 @@
 use crate::agent::Agent;
 use crate::exec::exec_command::ExecCommand;
 use crate::exec::support::open_vscode;
-use crate::exec::{exec_list, exec_new, exec_run, exec_run_redo, ExecEvent, RunRedoCtx};
+use crate::exec::{ExecEvent, RunRedoCtx, exec_list, exec_new, exec_run, exec_run_redo};
 use crate::hub::get_hub;
-use crate::init::{init_base, init_devai_files};
+use crate::init::{init_base, init_wks};
 use crate::{Error, Result};
 use derive_more::derive::From;
 use std::sync::Arc;
-use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio::sync::mpsc::{Receiver, Sender, channel};
 
 // region:    --- RedoCtx
 
@@ -75,7 +75,7 @@ impl Executor {
 
 		loop {
 			let Some(cmd) = self.command_rx.recv().await else {
-				println!("!!!! Devai Executor: Channel closed");
+				println!("!!!! Aipack Executor: Channel closed");
 				break;
 			};
 
@@ -83,19 +83,20 @@ impl Executor {
 
 			match cmd {
 				ExecCommand::Init(init_args) => {
-					init_devai_files(init_args.path.as_deref(), true).await?;
+					init_wks(init_args.path.as_deref(), true).await?;
+					init_base(false).await?;
 				}
 				ExecCommand::InitBase => {
-					init_base().await?;
+					init_base(true).await?;
 				}
 				ExecCommand::NewCommandAgent(new_args) => {
-					exec_new(new_args, init_devai_files(None, false).await?).await?;
+					exec_new(new_args, init_wks(None, false).await?).await?;
 				}
-				ExecCommand::List => exec_list(init_devai_files(None, false).await?).await?,
+				ExecCommand::List(list_args) => exec_list(init_wks(None, false).await?, list_args).await?,
 
 				ExecCommand::RunCommandAgent(run_args) => {
 					hub.publish(ExecEvent::RunStart).await;
-					let redo = exec_run(run_args, init_devai_files(None, false).await?).await?;
+					let redo = exec_run(run_args, init_wks(None, false).await?).await?;
 					self.current_redo_ctx = Some(redo.into());
 					hub.publish(ExecEvent::RunEnd).await;
 				}

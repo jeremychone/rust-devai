@@ -1,7 +1,7 @@
+use crate::Result;
 use crate::agent::Agent;
 use crate::run::DirContext;
 use crate::script::LuaEngine;
-use crate::Result;
 use simple_fs::SPath;
 use std::sync::Arc;
 
@@ -9,7 +9,7 @@ use std::sync::Arc;
 #[derive(Debug, Default, Clone)]
 pub struct Literals {
 	/// The store of all literals, pattern and value
-	/// e.g. `vec![("&DEVAI_AGENT_DIR","./.devai/custom/command-agent/some.devai")]`
+	/// e.g. `vec![("&AIPACK_AGENT_DIR","./.aipack/custom/command-agent/some.aipack")]`
 	store: Arc<Vec<(&'static str, String)>>,
 }
 
@@ -21,7 +21,6 @@ impl Literals {
 		let mut store = Vec::new();
 
 		let agent_path = dir_context.current_dir().join(agent.file_path())?;
-		let agent_path = agent_path.diff(dir_context.workspace_dir())?;
 		// Add back the './' prefix to follow convention of being relative to workspace_dir
 		let agent_path = SPath::new(format!("./{agent_path}"))?;
 
@@ -29,7 +28,7 @@ impl Literals {
 			.parent()
 			.ok_or_else(|| format!("Agent {agent_path} does not have a parent dir"))?;
 
-		let devai_dir = dir_context.devai_dir();
+		let aipack_paths = dir_context.aipack_paths();
 
 		store.push(("PWD", dir_context.current_dir().to_string()));
 
@@ -39,14 +38,14 @@ impl Literals {
 		//          agent_name: `my-cool-agent`)
 		//   - When "my-cool-agent/cool-specialized.md"
 		//          agent_name: `my-cool-agent/cool-specialized`
-		//   - When `devai run ./my-folder/command-agent-jc`
+		//   - When `aip run ./my-folder/command-agent-jc`
 		//          agent_name: `./my-folder/command-agent-jc`
 		// literals.append("AGENT_NAME", ???);
 
 		// The workspace_dir should be absolute, and all of the other paths will relative to it.
-		store.push(("WORKSPACE_DIR", dir_context.workspace_dir().to_string()));
+		store.push(("WORKSPACE_DIR", dir_context.wks_dir().to_string()));
 
-		store.push(("DEVAI_DIR", devai_dir.devai_dir().to_string()));
+		store.push(("AIPACK_DIR", aipack_paths.wks_aipack_dir().to_string()));
 
 		store.push(("AGENT_NAME", agent.name().to_string()));
 		store.push(("AGENT_FILE_NAME", agent_path.name().to_string()));
@@ -90,16 +89,15 @@ impl Literals {
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::run_reflective_agent;
-	use std::path::Path;
+	use crate::_test_support::{assert_ends_with, run_reflective_agent};
 	use value_ext::JsonValueExt;
 
 	#[tokio::test]
-	async fn test_run_literals_devai_dir() -> Result<()> {
+	async fn test_run_literals_aipack_dir() -> Result<()> {
 		let script = r#"
 return {
-	  WORKSPACE_DIR = CTX.WORKSPACE_DIR,
-		DEVAI_DIR        = CTX.DEVAI_DIR,
+	  WORKSPACE_DIR    = CTX.WORKSPACE_DIR,
+		AIPACK_DIR       = CTX.AIPACK_DIR,
 		AGENT_FILE_NAME  = CTX.AGENT_FILE_NAME,
 		AGENT_FILE_PATH  = CTX.AGENT_FILE_PATH,
 		AGENT_FILE_DIR   = CTX.AGENT_FILE_DIR,
@@ -111,24 +109,11 @@ return {
 		let res = run_reflective_agent(script, None).await?;
 
 		// -- Check
-		// workspace_dir
-		let workspace_dir = res.x_get_as::<&str>("WORKSPACE_DIR")?;
-		assert!(Path::new(workspace_dir).is_absolute(), "workspace_dir must be absolute");
-		assert!(
-			workspace_dir.ends_with("tests-data/sandbox-01"),
-			"WORKSPACE_DIR must end with 'tests-data/sandbox-01'"
-		);
-
-		// devai dir
-		assert_eq!(res.x_get_as::<&str>("DEVAI_DIR")?, "./.devai");
-
-		assert_eq!(
-			res.x_get_as::<&str>("AGENT_FILE_PATH")?,
-			"./mock/reflective-agent.devai"
-		);
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_DIR")?, "./mock");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_NAME")?, "reflective-agent.devai");
-		assert_eq!(res.x_get_as::<&str>("AGENT_FILE_STEM")?, "reflective-agent");
+		assert_ends_with(res.x_get_str("WORKSPACE_DIR")?, "tests-data/sandbox-01");
+		assert_eq!(res.x_get_str("AGENT_FILE_NAME")?, "reflective-agent.aip");
+		assert_eq!(res.x_get_str("AGENT_FILE_STEM")?, "reflective-agent");
+		assert_ends_with(res.x_get_str("AIPACK_DIR")?, "tests-data/sandbox-01/.aipack");
+		assert_ends_with(res.x_get_str("AGENT_FILE_PATH")?, "mock/reflective-agent.aip");
 
 		Ok(())
 	}

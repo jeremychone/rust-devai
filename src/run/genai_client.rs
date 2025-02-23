@@ -1,7 +1,7 @@
 //! Module about AI support functions.
 
-use crate::support::cred::get_or_prompt_api_key;
 use crate::Result;
+use crate::support::cred::get_or_prompt_api_key;
 use genai::chat::ChatOptions;
 use genai::resolver::AuthData;
 use genai::{Client, ModelIden};

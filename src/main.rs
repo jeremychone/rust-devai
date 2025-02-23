@@ -17,9 +17,9 @@ mod _test_support;
 
 use crate::cli::CliArgs;
 use crate::exec::Executor;
-use crate::hub::{get_hub, HubEvent};
+use crate::hub::{HubEvent, get_hub};
 use crate::tui::TuiApp;
-use clap::{crate_version, Parser};
+use clap::{Parser, crate_version};
 use error::{Error, Result};
 use std::time::Duration;
 

@@ -12,7 +12,7 @@ use value_ext::JsonValueExt;
 async fn test_run_agent_llm_c_simple_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-llm/agent-simple.devai", &runtime)?;
+	let agent = load_test_agent("./agent-llm/agent-simple.aip", &runtime)?;
 
 	// -- Execute
 	let res = run_test_agent(&runtime, &agent).await?;
@@ -27,7 +27,7 @@ async fn test_run_agent_llm_c_simple_ok() -> Result<()> {
 async fn test_run_agent_llm_c_on_file_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-llm/agent-on-file.devai", &runtime)?;
+	let agent = load_test_agent("./agent-llm/agent-on-file.aip", &runtime)?;
 
 	// -- Execute
 	let on_file = SPath::new("./other/hello.txt")?;
@@ -50,7 +50,7 @@ async fn test_run_agent_llm_c_on_file_ok() -> Result<()> {
 async fn test_run_agent_llm_full_chat_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("agent-llm/agent-full-chat.devai", &runtime)?;
+	let agent = load_test_agent("agent-llm/agent-full-chat.aip", &runtime)?;
 
 	// -- Execute
 	let res = run_test_agent(&runtime, &agent).await?;
@@ -58,7 +58,7 @@ async fn test_run_agent_llm_full_chat_ok() -> Result<()> {
 	// -- Check
 	let content = res.as_str().ok_or("Should return a string")?;
 	// concatinate the first char of each line
-	// Because the `agent-full-chat.devai` system instructs to give only 3 bullet points answer.
+	// Because the `agent-full-chat.aip` system instructs to give only 3 bullet points answer.
 	let first_chart_of_each_line = content
 		.lines()
 		.map(|line| line.chars().next().unwrap_or_default())

@@ -1,0 +1,21 @@
+[default_options]
+# Required (any model supported by the Rust genai crate)
+# e.g.,    
+#          Gemini: "gemini-2.0-flash-001", "gemini-1.5-pro", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-flash-8b" 
+#             xAI: "grok-beta"
+#       Anthropic: "claude-3-5-sonnet-20241022", "claude-3-5-haiku-20241022", "claude-3-haiku-20240307"
+#          Ollama: "llama3.3:70b", "llama3.1:8b", "llama3.2:3b" "deepseek-r1:8b" "deepseek-coder-v2:16b" (or any locally installed Ollama)
+#            Groq: "deepseek-r1-distill-llama-70b", "llama3-8b-8192", "llama-3.3-70b-versatile"
+#          OpenAI: "o3-mini", "o3-mini-high", "o3-mini-low", "gpt-4o", "gpt-4o-mini"
+#        DeepSeek: "deepseek-chat" "deepseek-reasoner" (from deepseek.com)
+model = "gpt-4o-mini"
+
+# Temperature (by default unset)
+# temperature = 0.0
+
+# How many inputs can be processed at the same time (Defaults to 1 if absent)
+# input_concurrency = 6
+
+# Define your own model aliases for any model/provider you have access to, and they can be used in place of the model name.
+# This can also be overridden or complemented in the `# Options` section of the aipack.
+model_aliases = { cost-saver = "deepseek-chat", standard = "gpt-4o", coder = "claude-3-7-sonnet-latest", high-thinker = "o3-mini-high"}

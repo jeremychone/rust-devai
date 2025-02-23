@@ -8,8 +8,8 @@
 //! ### Functions
 //! * `utils.lua.dump(value: any) -> string`
 
-use crate::run::RuntimeContext;
 use crate::Result;
+use crate::run::RuntimeContext;
 use mlua::{Lua, Table, Value};
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {

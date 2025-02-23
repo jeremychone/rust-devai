@@ -10,11 +10,11 @@
 //! * `utils.md.extract_meta(md_content) -> Table, String`
 //! * `utils.md.outer_block_content_or_raw(md_content: string) -> string`
 
+use crate::Result;
 use crate::run::RuntimeContext;
 use crate::support::md::{self};
 use crate::support::{Extrude, W};
 use crate::types::MdBlock;
-use crate::Result;
 use mlua::{IntoLua, Lua, LuaSerdeExt, MultiValue, Table, Value};
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
@@ -144,7 +144,7 @@ mod tests {
 		// -- Setup & Fixtures
 		// NOTE: the [[ ]] for multi line in lua breaks with the ``` for code block, so, reading files.
 		let fx_script = r#"
-local file = utils.file.load("agent-script/agent-before-all-inputs-gen.devai")
+local file = utils.file.load("agent-script/agent-before-all-inputs-gen.aip")
 return utils.md.extract_blocks(file.content, {lang = "lua"})
 		"#;
 

@@ -1,11 +1,11 @@
 use crate::hub::get_hub;
 use crate::run::{DirContext, PathResolver, RuntimeContext};
 use crate::script::lua_script::helpers::{get_value_prop_as_string, to_vec_of_strings};
-use crate::support::{files, paths, AsStrsExt};
+use crate::support::{AsStrsExt, files, paths};
 use crate::types::{FileMeta, FileRecord};
 use crate::{Error, Result};
 use mlua::{FromLua, IntoLua, Lua, Value};
-use simple_fs::{ensure_file_dir, iter_files, list_files, ListOptions, SPath};
+use simple_fs::{ListOptions, SPath, ensure_file_dir, iter_files, list_files};
 use std::fs::write;
 use std::io::Write;
 
@@ -61,7 +61,7 @@ pub(super) fn file_load(
 /// Does not return anything
 ///
 pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, content: String) -> mlua::Result<()> {
-	let path = ctx.dir_context().resolve_path(&rel_path, PathResolver::WorkspaceDir)?;
+	let path = ctx.dir_context().resolve_path(&rel_path, PathResolver::WksDir)?;
 	ensure_file_dir(&path).map_err(Error::from)?;
 
 	write(&path, content)?;
@@ -84,7 +84,7 @@ pub(super) fn file_save(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, cont
 /// Does not return anything
 ///
 pub(super) fn file_append(_lua: &Lua, ctx: &RuntimeContext, rel_path: String, content: String) -> mlua::Result<()> {
-	let path = ctx.dir_context().resolve_path(&rel_path, PathResolver::WorkspaceDir)?;
+	let path = ctx.dir_context().resolve_path(&rel_path, PathResolver::WksDir)?;
 	ensure_file_dir(&path).map_err(Error::from)?;
 
 	let mut file = std::fs::OpenOptions::new()
@@ -122,7 +122,7 @@ pub(super) fn file_ensure_exists(
 ) -> mlua::Result<mlua::Value> {
 	let options = options.unwrap_or_default();
 	let rel_path = SPath::new(path).map_err(Error::from)?;
-	let full_path = ctx.dir_context().resolve_path(&rel_path, PathResolver::WorkspaceDir)?;
+	let full_path = ctx.dir_context().resolve_path(&rel_path, PathResolver::WksDir)?;
 
 	// if the file does not exist, create it.
 	if !full_path.exists() {
@@ -351,7 +351,7 @@ fn base_dir_and_globs(
 
 fn compute_base_dir(dir_context: &DirContext, options: Option<&Value>) -> Result<SPath> {
 	// the default base_path is the workspace dir.
-	let workspace_path = dir_context.resolve_path("", PathResolver::WorkspaceDir)?;
+	let workspace_path = dir_context.resolve_path("", PathResolver::WksDir)?;
 
 	// if options, try to resolve the options.base_dir
 	let base_dir = get_value_prop_as_string(options, "base_dir", "utils.file... options fail")?;
@@ -378,22 +378,22 @@ fn compute_base_dir(dir_context: &DirContext, options: Option<&Value>) -> Result
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{assert_contains, eval_lua, run_reflective_agent, setup_lua, SANDBOX_01_DIR};
+	use crate::_test_support::{SANDBOX_01_WKS_DIR, assert_contains, eval_lua, run_reflective_agent, setup_lua};
 	use std::path::Path;
 	use value_ext::JsonValueExt as _;
 
 	#[tokio::test]
 	async fn test_lua_file_load_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let fx_path = "./agent-script/agent-hello.devai";
+		let fx_path = "./agent-script/agent-hello.aip";
 
 		// -- Exec
 		let res = run_reflective_agent(&format!(r#"return utils.file.load("{fx_path}")"#), None).await?;
 
 		// -- Check
-		assert_contains(res.x_get_str("content")?, "from agent-hello.devai");
+		assert_contains(res.x_get_str("content")?, "from agent-hello.aip");
 		assert_eq!(res.x_get_str("path")?, fx_path);
-		assert_eq!(res.x_get_str("name")?, "agent-hello.devai");
+		assert_eq!(res.x_get_str("name")?, "agent-hello.aip");
 
 		Ok(())
 	}
@@ -403,7 +403,7 @@ mod tests {
 	#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 	async fn test_lua_file_save_simple_ok() -> Result<()> {
 		// -- Setup & Fixtures
-		let fx_dest_path = "./.tmp/test_file_save_simple_ok/agent-hello.devai";
+		let fx_dest_path = "./.tmp/test_file_save_simple_ok/agent-hello.aip";
 		let fx_content = "hello from test_file_save_simple_ok";
 
 		// -- Exec
@@ -414,7 +414,7 @@ mod tests {
 		.await?;
 
 		// -- Check
-		let dest_path = Path::new(SANDBOX_01_DIR).join(fx_dest_path);
+		let dest_path = Path::new(SANDBOX_01_WKS_DIR).join(fx_dest_path);
 		let file_content = std::fs::read_to_string(dest_path)?;
 		assert_eq!(file_content, fx_content);
 
@@ -450,9 +450,10 @@ mod tests {
 
 		// -- Check
 		let res_paths = to_res_paths(&res);
-		assert_eq!(res_paths.len(), 2, "result length");
-		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.devai");
-		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.devai");
+		assert_eq!(res_paths.len(), 3, "result length");
+		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/agent-hello-3.aip");
+		assert_contains(&res_paths, "sub-dir-a/sub-sub-dir/main.aip");
+		assert_contains(&res_paths, "sub-dir-a/agent-hello-2.aip");
 
 		Ok(())
 	}
@@ -498,16 +499,21 @@ return { files = files }
 			.as_array()
 			.ok_or("file should be array")?;
 
-		assert_eq!(files.len(), 2, ".files.len() should be 2");
+		assert_eq!(files.len(), 3, ".files.len() should be 3");
+
 		// NOTE: Here we assume the order will be deterministic and the same across OSes (tested on Mac).
 		//       This logic might need to be changed, or actually, the list might need to have a fixed order.
 		assert_eq!(
-			"agent-hello-2.devai",
+			"main.aip",
 			files.first().ok_or("Should have a least one file")?.x_get_str("name")?
 		);
 		assert_eq!(
-			"agent-hello-3.devai",
+			"agent-hello-3.aip",
 			files.get(1).ok_or("Should have a least two file")?.x_get_str("name")?
+		);
+		assert_eq!(
+			"agent-hello-2.aip",
+			files.get(2).ok_or("Should have a least two file")?.x_get_str("name")?
 		);
 
 		Ok(())
@@ -518,7 +524,7 @@ return { files = files }
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::super::init_module, "file")?;
 		let lua_code = r#"
-local files = utils.file.list({"agent-hello-*.devai"}, {base_dir = "sub-dir-a"})
+local files = utils.file.list({"agent-hello-*.aip"}, {base_dir = "sub-dir-a"})
 return { files = files }
 		"#;
 
@@ -536,7 +542,7 @@ return { files = files }
 		// NOTE: Here we assume the order will be deterministic and the same across OSes (tested on Mac).
 		//       This logic might need to be changed, or actually, the list might need to have a fixed order.
 		assert_eq!(
-			"agent-hello-2.devai",
+			"agent-hello-2.aip",
 			files.first().ok_or("Should have a least one file")?.x_get_str("name")?
 		);
 
@@ -554,8 +560,8 @@ return { files = files }
 
 		// -- Check
 		// let res_paths = to_res_paths(&res);
-		assert_eq!(res.x_get_str("name")?, "agent-hello-2.devai");
-		assert_eq!(res.x_get_str("path")?, "sub-dir-a/agent-hello-2.devai");
+		assert_eq!(res.x_get_str("name")?, "agent-hello-2.aip");
+		assert_eq!(res.x_get_str("path")?, "sub-dir-a/agent-hello-2.aip");
 
 		Ok(())
 	}

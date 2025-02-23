@@ -1,6 +1,6 @@
 #![allow(unused)]
-use crate::types::MdBlock;
 use crate::Result;
+use crate::types::MdBlock;
 use serde_json::Value;
 
 pub fn extract_meta(content: &str) -> Result<(Value, String)> {

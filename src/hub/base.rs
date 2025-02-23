@@ -22,7 +22,7 @@ impl Hub {
 
 		match self.tx.send(event) {
 			Ok(_) => (),
-			Err(err) => println!("DEVAI INTERNAL ERROR - failed to send event to hub - {err}"),
+			Err(err) => println!("AIPACK INTERNAL ERROR - failed to send event to hub - {err}"),
 		}
 	}
 
@@ -34,7 +34,7 @@ impl Hub {
 				Ok(rt) => rt.block_on(async { self.publish(event).await }),
 
 				// NOTE: Here per design, we do not return error or break, as it is just for logging
-				Err(err) => println!("DEVAI INTERNAL ERROR - no current tokio handle - {err}"),
+				Err(err) => println!("AIPACK INTERNAL ERROR - no current tokio handle - {err}"),
 			}
 		});
 	}

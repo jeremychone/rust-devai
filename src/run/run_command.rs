@@ -1,9 +1,9 @@
 use crate::agent::{Agent, AgentOptions};
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
-use crate::run::run_input::{run_agent_input, RunAgentInputResponse};
+use crate::run::run_input::{RunAgentInputResponse, run_agent_input};
 use crate::run::{DirContext, RunBaseOptions, Runtime};
-use crate::script::{BeforeAllResponse, DevaiCustom, FromValue};
+use crate::script::{AipackCustom, BeforeAllResponse, FromValue};
 use crate::{Error, Result};
 use serde::Serialize;
 use serde_json::Value;
@@ -20,15 +20,15 @@ pub struct RunCommandResponse {
 }
 
 /// Return the display path
-/// - If .devai/ or relative to workspace, then, relatively to workspace
-/// - If ~/.devai-base/ then, absolute path
+/// - If .aipack/ or relative to workspace, then, relatively to workspace
+/// - If ~/.aipack-base/ then, absolute path
 fn get_display_path(file_path: &str, dir_context: &DirContext) -> Result<SPath> {
 	let file_path = SPath::new(file_path)?;
 
-	if file_path.to_str().contains(".devai-base") {
+	if file_path.to_str().contains(".aipack-base") {
 		Ok(file_path)
 	} else {
-		let spath = file_path.diff(dir_context.workspace_dir())?;
+		let spath = file_path.diff(dir_context.wks_dir())?;
 		Ok(spath)
 	}
 }
@@ -61,17 +61,17 @@ pub async fn run_command_agent(
 		let lua_value = lua_engine.eval(before_all_script, Some(lua_scope), Some(&[agent.file_dir()?.to_str()]))?;
 		let before_all_res = serde_json::to_value(lua_value)?;
 
-		match DevaiCustom::from_value(before_all_res)? {
+		match AipackCustom::from_value(before_all_res)? {
 			// it is an skip action
-			FromValue::DevaiCustom(DevaiCustom::Skip { reason }) => {
+			FromValue::AipackCustom(AipackCustom::Skip { reason }) => {
 				let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
-				hub.publish(format!("-! DevAI Skip inputs at Before All section{reason_msg}"))
+				hub.publish(format!("-! Aipack Skip inputs at Before All section{reason_msg}"))
 					.await;
 				return Ok(RunCommandResponse::default());
 			}
 
 			// it is before_all_response, so, we eventually override the inputs
-			FromValue::DevaiCustom(DevaiCustom::BeforeAllResponse(BeforeAllResponse {
+			FromValue::AipackCustom(AipackCustom::BeforeAllResponse(BeforeAllResponse {
 				inputs: inputs_ov,
 				before_all,
 				options,
@@ -170,20 +170,20 @@ pub async fn run_command_agent(
 
 			// Process the output
 			let run_input_value = run_input_response.map(|v| v.into_value()).unwrap_or_default();
-			let output = match DevaiCustom::from_value(run_input_value)? {
+			let output = match AipackCustom::from_value(run_input_value)? {
 				// if it is a skip, we skip
-				FromValue::DevaiCustom(DevaiCustom::Skip { reason }) => {
+				FromValue::AipackCustom(AipackCustom::Skip { reason }) => {
 					let reason_msg = reason.map(|reason| format!(" (Reason: {reason})")).unwrap_or_default();
-					hub.publish(format!("-! DevAI Skip input at Output stage{reason_msg}")).await;
+					hub.publish(format!("-! Aipack Skip input at Output stage{reason_msg}")).await;
 					Value::Null
 				}
 
-				// Any other DevaiCustom is not supported at output stage
-				FromValue::DevaiCustom(other) => {
+				// Any other AipackCustom is not supported at output stage
+				FromValue::AipackCustom(other) => {
 					return Err(Error::custom(format!(
-						"devai custom '{}' not supported at the Output stage",
+						"Aipack custom '{}' not supported at the Output stage",
 						other.as_ref()
-					)))
+					)));
 				}
 
 				// Plain value passthrough

@@ -1,6 +1,6 @@
 use crate::cli::CliArgs;
 use crate::exec::{ExecCommand, ExecEvent};
-use crate::hub::{get_hub, HubEvent};
+use crate::hub::{HubEvent, get_hub};
 use crate::tui::in_reader::InReader;
 use crate::tui::tui_elem;
 use crate::{Error, Result};

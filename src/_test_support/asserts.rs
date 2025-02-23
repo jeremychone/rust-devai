@@ -28,6 +28,32 @@ where
 	);
 }
 
+pub fn assert_ends_with<'a, T>(data: T, val: &str)
+where
+	T: Into<DataContainer<'a>>,
+{
+	let container: DataContainer = data.into();
+	assert!(
+		container.ends_with(val),
+		"Should end with: {}\nBut was: {:?}",
+		val,
+		container
+	);
+}
+
+pub fn assert_not_ends_with<'a, T>(data: T, val: &str)
+where
+	T: Into<DataContainer<'a>>,
+{
+	let container: DataContainer = data.into();
+	assert!(
+		!container.ends_with(val),
+		"Should not end with: {}\nBut was: {:?}",
+		val,
+		container
+	);
+}
+
 // region:    --- Support Types
 
 pub enum DataContainer<'a> {
@@ -78,6 +104,18 @@ impl DataContainer<'_> {
 			DataContainer::Str(string) => string.contains(val),
 		}
 	}
+
+	fn ends_with(&self, val: &str) -> bool {
+		match self {
+			DataContainer::Slice(slice) => {
+				if slice.is_empty() {
+					return false;
+				}
+				slice.last().unwrap().ends_with(val)
+			},
+			DataContainer::Str(string) => string.ends_with(val),
+		}
+	}
 }
 
 // endregion: --- Support Types
@@ -100,6 +138,25 @@ mod tests {
 
 		let data_str = "This is a test string";
 		assert_contains(data_str, "test");
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_test_support_asserts_ends_with_simple() -> Result<()> {
+		// -- Setup & Fixtures
+		let data_vec = vec!["apple", "banana", "cherry"];
+		let data_slice: &[&str] = &["dog", "cat", "mouse"];
+		let data_str = "This is a test string";
+		
+		// -- Exec & Check
+		assert_ends_with(&data_vec, "y");
+		assert_ends_with(data_slice, "e");
+		assert_ends_with(data_str, "string");
+		
+		assert_not_ends_with(&data_vec, "x");
+		assert_not_ends_with(data_slice, "dog");
+		assert_not_ends_with(data_str, "test");
 
 		Ok(())
 	}

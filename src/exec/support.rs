@@ -1,5 +1,5 @@
-use crate::hub::get_hub;
 use crate::Error;
+use crate::hub::get_hub;
 use std::path::Path;
 use std::process::Command;
 

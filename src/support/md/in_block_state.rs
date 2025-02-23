@@ -18,19 +18,11 @@ impl InBlockState {
 		match self {
 			InBlockState::In3 => {
 				// toggle out only if same (if not 6, it's 3)
-				if !is_6 {
-					InBlockState::Out
-				} else {
-					self
-				}
+				if !is_6 { InBlockState::Out } else { self }
 			}
 			InBlockState::In6 => {
 				// toggle out only if same
-				if is_6 {
-					InBlockState::Out
-				} else {
-					self
-				}
+				if is_6 { InBlockState::Out } else { self }
 			}
 			InBlockState::Out => {
 				if is_6 {

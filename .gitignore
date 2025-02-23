@@ -13,22 +13,24 @@ _*
 *.lockb
 *.log
 
-# -- Devai
-# Only allow .devai/custom and .devai/Config.toml
-# Note: Here the starting `/` will just include the top .devai. 
-#       Remove the starting `/` to include all .devai/custom even if their in a sub dir
-# !/.devai/
-# .devai/*
-# !.devai/custom/
-# !.devai/custom/**
-# !.devai/Config.toml
-# Ignore the .devai
-src/**/*.devai
+# -- Aipack
+# Only allow .aipack/custom and .aipack/config.toml
+# Note: Here the starting `/` will just include the top .aipack. 
+#       Remove the starting `/` to include all .aipack/custom even if their in a sub dir
+# !/.aipack/
+# .aipack/*
+# !.aipack/custom/
+# !.aipack/custom/**
+# !.aipack/Config.toml
+# Ignore the .aipack
+src/**/*.aip
 
-# -- Devai for test
-!/tests-data/sandbox-01/.devai/
-/tests-data/sandbox-01/.devai/*
-!/tests-data/sandbox-01/.devai/config.toml
+# -- Aipack for test
+!/tests-data/sandbox-01/.aipack/
+!/tests-data/sandbox-01/.aipack/*
+!/tests-data/sandbox-01/.aipack/config.toml
+
+!/tests-data/.aipack-base
 
 # -- Rust
 target/

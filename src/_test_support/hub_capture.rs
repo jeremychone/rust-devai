@@ -1,7 +1,7 @@
 use crate::_test_support::Result;
-use crate::hub::{get_hub, HubEvent};
+use crate::hub::{HubEvent, get_hub};
 use std::sync::Arc;
-use tokio::sync::{oneshot, Mutex};
+use tokio::sync::{Mutex, oneshot};
 
 #[allow(unused)]
 pub struct HubCapture {

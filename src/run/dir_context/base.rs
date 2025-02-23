@@ -1,15 +1,15 @@
-use crate::run::DevaiDir;
-use crate::support::files::current_dir;
 use crate::Result;
+use crate::run::AipackPaths;
+use crate::support::files::current_dir;
 use simple_fs::SPath;
 use std::path::Path;
 
 #[allow(clippy::enum_variant_names)] // to remove
 pub enum PathResolver {
 	CurrentDir,
-	WorkspaceDir,
+	WksDir,
 	#[allow(unused)]
-	DevaiDir,
+	AipackDir,
 }
 
 #[derive(Debug, Clone)]
@@ -18,38 +18,33 @@ pub struct DirContext {
 	/// (except for test, which can be mocked to another dir)
 	current_dir: SPath,
 
-	devai_dir: DevaiDir,
-
-	// Absolute path of the devai
-	workspace_dir: SPath,
+	/// This is workspace `.aipack/`
+	aipack_paths: AipackPaths,
 }
 
 /// Constructor/Loader
 impl DirContext {
-	pub fn new(devai_dir: DevaiDir) -> Result<Self> {
+	pub fn new(aipack_dir: AipackPaths) -> Result<Self> {
 		let current_dir = current_dir()?;
-		Self::from_devai_dir_and_current_dir(devai_dir, current_dir)
+		Self::from_aipack_dir_and_current_dir(aipack_dir, current_dir)
 	}
 
 	/// Private to create a new DirContext
 	/// Note: Only the test function will provide a mock current_dir
-	fn from_devai_dir_and_current_dir(devai_dir: DevaiDir, current_dir: SPath) -> Result<Self> {
-		let workspace_dir = devai_dir.workspace_dir().canonicalize()?;
+	fn from_aipack_dir_and_current_dir(aipack_dir: AipackPaths, current_dir: SPath) -> Result<Self> {
 		let current_dir = current_dir.canonicalize()?;
 		Ok(Self {
 			current_dir,
-			devai_dir,
-			workspace_dir,
+			aipack_paths: aipack_dir,
 		})
 	}
 
-	/// Here is a test function that create a new DirContext with a Mock current dir
 	#[cfg(test)]
-	pub fn from_parent_dir_and_current_dir_for_test(
-		parent_dir: impl AsRef<std::path::Path>,
-		mock_current_dir: SPath,
-	) -> Result<Self> {
-		Self::from_devai_dir_and_current_dir(DevaiDir::from_parent_dir(parent_dir)?, mock_current_dir)
+	pub fn from_current_and_aipack_paths(current_dir: SPath, aipack_paths: AipackPaths) -> Result<Self> {
+		Ok(Self {
+			current_dir,
+			aipack_paths,
+		})
 	}
 }
 
@@ -59,13 +54,13 @@ impl DirContext {
 		&self.current_dir
 	}
 
-	/// Will always be `"./.devai/"`
-	pub fn devai_dir(&self) -> &DevaiDir {
-		&self.devai_dir
+	/// Will always be `"./.aipack/"`
+	pub fn aipack_paths(&self) -> &AipackPaths {
+		&self.aipack_paths
 	}
 
-	pub fn workspace_dir(&self) -> &SPath {
-		&self.workspace_dir
+	pub fn wks_dir(&self) -> &SPath {
+		self.aipack_paths().wks_dir()
 	}
 }
 
@@ -79,8 +74,8 @@ impl DirContext {
 		} else {
 			match mode {
 				PathResolver::CurrentDir => Ok(self.current_dir.join(path)?),
-				PathResolver::WorkspaceDir => Ok(self.workspace_dir.join(path)?),
-				PathResolver::DevaiDir => Ok(self.devai_dir().devai_dir_full_path().join(path)?),
+				PathResolver::WksDir => Ok(self.wks_dir().join(path)?),
+				PathResolver::AipackDir => Ok(self.aipack_paths().wks_aipack_dir().join(path)?),
 			}
 		}
 	}

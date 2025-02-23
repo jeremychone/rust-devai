@@ -8,9 +8,9 @@
 //! ### Functions
 //! * `utils.html.prune_to_content(html_content: string) -> string`
 
+use crate::Result;
 use crate::run::RuntimeContext;
 use crate::support::html::prune_to_content;
-use crate::Result;
 use mlua::{Lua, Table};
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
@@ -46,7 +46,7 @@ fn prune_to_content_lua(_lua: &Lua, html_content: String) -> mlua::Result<String
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
 
-	use crate::_test_support::{setup_lua, eval_lua};
+	use crate::_test_support::{eval_lua, setup_lua};
 
 	#[tokio::test]
 	async fn test_lua_html_prune_to_content_ok() -> Result<()> {

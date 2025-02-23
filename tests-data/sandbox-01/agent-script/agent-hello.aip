@@ -1,0 +1,5 @@
+# Output
+
+```lua
+return "Hello '" .. input .. "' from agent-hello.aip"
+```

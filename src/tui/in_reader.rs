@@ -5,7 +5,7 @@ use flume::{Receiver, Sender};
 use std::time::Duration;
 
 /// The input reader (using crossterm)
-/// This is to abstract the way we read user input for the devai app.
+/// This is to abstract the way we read user input for the aipack app.
 /// For now, simple key reader, and forward the crossterm KeyEvent in a flume rx
 pub struct InReader {
 	tx: Sender<KeyEvent>,

@@ -1,22 +1,10 @@
 use crate::{Error, Result};
-use simple_fs::{SFile, SPath};
+use simple_fs::SPath;
 use std::env;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::Path;
-
-/// Returns the file that matches the path for a given list of directories.
-/// This is useful for finding a file path with some directory precedence rules.
-pub fn first_file_from_dirs(dirs: &[&str], path: &str) -> Result<Option<SFile>> {
-	for dir in dirs {
-		let file_path = Path::new(dir).join(path);
-		if file_path.exists() {
-			return Ok(Some(SFile::from_path(file_path)?));
-		}
-	}
-
-	Ok(None)
-}
+use walkdir::WalkDir;
 
 /// Returns the current dir
 pub fn current_dir() -> Result<SPath> {
@@ -25,7 +13,52 @@ pub fn current_dir() -> Result<SPath> {
 	Ok(dir)
 }
 
-/// Relatively efficient way to determine if a file is empty, meaning lenght == 0, or only whitespace.
+/// Lists directories under the base_dir up to the specified depth.
+///
+/// # Parameters
+/// - `base_dir`: The base directory to start listing from
+/// - `depth`: Maximum directory depth to traverse (0 means just the base_dir)
+/// - `only_leaf`: If true, only returns directories exactly at the specified depth.
+///                (Callers can pass true to use the default behavior.)
+///
+/// # Returns
+/// A vector of PathBuf for the directories that match the criteria
+pub fn list_dirs(base_dir: impl AsRef<Path>, depth: usize, only_leaf: bool) -> Vec<SPath> {
+	let base_path = base_dir.as_ref();
+	let base_depth = base_path.components().count();
+
+	let mut dirs = Vec::new();
+
+	for entry in WalkDir::new(base_path)
+		.min_depth(if only_leaf { depth } else { 1 })
+		.max_depth(depth)
+		.into_iter()
+		.filter_entry(|e| e.file_type().is_dir())
+	{
+		let entry = entry.expect("Error walking directory");
+		if entry.file_type().is_dir() {
+			// Skip the base directory itself if only_leaf is true and depth is 0
+			if only_leaf && depth == 0 && entry.path() == base_path {
+				continue;
+			}
+
+			// Calculate current depth relative to base_path
+			let current_depth = entry.path().components().count() - base_depth;
+
+			// If only_leaf is true, we only want directories exactly at the specified depth.
+			// Otherwise, include all directories up to and including the max depth.
+			if !only_leaf || current_depth == depth {
+				if let Ok(spath) = SPath::from_walkdir_entry(entry) {
+					dirs.push(spath);
+				}
+			}
+		}
+	}
+
+	dirs
+}
+
+/// Relatively efficient way to determine if a file is empty, meaning length == 0, or only whitespace.
 pub fn is_file_empty(file_path: impl AsRef<Path>) -> Result<bool> {
 	let path = file_path.as_ref();
 	let file = File::open(path).map_err(|err| {
@@ -69,3 +102,94 @@ fn is_buff_empty(buff: &[u8]) -> bool {
 	let s = std::str::from_utf8(buff).unwrap_or("");
 	s.chars().all(|c| c.is_whitespace())
 }
+
+// region:    --- Tests
+
+#[cfg(test)]
+mod tests {
+	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>;
+
+	use super::*;
+	use std::path::Path;
+
+	#[test]
+	fn test_support_files_list_dirs_only_leaf() -> Result<()> {
+		// -- Setup & Fixtures
+		// Assuming the following directory structure exists relative to the crate root:
+		// src/agent/
+		// src/cli/
+		// src/script/lua_script/
+		// src/support/code/
+		// src/support/md/
+		// src/support/text/
+		let base_dir = "src";
+		let depth = 2;
+		let only_leaf = true;
+
+		// -- Exec
+		let dirs = list_dirs(base_dir, depth, only_leaf);
+
+		// -- Check
+		// Expected directories at exactly depth 2 (relative to "src")
+		let expected = vec![
+			"src/script/lua_script",
+			"src/support/code",
+			"src/support/md",
+			"src/support/text",
+		];
+
+		for exp in expected {
+			let exp_path = SPath::new(Path::new(exp).canonicalize()?)?;
+			let found = dirs
+				.iter()
+				.any(|d| d.canonicalize().map(|p| p.to_str() == exp_path.to_str()).unwrap_or(false));
+			assert!(found, "Expected directory {:?} not found in the returned list", exp);
+		}
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_support_files_list_dirs_all() -> Result<()> {
+		// -- Setup & Fixtures
+		let base_dir = "src";
+		let depth = 2;
+		let only_leaf = false;
+
+		// -- Exec
+		let dirs = list_dirs(base_dir, depth, only_leaf);
+
+		// -- Check
+		// For only_leaf = false, expected directories include those at depth 1 and depth 2.
+		let expected = vec!["src/agent", "src/cli", "src/script", "src/support", "src/script/lua_script"];
+
+		for exp in expected {
+			let exp_path = SPath::new(Path::new(exp).canonicalize()?)?;
+			let found = dirs
+				.iter()
+				.any(|d| d.canonicalize().map(|p| p.to_str() == exp_path.to_str()).unwrap_or(false));
+			assert!(found, "Expected directory {:?} not found in the returned list", exp);
+		}
+
+		Ok(())
+	}
+
+	#[test]
+	fn test_support_files_list_dirs_depth_zero() -> Result<()> {
+		// -- Setup & Fixtures
+		let base_dir = "src";
+		let depth = 0;
+		let only_leaf = true;
+
+		// -- Exec
+		let dirs = list_dirs(base_dir, depth, only_leaf);
+
+		// -- Check
+		// For depth = 0 with only_leaf true, the expected result is an empty vector.
+		assert!(dirs.is_empty(), "Expected empty directory list for depth=0");
+
+		Ok(())
+	}
+}
+
+// endregion: --- Tests

@@ -14,7 +14,7 @@ use crate::support::StrExt as _;
 use crate::{Error, Result};
 use mlua::{Lua, LuaSerdeExt, Table, Value};
 use reqwest::redirect::Policy;
-use reqwest::{header, Client, Response};
+use reqwest::{Client, Response, header};
 
 pub fn init_module(lua: &Lua, _runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
@@ -273,7 +273,7 @@ return utils.web.post(url, {some = "stuff"})
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "web")?;
 		let script = r#"
-local url = "https://this-cannot-go/anywhere-or-can-it.devai"
+local url = "https://this-cannot-go/anywhere-or-can-it.aip"
 return utils.web.get(url)
 		"#;
 
@@ -286,7 +286,7 @@ return utils.web.get(url)
 		// -- Check
 		let err_str = err.to_string();
 		assert_contains(&err_str, "Fail to do utils.web.get");
-		assert_contains(&err_str, "https://this-cannot-go/anywhere-or-can-it.devai");
+		assert_contains(&err_str, "https://this-cannot-go/anywhere-or-can-it.aip");
 
 		Ok(())
 	}

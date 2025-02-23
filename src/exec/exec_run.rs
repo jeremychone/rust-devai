@@ -1,13 +1,13 @@
 use super::support::open_vscode;
-use crate::agent::{find_agent, Agent};
+use crate::agent::{Agent, find_agent};
 use crate::cli::RunArgs;
-use crate::hub::{get_hub, HubEvent}; // Importing get_hub
-use crate::run::{run_command_agent, PathResolver, Runtime};
+use crate::hub::{HubEvent, get_hub}; // Importing get_hub
 use crate::run::{DirContext, RunCommandOptions};
+use crate::run::{Runtime, run_command_agent};
 use crate::support::jsons::into_values;
 use crate::types::FileMeta;
 use crate::{Error, Result};
-use simple_fs::{list_files, watch, SEventKind, SPath};
+use simple_fs::{SEventKind, SPath, list_files, watch};
 use std::sync::Arc;
 
 // region:    --- RunRedoCtx
@@ -40,7 +40,7 @@ impl RunRedoCtx {
 /// Exec for the Run command
 /// Might do a single run or a watch
 pub async fn exec_run(run_args: RunArgs, dir_context: DirContext) -> Result<Arc<RunRedoCtx>> {
-	// NOTE - This is important to avoid hanging when performing a run that requires a .devai initialization
+	// NOTE - This is important to avoid hanging when performing a run that requires a .aipack initialization
 	// TODO - Might need to find a better place to put this, or change the way the initialization and run are orchestrated
 	tokio::task::yield_now().await;
 
@@ -62,7 +62,7 @@ pub async fn exec_run_first(run_args: RunArgs, dir_context: DirContext) -> Resul
 
 	let runtime = Runtime::new(dir_context)?;
 
-	let agent = find_agent(cmd_agent_name, runtime.dir_context(), PathResolver::CurrentDir)?;
+	let agent = find_agent(cmd_agent_name, runtime.dir_context())?;
 
 	let run_options = RunCommandOptions::new(run_args)?;
 
@@ -94,7 +94,7 @@ pub async fn exec_run_redo(run_redo_ctx: &RunRedoCtx) -> Option<RunRedoCtx> {
 	} = run_redo_ctx;
 
 	// make sure to reload the agent
-	let agent = match find_agent(agent.name(), runtime.dir_context(), PathResolver::CurrentDir) {
+	let agent = match find_agent(agent.name(), runtime.dir_context()) {
 		Ok(agent) => agent,
 		Err(err) => {
 			hub.publish(err).await;
@@ -179,7 +179,7 @@ async fn do_run(run_command_options: &RunCommandOptions, runtime: &Runtime, agen
 		let files = list_files("./", Some(&on_file_globs), None)?;
 
 		// -- Second, normalize the path relative to workspace_dir
-		let workspace_dir = runtime.dir_context().devai_dir().workspace_dir();
+		let workspace_dir = runtime.dir_context().aipack_paths().wks_dir();
 		let files: Vec<SPath> = files
 			.into_iter()
 			.filter_map(|file| {

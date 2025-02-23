@@ -1,0 +1,30 @@
+# Before All
+
+```lua
+
+inputs[1] = inputs[1] .. "-0"
+inputs[2] = inputs[2] .. "-1"
+table.insert(inputs, "C")
+
+return aipack.before_all_response({
+    before_all = "some before all data",
+    inputs = inputs
+})
+
+```
+
+# Data 
+
+```lua
+
+return "Data with input: '" .. input .. "'"
+
+```
+
+# Output
+
+```lua
+
+return data
+
+```

@@ -1,12 +1,12 @@
-use crate::hub::get_hub;
 use crate::Result;
+use crate::hub::get_hub;
 use genai::chat::ChatOptions;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
 use value_ext::JsonValueExt;
 
-/// Configuration for the Agent, defined in `.devai/config.toml` and
+/// Configuration for the Agent, defined in `.aipack/config.toml` and
 /// optionally overridden in the `# Config` section of the Command Agent Markdown.
 ///
 /// Note: The values are flattened for simplicity but may be nested in the future.
@@ -287,7 +287,7 @@ Your current config.toml uses the legacy format. It still works, but it is recom
 
 To update your config.toml:
   - Rename your current config.toml to config-old.toml (or any name you prefer).
-  - Run 'devai init' (this will create a new config.toml).
+  - Run 'aip init' (this will create a new config.toml).
   - Manually transfer the values from your config-old.toml to the new config.toml.
 
 ====
@@ -348,28 +348,6 @@ mod tests {
 		assert_eq!(
 			options.get_model_for_alias("small").ok_or("Should have an alias for small")?,
 			"gemini-2.0-flash-001"
-		);
-
-		Ok(())
-	}
-
-	#[test]
-	fn test_options_legacy_0_5_9() -> Result<()> {
-		// -- Setup & Fixtures
-		let config_content = simple_fs::read_to_string("./tests-data/config/config-v_0_5_09.toml")?;
-		let config_value = serde_json::to_value(&parse_toml(&config_content)?)?;
-
-		// -- Exec
-		let options = AgentOptions::from_config_value(config_value)?;
-
-		// -- Check
-		assert!(options.legacy, "Should be legacy");
-		assert_eq!(options.model(), Some("gpt-4o-mini"));
-		assert_eq!(options.temperature(), Some(0.0));
-		assert_eq!(options.input_concurrency(), Some(6));
-		assert!(
-			options.get_model_for_alias("small").is_none(),
-			" should not have any alias"
 		);
 
 		Ok(())

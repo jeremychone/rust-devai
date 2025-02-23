@@ -1,5 +1,5 @@
 use crate::exec::ExecCommand;
-use clap::{command, Parser, Subcommand};
+use clap::{Parser, Subcommand, command};
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -12,26 +12,27 @@ pub struct CliArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum CliCommand {
-	/// Initialize the `.devai/` folder with the base setting files. Any file that already exists will not be touched.
+	/// Initialize the `.aipack/` folder with the base setting files. Any file that already exists will not be touched.
 	Init(InitArgs),
 
-	#[command(name = "init-base", about = "Init the ~/.devai-base")]
+	#[command(name = "init-base", about = "Init the ~/.aipack-base")]
 	InitBase,
 
 	/// Executes the Command Agent `<name>` based on its name or short name.
 	///
-	/// The `<name>` is relative to the `.devai/[default|custom]/command-agent/<name>.devai`
+	/// The `<name>` is relative to the `.aipack/[default|custom]/command-agent/<name>.aipack`
 	///
-	/// for example `devai run proof-comments` or `devai run pc` will match:
-	/// either `.devai/custom/command-agent/proof-comments.devai`
-	/// and if not found will look in `.devai/default/command-agent/proof-comments.devai`
+	/// for example `aip run proof-comments` or `aip run pc` will match:
+	/// either `.aipack/custom/command-agent/proof-comments.aipack`
+	/// and if not found will look in `.aipack/default/command-agent/proof-comments.aipack`
 	Run(RunArgs),
 
-	/// Create a New Command Agent under `.devai/custom/command-agent/`
-	New(NewArgs),
-
+	// DISABLED FOR NOW
+	// Create a New Command Agent under `.aipack/custom/command-agent/`
+	// New(NewArgs),
+	//
 	/// List the available command agents
-	List,
+	List(ListArgs),
 }
 
 /// Custom function
@@ -44,8 +45,8 @@ impl CliCommand {
 			CliCommand::Run(run_args) => !run_args.not_interactive,
 			CliCommand::Init(_) => false,
 			CliCommand::InitBase => false,
-			CliCommand::New(_) => false,
-			CliCommand::List => false,
+			// CliCommand::New(_) => false,
+			CliCommand::List(_) => false,
 		}
 	}
 }
@@ -56,7 +57,7 @@ impl CliCommand {
 #[derive(Parser, Debug)]
 pub struct RunArgs {
 	/// The name of the Command Agent to execute, required.
-	/// This should be the name of the markdown file under `.devai/customs` or `.devai/defaults` (without extension),
+	/// This should be the name of the markdown file under `.aipack/customs` or `.aipack/defaults` (without extension),
 	/// or the filename initial `proof-comments.md` will match to `proof-comments` or `pc`
 	pub cmd_agent_name: String,
 
@@ -93,13 +94,27 @@ pub struct RunArgs {
 
 /// Arguments for the `run` subcommand
 #[derive(Parser, Debug)]
+pub struct ListArgs {
+	/// A complete or partial aipack reference
+	/// (optional)
+	/// e.g., `jc@coder` or `jc@` or `@coder`
+	pub pack_ref: Option<String>,
+
+	/// Open the .aipack file, and the target file if exists.
+	/// Note: For now assume vscode `code ...` is installed
+	#[arg(short = 'o', long = "open")]
+	pub open: bool,
+}
+
+/// Arguments for the `run` subcommand
+#[derive(Parser, Debug)]
 pub struct NewArgs {
 	/// The command agent name which will be created under
-	/// e.g., `devai new my-cool-agent`
-	///        will create `.devai/custom/command-agent/my-cool-agent.devai`
+	/// e.g., `aip new my-cool-agent`
+	///        will create `.aipack/custom/command-agent/my-cool-agent.aipack`
 	pub agent_path: String,
 
-	/// Open the .devai file, and the target file if exists.
+	/// Open the .aipack file, and the target file if exists.
 	/// Note: For now assume vscode `code ...` is installed
 	#[arg(short = 'o', long = "open")]
 	pub open: bool,
@@ -107,8 +122,8 @@ pub struct NewArgs {
 
 #[derive(Parser, Debug)]
 pub struct InitArgs {
-	/// The optional path of were to init the .devai (relative to current directory)
-	/// If not given, devai will find the closest .devai/ or create one at current directory
+	/// The optional path of were to init the .aipack (relative to current directory)
+	/// If not given, aipack will find the closest .aipack/ or create one at current directory
 	pub path: Option<String>,
 }
 
@@ -122,8 +137,8 @@ impl From<CliCommand> for ExecCommand {
 			CliCommand::Init(init_args) => ExecCommand::Init(init_args),
 			CliCommand::InitBase => ExecCommand::InitBase,
 			CliCommand::Run(run_args) => ExecCommand::RunCommandAgent(run_args),
-			CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
-			CliCommand::List => ExecCommand::List,
+			// CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
+			CliCommand::List(list_args) => ExecCommand::List(list_args),
 		}
 	}
 }

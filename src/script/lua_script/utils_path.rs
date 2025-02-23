@@ -21,13 +21,13 @@
 //!         is because there is another type of normalization that removes the "../".
 //!         There are no functions for this yet, but keeping the future open.
 
-use crate::run::{PathResolver, RuntimeContext};
 use crate::Result;
+use crate::run::{PathResolver, RuntimeContext};
 use mlua::{Lua, MultiValue, Table};
 use mlua::{Value, Variadic};
 use simple_fs::SPath;
 use std::path::PathBuf;
-use std::path::{Path, MAIN_SEPARATOR};
+use std::path::{MAIN_SEPARATOR, Path};
 
 pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table> {
 	let table = lua.create_table()?;
@@ -95,7 +95,7 @@ fn path_split(lua: &Lua, path: String) -> mlua::Result<MultiValue> {
 ///
 /// Checks if the specified path exists.
 fn path_exists(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
-	let path = ctx.dir_context().resolve_path(&path, PathResolver::WorkspaceDir)?;
+	let path = ctx.dir_context().resolve_path(&path, PathResolver::WksDir)?;
 	Ok(path.exists())
 }
 
@@ -106,7 +106,7 @@ fn path_exists(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 ///
 /// Checks if the specified path is a file.
 fn path_is_file(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
-	let path = ctx.dir_context().resolve_path(&path, PathResolver::WorkspaceDir)?;
+	let path = ctx.dir_context().resolve_path(&path, PathResolver::WksDir)?;
 	Ok(path.is_file())
 }
 
@@ -117,7 +117,7 @@ fn path_is_file(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 ///
 /// Checks if the specified path is a directory.
 fn path_is_dir(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
-	let path = ctx.dir_context().resolve_path(&path, PathResolver::WorkspaceDir)?;
+	let path = ctx.dir_context().resolve_path(&path, PathResolver::WksDir)?;
 	Ok(path.is_dir())
 }
 
@@ -261,10 +261,10 @@ mod tests {
 		// -- Setup & Fixtures
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &[
-			"./agent-script/agent-hello.devai",
-			"agent-script/agent-hello.devai",
-			"./sub-dir-a/agent-hello-2.devai",
-			"sub-dir-a/agent-hello-2.devai",
+			"./agent-script/agent-hello.aip",
+			"agent-script/agent-hello.aip",
+			"./sub-dir-a/agent-hello-2.aip",
+			"sub-dir-a/agent-hello-2.aip",
 			"./sub-dir-a/",
 			"sub-dir-a",
 			"./sub-dir-a/",
@@ -303,11 +303,11 @@ mod tests {
 	async fn test_lua_path_is_file_true() -> Result<()> {
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &[
-			"./agent-script/agent-hello.devai",
-			"agent-script/agent-hello.devai",
-			"./sub-dir-a/agent-hello-2.devai",
-			"sub-dir-a/agent-hello-2.devai",
-			"./sub-dir-a/../agent-script/agent-hello.devai",
+			"./agent-script/agent-hello.aip",
+			"agent-script/agent-hello.aip",
+			"./sub-dir-a/agent-hello-2.aip",
+			"sub-dir-a/agent-hello-2.aip",
+			"./sub-dir-a/../agent-script/agent-hello.aip",
 		];
 
 		for path in paths {
@@ -360,9 +360,9 @@ mod tests {
 	async fn test_lua_path_is_dir_false() -> Result<()> {
 		let lua = setup_lua(super::init_module, "path")?;
 		let paths = &[
-			"./agent-hello.devai",
-			"agent-hello.devai",
-			"./sub-dir-a/agent-hello-2.devai",
+			"./agent-hello.aipack",
+			"agent-hello.aipack",
+			"./sub-dir-a/agent-hello-2.aipack",
 			"./sub-dir-a/other-path",
 			"nofile.txt",
 			"./s rc/",
@@ -385,7 +385,7 @@ mod tests {
 		let lua = setup_lua(super::init_module, "path")?;
 		// Fixtures: (path, expected_parent)
 		let paths = &[
-			("./agent-hello.devai", "."),
+			("./agent-hello.aipack", "."),
 			("./", ""),
 			(".", ""),
 			("./sub-dir/file.txt", "./sub-dir"),

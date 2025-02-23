@@ -3,8 +3,7 @@ use std::fs::File;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use walkdir::WalkDir;
-use zip::write::FileOptions;
-use zip::CompressionMethod;
+use zip::write::SimpleFileOptions;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// Get the output directory for build artifacts
@@ -14,11 +13,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	// Create zip file
 	let zip_file = File::create(&zip_path)?;
 	let mut zip = zip::ZipWriter::new(zip_file);
-	let options = FileOptions::default()
-		.compression_method(CompressionMethod::Deflated)
-		.unix_permissions(0o755);
+
 	let init_dir = Path::new("_init");
 	let mut buffer = Vec::new();
+
+	// old way
+	// let options = FileOptions::default()
+	// 	.compression_method(CompressionMethod::Deflated)
+	// 	.unix_permissions(0o755);
+
+	let options = SimpleFileOptions::default();
 
 	// Recursively add files from _init directory
 	for entry in WalkDir::new(init_dir) {

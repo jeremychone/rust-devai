@@ -1,15 +1,15 @@
+use crate::Result;
 use crate::agent::{Agent, PromptPart};
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
-use crate::script::{DevaiCustom, FromValue};
+use crate::script::{AipackCustom, FromValue};
+use crate::support::W;
 use crate::support::hbs::hbs_render;
 use crate::support::text::{format_duration, format_num};
-use crate::support::W;
-use crate::Result;
+use genai::ModelName;
 use genai::adapter::AdapterKind;
 use genai::chat::{ChatMessage, ChatRequest, ChatResponse, MetaUsage};
-use genai::ModelName;
 use mlua::IntoLua;
 use serde::Serialize;
 use serde_json::Value;
@@ -165,26 +165,26 @@ pub async fn run_agent_input(
 		Value::Null
 	};
 
-	// skip input if devai action is sent
-	let data = match DevaiCustom::from_value(data)? {
-		// If it is not a DevaiCustom the data is the orginal value
+	// skip input if aipack action is sent
+	let data = match AipackCustom::from_value(data)? {
+		// If it is not a AipackCustom the data is the orginal value
 		FromValue::OriginalValue(data) => data,
 
 		// If we have a skip, we can skip
-		FromValue::DevaiCustom(DevaiCustom::Skip { reason }) => {
+		FromValue::AipackCustom(AipackCustom::Skip { reason }) => {
 			let reason_txt = reason.map(|r| format!(" (Reason: {r})")).unwrap_or_default();
 
-			hub.publish(format!("-! DevAI Skip input at Data stage: {label}{reason_txt}"))
+			hub.publish(format!("-! Aipack Skip input at Data stage: {label}{reason_txt}"))
 				.await;
 			return Ok(None);
 		}
 
-		FromValue::DevaiCustom(other) => {
+		FromValue::AipackCustom(other) => {
 			return Err(format!(
-				"-! DevAI Custom '{}' is not supported at the Data stage",
+				"-! Aipack Custom '{}' is not supported at the Data stage",
 				other.as_ref()
 			)
-			.into())
+			.into());
 		}
 	};
 

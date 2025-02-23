@@ -1,0 +1,20 @@
+# Data
+
+```lua
+return {
+	WORKSPACE_DIR =    CTX.WORKSPACE_DIR,
+    AIPACK_DIR =        CTX.AIPACK_DIR,
+    AGENT_NAME =       CTX.AGENT_NAME,
+    AGENT_FILE_PATH =  CTX.AGENT_FILE_PATH,
+    AGENT_FILE_DIR =   CTX.AGENT_FILE_DIR,
+    AGENT_FILE_NAME =  CTX.AGENT_FILE_NAME,
+    AGENT_FILE_STEM =  CTX.AGENT_FILE_STEM,
+}
+```
+
+# Output
+
+```lua
+return data
+```
+

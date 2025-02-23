@@ -9,7 +9,7 @@ use simple_fs::SPath;
 async fn test_run_agent_script_hello_ok() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-script/agent-hello.devai", &runtime)?;
+	let agent = load_test_agent("./agent-script/agent-hello.aip", &runtime)?;
 
 	// -- Execute
 	let res = run_test_agent_with_input(&runtime, &agent, "input-01").await?;
@@ -18,8 +18,24 @@ async fn test_run_agent_script_hello_ok() -> Result<()> {
 	// Note here '' because input is null
 	assert_eq!(
 		res.as_str().ok_or("Should have output result")?,
-		"Hello 'input-01' from agent-hello.devai"
+		"Hello 'input-01' from agent-hello.aip"
 	);
+
+	Ok(())
+}
+
+#[tokio::test]
+async fn test_run_agent_script_require_lua() -> Result<()> {
+	// -- Setup & Fixtures
+	let runtime = Runtime::new_test_runtime_sandbox_01()?;
+	let agent = load_test_agent("./other/demo", &runtime)?;
+
+	// -- Exec
+	let res = run_test_agent_with_input(&runtime, &agent, Value::Null).await?;
+
+	// -- Check
+	let res = res.as_str().ok_or("Should be string")?;
+	assert_eq!(res, "demo.name_one is 'Demo One'");
 
 	Ok(())
 }
@@ -30,7 +46,7 @@ async fn test_run_agent_script_hello_ok() -> Result<()> {
 async fn test_run_agent_script_before_all_simple() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-script/agent-before-all.devai", &runtime)?;
+	let agent = load_test_agent("./agent-script/agent-before-all.aip", &runtime)?;
 
 	// -- Execute
 	let on_path = SPath::new("./some-random/file.txt")?;
@@ -55,7 +71,7 @@ async fn test_run_agent_script_before_all_simple() -> Result<()> {
 async fn test_run_agent_script_with_options_read() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-script/agent-options.devai", &runtime)?;
+	let agent = load_test_agent("./agent-script/agent-options.aip", &runtime)?;
 
 	// -- Exec
 	let inputs = vec!["one".into(), "two".into()];
@@ -89,7 +105,7 @@ async fn test_run_agent_script_with_options_read() -> Result<()> {
 async fn test_run_agent_script_before_all_inputs_reshape() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-script/agent-before-all-inputs-reshape.devai", &runtime)?;
+	let agent = load_test_agent("./agent-script/agent-before-all-inputs-reshape.aip", &runtime)?;
 
 	// -- Exec
 	let inputs = vec!["one".into(), "two".into()];
@@ -111,7 +127,7 @@ async fn test_run_agent_script_before_all_inputs_reshape() -> Result<()> {
 async fn test_run_agent_script_before_all_inputs_gen() -> Result<()> {
 	// -- Setup & Fixtures
 	let runtime = Runtime::new_test_runtime_sandbox_01()?;
-	let agent = load_test_agent("./agent-script/agent-before-all-inputs-gen.devai", &runtime)?;
+	let agent = load_test_agent("./agent-script/agent-before-all-inputs-gen.aip", &runtime)?;
 
 	// -- Exec
 	let res = run_command_agent(&runtime, agent, None, &RunBaseOptions::default(), true).await?;
@@ -162,7 +178,7 @@ async fn common_test_run_agent_script_skip(reason: Option<&str>) -> Result<()> {
 # Data
 ```lua
 if input == "one" then
-  return devai.skip({reason_str})
+  return aipack.skip({reason_str})
 end
 ```
 
@@ -174,7 +190,7 @@ return "output for: " .. input
 	"#
 	);
 
-	let agent = load_inline_agent("./dummy/path.devai", fx_agent)?;
+	let agent = load_inline_agent("./dummy/path.aip", fx_agent)?;
 
 	// -- Execute
 	let inputs = fx_inputs.iter().map(|v| Value::String(v.to_string())).collect();
