@@ -107,7 +107,7 @@ impl<'a> MdBlockIter<'a> {
 	}
 }
 
-impl<'a> MdBlockIter<'a> {
+impl MdBlockIter<'_> {
 	pub fn collect_blocks_and_extruded_content(mut self) -> (Vec<MdBlock>, String) {
 		let mut blocks: Vec<MdBlock> = Vec::new();
 
@@ -123,7 +123,7 @@ impl<'a> MdBlockIter<'a> {
 }
 
 /// Implementing Iterator for MdBlock to yield `MdBlock` directly.
-impl<'a> Iterator for MdBlockIter<'a> {
+impl Iterator for MdBlockIter<'_> {
 	type Item = MdBlock;
 
 	fn next(&mut self) -> Option<Self::Item> {

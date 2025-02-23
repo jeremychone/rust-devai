@@ -42,7 +42,7 @@ function prep_prompt_file(input, options)
 
   -- open if first time
   if first_time then 
-    utils.cmd.exec("code", {path})
+    ok, err = pcall(utils.cmd.exec,"code", {path})
   end
 
   return utils.file.load(path)

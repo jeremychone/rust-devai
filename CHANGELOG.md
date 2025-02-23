@@ -1,9 +1,10 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` Refactor
 
-## Work In Progress - `v0.5.10`
+## 2025-02-22 - [v0.5.11](https://github.com/jeremychone/rust-devai/compare/v0.5.9...v0.5.11)
 
 - `+` Parametric Agents with support for `#!meta` prompt code blocks
-- ...
+- `+` `coder` agent
+- ... many more
 
 ## 2025-01-27 - [v0.5.9](https://github.com/jeremychone/rust-devai/compare/v0.5.8...v0.5.9)
 

@@ -307,7 +307,7 @@ impl<'a> MdSectionIter<'a> {
 }
 
 /// Iterator impl
-impl<'a> Iterator for MdSectionIter<'a> {
+impl Iterator for MdSectionIter<'_> {
 	type Item = MdSection;
 
 	fn next(&mut self) -> Option<Self::Item> {
@@ -318,7 +318,7 @@ impl<'a> Iterator for MdSectionIter<'a> {
 // region:    --- Splitter
 
 /// Splitter extractor uses the iterator to split the md content in certain ways
-impl<'a> MdSectionIter<'a> {
+impl MdSectionIter<'_> {
 	/// Split the first MdSection out, and have the before and after as strings.
 	/// NOTE: Right now, jsut take the top MdSection, so `.before` will always be empty string
 	pub fn split_first(&mut self) -> MdSectionSplit {

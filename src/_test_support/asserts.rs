@@ -71,7 +71,7 @@ impl<'a> From<&'a String> for DataContainer<'a> {
 	}
 }
 
-impl<'a> DataContainer<'a> {
+impl DataContainer<'_> {
 	fn contains(&self, val: &str) -> bool {
 		match self {
 			DataContainer::Slice(slice) => slice.contains(&val),

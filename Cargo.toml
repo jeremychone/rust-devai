@@ -1,6 +1,6 @@
 [package]
 name = "devai"
-version = "0.5.11-WIP"
+version = "0.5.11"
 edition = "2021"
 rust-version = "1.82"
 license = "MIT OR Apache-2.0"
@@ -16,10 +16,10 @@ unused = { level = "allow", priority = -1 } # For exploratory dev.
 
 [dependencies]
 # -- Async
-tokio = { version = "1", features = ["full"] }
+tokio = { version = "1" }
 flume = "0.11.1"
 # -- AI
-genai = "0.1.21"
+genai = "0.1.22"
 # -- Json & Data Files
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
@@ -43,6 +43,7 @@ home = "0.5.11"
 zip = "0.6"
 # -- Web
 reqwest = {version = "0.12", default-features = false, features = ["json", "rustls-tls"]}
+
 # -- Others
 derive_more = {version = "2.0.0", features = ["from","display","debug"] }
 strum = { version = "0.27", features = ["derive"] }

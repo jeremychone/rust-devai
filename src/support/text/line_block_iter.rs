@@ -107,7 +107,7 @@ impl<'a> LineBlockIter<'a> {
 	}
 }
 
-impl<'a> Iterator for LineBlockIter<'a> {
+impl Iterator for LineBlockIter<'_> {
 	type Item = String;
 
 	fn next(&mut self) -> Option<Self::Item> {
