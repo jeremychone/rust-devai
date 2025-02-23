@@ -12,7 +12,7 @@ repository = "https://github.com/jeremychone/rust-devai"
 
 [lints.rust]
 unsafe_code = "forbid"
-# unused = { level = "allow", priority = -1 } # For exploratory dev.
+unused = { level = "allow", priority = -1 } # For exploratory dev.
 
 [dependencies]
 # -- Async
@@ -42,7 +42,7 @@ simple-fs = { version = "0.5.0" }
 home = "0.5.11"
 zip = "0.6"
 # -- Web
-reqwest = {version = "0.12", features = ["json"]}
+reqwest = {version = "0.12", default-features = false, features = ["json", "rustls-tls"]}
 # -- Others
 derive_more = {version = "2.0.0", features = ["from","display","debug"] }
 strum = { version = "0.27", features = ["derive"] }
