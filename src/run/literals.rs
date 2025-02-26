@@ -1,5 +1,5 @@
 use crate::Result;
-use crate::agent::Agent;
+use crate::agent::{Agent, AgentRef};
 use crate::run::DirContext;
 use crate::script::LuaEngine;
 use simple_fs::SPath;
@@ -32,20 +32,21 @@ impl Literals {
 
 		store.push(("PWD", dir_context.current_dir().to_string()));
 
-		// resolved name from the command
-		//   - (so, when pc, it's `proof-comment`)
-		//   - When "my-cool-agent/main.md" `my-cool-agent`
-		//          agent_name: `my-cool-agent`)
-		//   - When "my-cool-agent/cool-specialized.md"
-		//          agent_name: `my-cool-agent/cool-specialized`
-		//   - When `aip run ./my-folder/command-agent-jc`
-		//          agent_name: `./my-folder/command-agent-jc`
-		// literals.append("AGENT_NAME", ???);
+		if let AgentRef::PackRef(pack_ref) = agent.agent_ref() {
+			store.push(("PACK_NAMESPACE", pack_ref.namespace.to_string()));
+			store.push(("PACK_NAME", pack_ref.name.to_string()));
+			if let Some(sub_path) = pack_ref.sub_path.as_deref() {
+				store.push(("PACK_SUB_PATH", sub_path.to_string()));
+			}
+			// this will be `demo@craft/text`
+			store.push(("PACK_REF", pack_ref.to_string()))
+		}
 
 		// The workspace_dir should be absolute, and all of the other paths will relative to it.
 		store.push(("WORKSPACE_DIR", dir_context.wks_dir().to_string()));
 
-		store.push(("AIPACK_DIR", aipack_paths.wks_aipack_dir().to_string()));
+		store.push(("WORKSPACE_AIPACK_DIR", aipack_paths.wks_aipack_dir().to_string()));
+		store.push(("BASE_AIPACK_DIR", aipack_paths.base_aipack_dir().to_string()));
 
 		store.push(("AGENT_NAME", agent.name().to_string()));
 		store.push(("AGENT_FILE_NAME", agent_path.name().to_string()));

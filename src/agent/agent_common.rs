@@ -92,6 +92,10 @@ impl Agent {
 			.unwrap_or(&self.inner.agent_options)
 	}
 
+	pub fn agent_ref(&self) -> &AgentRef {
+		&self.inner.agent_ref
+	}
+
 	pub fn name(&self) -> &str {
 		&self.inner.name
 	}

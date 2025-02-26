@@ -49,7 +49,7 @@ impl PartialAgentRef {
 			// Return a PackRef wrapped in the AgentRef enum
 			PartialAgentRef::PackRef(PartialPackRef {
 				namespace,
-				pack_name,
+				name: pack_name,
 				sub_path,
 			})
 		} else {
@@ -82,17 +82,17 @@ impl std::fmt::Display for PartialAgentRef {
 #[derive(Debug, Clone)]
 pub struct PartialPackRef {
 	pub namespace: Option<String>,
-	pub pack_name: String,
+	pub name: String,
 	pub sub_path: Option<String>,
 }
 
-/// Implement the Display trait for AgentRef
+/// Implement the Display trait for PartialPackRef
 impl std::fmt::Display for PartialPackRef {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if let Some(ns) = &self.namespace {
 			write!(f, "{}@", ns)?;
 		}
-		write!(f, "{}", self.pack_name)?;
+		write!(f, "{}", self.name)?;
 		if let Some(sub_path) = &self.sub_path {
 			write!(f, "/{}", sub_path)?;
 		}
@@ -115,7 +115,7 @@ pub enum AgentRef {
 #[derive(Debug, Clone)]
 pub struct PackRef {
 	pub namespace: String,
-	pub pack_name: String,
+	pub name: String,
 	pub sub_path: Option<String>,
 }
 
@@ -123,9 +123,20 @@ impl PackRef {
 	pub fn from_partial(ns: impl Into<String>, partial: PartialPackRef) -> Self {
 		Self {
 			namespace: ns.into(),
-			pack_name: partial.pack_name,
+			name: partial.name,
 			sub_path: partial.sub_path,
 		}
+	}
+}
+
+/// Implement the Display trait for PackRef
+impl std::fmt::Display for PackRef {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}@{}", self.namespace, self.name)?;
+		if let Some(sub_path) = &self.sub_path {
+			write!(f, "/{}", sub_path)?;
+		}
+		Ok(())
 	}
 }
 
@@ -170,7 +181,7 @@ mod tests {
 		match agent_ref {
 			PartialAgentRef::PackRef(ref pack_ref) => {
 				assert_eq!(pack_ref.namespace.as_deref(), Some("jc"), "Namespace should be 'jc'.");
-				assert_eq!(pack_ref.pack_name, "coder", "Pack name should be 'coder'.");
+				assert_eq!(pack_ref.name, "coder", "Pack name should be 'coder'.");
 				assert!(pack_ref.sub_path.is_none(), "Sub path should be None.");
 			}
 			_ => panic!("Expected AgentRef::PackRef but got a different variant."),
@@ -192,7 +203,7 @@ mod tests {
 		match agent_ref {
 			PartialAgentRef::PackRef(ref pack_ref) => {
 				assert_eq!(pack_ref.namespace.as_deref(), Some("jc"), "Namespace should be 'jc'.");
-				assert_eq!(pack_ref.pack_name, "coder", "Pack name should be 'coder'.");
+				assert_eq!(pack_ref.name, "coder", "Pack name should be 'coder'.");
 				assert_eq!(
 					pack_ref.sub_path.as_deref(),
 					Some("example/path"),

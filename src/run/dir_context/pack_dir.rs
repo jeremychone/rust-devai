@@ -8,26 +8,26 @@ use simple_fs::SPath;
 pub struct PackDir {
 	pub repo_kind: RepoKind,
 	pub namespace: String,
-	pub pack_name: String,
-	pub abs_path: SPath,
+	pub name: String,
+	pub path: SPath,
 }
 
 impl PackDir {
-	pub fn new(repo_kind: RepoKind, namespace: impl Into<String>, abs_path: SPath) -> Self {
+	pub fn new(repo_kind: RepoKind, namespace: impl Into<String>, path: SPath) -> Self {
 		let namespace = namespace.into();
-		let pack_name = abs_path.name().to_string();
+		let name = path.name().to_string();
 		Self {
 			repo_kind,
 			namespace,
-			abs_path,
-			pack_name,
+			path,
+			name,
 		}
 	}
 }
 
 impl PackDir {
 	pub fn pretty_path(&self) -> String {
-		let last_five = paths::path_last_components(&self.abs_path, 5);
+		let last_five = paths::path_last_components(&self.path, 5);
 		let prefix = match self.repo_kind {
 			RepoKind::WksCustom => "",
 			RepoKind::BaseCustom => "~/",
@@ -38,7 +38,7 @@ impl PackDir {
 }
 impl std::fmt::Display for PackDir {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}@{}", self.namespace, self.pack_name)
+		write!(f, "{}@{}", self.namespace, self.name)
 	}
 }
 
@@ -188,14 +188,7 @@ mod tests {
 	fn pack_dir_into_strs(pack_dirs: Vec<PackDir>) -> Vec<String> {
 		pack_dirs
 			.into_iter()
-			.map(|p| {
-				format!(
-					"{}@{} - {}",
-					p.namespace,
-					p.pack_name,
-					path_last_components(&p.abs_path, 5)
-				)
-			})
+			.map(|p| format!("{}@{} - {}", p.namespace, p.name, path_last_components(&p.path, 5)))
 			.collect::<Vec<_>>()
 	}
 	// endregion: --- Support

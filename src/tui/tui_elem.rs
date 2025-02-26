@@ -18,7 +18,7 @@ pub fn print_pack_list(pack_dirs: &[PackDir]) {
 
 	let mut width = 0;
 	for pack_dir in pack_dirs.iter() {
-		width = width.max(pack_dir.namespace.len() + pack_dir.pack_name.len());
+		width = width.max(pack_dir.namespace.len() + pack_dir.name.len());
 	}
 	width += 5;
 

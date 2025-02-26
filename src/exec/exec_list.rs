@@ -12,7 +12,7 @@ pub async fn exec_list(dir_context: DirContext, list_args: ListArgs) -> Result<(
 		if !pack_ref.contains('@') {
 			(Some(pack_ref), None)
 		} else if let PartialAgentRef::PackRef(pack_ref) = PartialAgentRef::new(&pack_ref) {
-			let pack_name = pack_ref.pack_name;
+			let pack_name = pack_ref.name;
 			let pack_name = if pack_name.trim().is_empty() {
 				None
 			} else {

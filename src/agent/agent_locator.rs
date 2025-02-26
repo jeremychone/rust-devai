@@ -32,7 +32,7 @@ pub fn find_agent(name: &str, dir_context: &DirContext) -> Result<Agent> {
 			doc.into_agent(name, agent_ref, base_options)?
 		}
 		PartialAgentRef::PackRef(pack_ref) => {
-			let pack_dirs = find_pack_dirs(dir_context, pack_ref.namespace.as_deref(), Some(&pack_ref.pack_name))?;
+			let pack_dirs = find_pack_dirs(dir_context, pack_ref.namespace.as_deref(), Some(&pack_ref.name))?;
 
 			// -- in case > 1, for now, no support
 			if pack_dirs.len() > 1 {
@@ -50,8 +50,8 @@ pub fn find_agent(name: &str, dir_context: &DirContext) -> Result<Agent> {
 			// -- Find the aip path
 			// Note: if it is None, the pack_dir, then, we have the as_dir to avoid do the dir.aip
 			let (aip_path, as_dir) = match pack_ref.sub_path.as_deref() {
-				Some(sub_path) => (pack_dir.abs_path.join_str(sub_path), false),
-				None => (pack_dir.abs_path, true),
+				Some(sub_path) => (pack_dir.path.join_str(sub_path), false),
+				None => (pack_dir.path, true),
 			};
 
 			let possible_aip_paths = possible_aip_paths(aip_path, as_dir);
