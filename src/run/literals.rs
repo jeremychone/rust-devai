@@ -38,13 +38,19 @@ impl Literals {
 			if let Some(sub_path) = pack_ref.sub_path.as_deref() {
 				store.push(("PACK_SUB_PATH", sub_path.to_string()));
 			}
-			// this will be `demo@craft/text`
-			store.push(("PACK_REF", pack_ref.to_string()))
+			// This will be `demo@craft`
+			store.push(("PACK_REF", format!("{}@{}", pack_ref.namespace, pack_ref.name)));
+			// This will be `demo@craft/text` (whatwever subpath is given by the user)
+			store.push(("PACK_FULL_REF", pack_ref.to_string()));
+
+			// This will be the absolute path of `demo@craft`
+			store.push(("PACK_DIR", pack_ref.pack_dir.to_string()));
 		}
 
 		// The workspace_dir should be absolute, and all of the other paths will relative to it.
 		store.push(("WORKSPACE_DIR", dir_context.wks_dir().to_string()));
 
+		// Those are the absolute path for `~/.aipack-base/` and `.aipack/`
 		store.push(("WORKSPACE_AIPACK_DIR", aipack_paths.wks_aipack_dir().to_string()));
 		store.push(("BASE_AIPACK_DIR", aipack_paths.base_aipack_dir().to_string()));
 

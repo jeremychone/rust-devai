@@ -1,6 +1,9 @@
 //! This module defines the AgentRef enum used to reference an agent either as a local file path
 //! or as a PackRef, which can be parsed from a string using the '@' delimiter.
 
+use crate::run::{PackDir, RepoKind};
+use simple_fs::SPath;
+
 /// AgentRef represents a reference to an agent.
 /// It can either be a LocalPath (a direct file path) or a PackRef (a parsed representation).
 #[derive(Debug, Clone)]
@@ -116,15 +119,27 @@ pub enum AgentRef {
 pub struct PackRef {
 	pub namespace: String,
 	pub name: String,
+	/// e.g. `text` if `demo@craft/text`
 	pub sub_path: Option<String>,
+	/// The absolute path of the pack `demo@craft`
+	pub pack_dir: SPath,
+	pub repo_kind: RepoKind,
 }
 
 impl PackRef {
-	pub fn from_partial(ns: impl Into<String>, partial: PartialPackRef) -> Self {
+	/// NOTE: Right now ns and pack_name ae in both pack_dir and partial, but that is ok for no
+	///       Eventually, need to clean this up.
+	pub fn from_partial(pack_dir: PackDir, partial: PartialPackRef) -> Self {
+		let repo_kind = pack_dir.repo_kind;
+		let namespace = pack_dir.namespace;
+		let pack_dir = pack_dir.path;
+
 		Self {
-			namespace: ns.into(),
+			namespace,
 			name: partial.name,
 			sub_path: partial.sub_path,
+			pack_dir,
+			repo_kind,
 		}
 	}
 }

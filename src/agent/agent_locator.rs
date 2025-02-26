@@ -51,7 +51,7 @@ pub fn find_agent(name: &str, dir_context: &DirContext) -> Result<Agent> {
 			// Note: if it is None, the pack_dir, then, we have the as_dir to avoid do the dir.aip
 			let (aip_path, as_dir) = match pack_ref.sub_path.as_deref() {
 				Some(sub_path) => (pack_dir.path.join_str(sub_path), false),
-				None => (pack_dir.path, true),
+				None => (pack_dir.path.clone(), true),
 			};
 
 			let possible_aip_paths = possible_aip_paths(aip_path, as_dir);
@@ -61,8 +61,7 @@ pub fn find_agent(name: &str, dir_context: &DirContext) -> Result<Agent> {
 
 			// -- Buid the final agent_ref with the resolved namespace
 			// TODO: Need to cleanup this strategy. Perhaps have PartialPackRef, and PackRef with namespace and pack_name
-			let ns = pack_dir.namespace;
-			let agent_ref = AgentRef::PackRef(PackRef::from_partial(ns, pack_ref));
+			let agent_ref = AgentRef::PackRef(PackRef::from_partial(pack_dir, pack_ref));
 
 			// -- Build and return the agent
 			let doc = AgentDoc::from_file(found_path)?;
