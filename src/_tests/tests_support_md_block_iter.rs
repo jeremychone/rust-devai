@@ -1,3 +1,4 @@
+use crate::_test_support::assert_contains;
 use crate::support::Extrude;
 use crate::support::md::MdBlockIter;
 use crate::types::MdBlock;
@@ -198,6 +199,58 @@ This is a text without any code blocks.
 
 	let blocks: Vec<MdBlock> = MdBlockIter::new(content, None, None).collect();
 	assert_eq!(blocks.len(), 0);
+
+	Ok(())
+}
+
+#[test]
+fn test_md_block_iter_6ticks_simple() -> Result<()> {
+	let content = r#"
+Some text
+``````rust
+``````
+```python
+def hello():
+		print("Hello, world!")
+```
+        "#;
+
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("rust"), None).collect();
+	assert_eq!(blocks.len(), 1);
+	assert_eq!(blocks[0].content.trim(), ""); // Expecting an empty block
+
+	Ok(())
+}
+
+#[test]
+fn test_md_block_iter_6ticks_nested() -> Result<()> {
+	// -- Setup & fixtures
+	let content = r#"
+Some text
+``````md
+This is a full markdown
+with some code block
+```rust
+let v = 123;
+```
+and other code
+`let d = "asf";`
+
+``````
+```python
+def hello():
+		print("Hello, world!")
+```
+        "#;
+
+	// -- Exec
+	let blocks: Vec<MdBlock> = MdBlockIter::new(content, Some("md"), None).collect();
+
+	// -- Check
+	assert_eq!(blocks.len(), 1);
+	let content = &blocks[0].content;
+	assert_contains(content, "```rust\nlet v = 123;\n```");
+	assert_contains(content, "and other code");
 
 	Ok(())
 }

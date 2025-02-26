@@ -1,5 +1,6 @@
 use crate::support::Extrude;
-use crate::types::MdBlock;
+use crate::support::md::InBlockState;
+use crate::types::MdBlock; // new import to support 3/6 ticks
 
 /// Represents an iterator over Markdown code blocks with optional language filtering.
 pub struct MdBlockIter<'a> {
@@ -13,7 +14,7 @@ pub struct MdBlockIter<'a> {
 	extruded_content: Vec<&'a str>,
 }
 
-/// Constructor and main iterator fuction
+/// Constructor and main iterator function
 impl<'a> MdBlockIter<'a> {
 	/// Creates a new MdBlock iterator from the given content.
 	///
@@ -38,71 +39,77 @@ impl<'a> MdBlockIter<'a> {
 	/// This function searches for the next code block in the Markdown content that satisfies the language filter criteria.
 	/// It skips any code blocks that do not match the filter and continues searching until a matching block is found or the content ends.
 	fn next_block(&mut self) -> Option<MdBlock> {
-		// If the line is inside a block and contains the language, it can be an empty string
-		let mut in_block: Option<&str> = None;
-		let mut captured_content: Option<Vec<&str>> = None;
-
+		// Use InBlockState to manage code block boundaries (3 or 6 ticks)
+		let mut block_state = InBlockState::Out;
+		let mut current_lang: Option<String> = None;
+		let mut captured_content: Option<Vec<&'a str>> = None;
 		let extrude_content = matches!(self.extrude, Some(Extrude::Content));
 
 		for line in self.lines.by_ref() {
-			// -- Check if new block and capture language
-			if line.starts_with("```") {
-				// -- We are entering a new block
-				if in_block.is_none() {
-					// Extract the language
-					let lang = line.trim_start_matches("```").trim();
-					in_block = Some(lang);
+			let previous_state = block_state;
+			block_state = block_state.compute_new(line);
 
-					// Determine if content needs to be captured
-					captured_content = match self.lang_filter {
-						Some(filter) => {
-							// -- match the filter, so we start capturing the block
-							if filter == lang {
-								Some(Vec::new())
-							} else {
-								if extrude_content {
-									self.extruded_content.push(line);
-									self.extruded_content.push("\n");
-								}
-								None
+			// Detect entering a new code block
+			if previous_state.is_out() && !block_state.is_out() {
+				let lang = match block_state {
+					InBlockState::In6 => line.strip_prefix("``````").unwrap_or(line).trim(),
+					InBlockState::In3 => line.strip_prefix("```").unwrap_or(line).trim(),
+					_ => line.trim(), // unreachable
+				};
+				// Store the language for later use when constructing MdBlock.
+				current_lang = Some(lang.to_string());
+				captured_content = match self.lang_filter {
+					Some(filter) => {
+						if filter == lang {
+							Some(Vec::new())
+						} else {
+							if extrude_content {
+								self.extruded_content.push(line);
+								self.extruded_content.push("\n");
 							}
+							None
 						}
-						None => Some(Vec::new()),
-					};
-				}
-				// -- We are exiting a block
-				else {
-					if let Some(content) = captured_content {
-						let content = content.join("");
-						return Some(MdBlock {
-							lang: Some(in_block.unwrap_or_default().to_string()),
-							content,
-						});
-					} else if extrude_content {
-						self.extruded_content.push(line);
-						self.extruded_content.push("\n");
 					}
-
-					in_block = None;
-					captured_content = None;
-				}
-
+					None => Some(Vec::new()),
+				};
 				continue;
-			} // if line.starts_with("```")
-
-			// -- Capture the content
-			if let Some(content) = &mut captured_content {
-				content.push(line);
-				content.push("\n");
 			}
-			// -- If no capture, but extrude_content, then, we extrude it
-			else if extrude_content {
-				self.extruded_content.push(line);
-				self.extruded_content.push("\n");
+
+			// Detect exiting a code block
+			if !previous_state.is_out() && block_state.is_out() {
+				if let Some(content) = captured_content.take() {
+					let joined = content.join("");
+					let block = MdBlock {
+						lang: current_lang.clone(),
+						content: joined,
+					};
+					return Some(block);
+				} else if extrude_content {
+					self.extruded_content.push(line);
+					self.extruded_content.push("\n");
+				}
+				current_lang = None;
+				continue;
+			}
+
+			// When inside a code block, capture the content if applicable
+			if !block_state.is_out() {
+				if let Some(ref mut cap) = captured_content {
+					cap.push(line);
+					cap.push("\n");
+				} else if extrude_content {
+					self.extruded_content.push(line);
+					self.extruded_content.push("\n");
+				}
+			} else {
+				// Outside a block, extrude content if necessary.
+				if extrude_content {
+					self.extruded_content.push(line);
+					self.extruded_content.push("\n");
+				}
 			}
 		}
 
-		// No more blocks found
 		None
 	}
 }
