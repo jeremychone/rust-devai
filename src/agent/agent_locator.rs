@@ -97,9 +97,8 @@ pub fn possible_aip_paths(path: SPath, as_dir: bool) -> Vec<SPath> {
 	}
 }
 
-/// Loads the base agent configuration.
+/// Loads the base agent options.
 ///
-/// FIXME: ->> Will need to merge the .aipack-base/config.toml with the .aipack/config.toml
 pub fn load_and_merge_configs_agent_options(dir_context: &DirContext) -> Result<AgentOptions> {
 	let config_paths = dir_context.aipack_paths().get_wks_config_toml_paths()?;
 

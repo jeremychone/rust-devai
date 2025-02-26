@@ -53,14 +53,19 @@ fn prompt_and_save(entry: Entry, disp_name: &str) -> Result<String> {
 	terminal::disable_raw_mode().expect("Failed to disable crossterm raw mode");
 
 	// -- Prompt the user
-	let mut input = String::new();
-	println!(
+
+	print!(
 		r#"
 API KEY for '{}' not found in environment vairable or keychain 
-Please enter value (will store key in Mac keychain, under aipack_secrets/{}): "#,
+Please enter value (will store key in Mac keychain, under aipack_secrets/{}): 
+"#,
 		disp_name, disp_name
 	);
 	io::stdout().flush()?;
+
+	// NOTE: Sometime on VSCode integrated terminal, we do not get the input.
+	// TODO: Might want to change that with the cross term.
+	let mut input = String::new();
 	io::stdin().read_line(&mut input)?;
 
 	// -- Validate the answer

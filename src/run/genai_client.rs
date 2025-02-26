@@ -27,9 +27,15 @@ pub fn get_genai_client() -> Result<genai::Client> {
 				#[cfg(target_os = "macos")]
 				{
 					// TODO: need to pass the model
-					let key = get_or_prompt_api_key(key_name)
-						.map_err(|err| genai::resolver::Error::Custom(err.to_string()))?;
-					Ok(Some(AuthData::from_single(key)))
+					let key = get_or_prompt_api_key(key_name);
+
+					match key {
+						Ok(key) => Ok(Some(AuthData::from_single(key))),
+						Err(err) => {
+							// Eventually need to handle his
+							Err(genai::resolver::Error::Custom(err.to_string()))
+						}
+					}
 				}
 				#[cfg(not(target_os = "macos"))]
 				{
