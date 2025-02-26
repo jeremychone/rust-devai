@@ -47,7 +47,7 @@ crossterm = { version = "0.28.1", features = ["event-stream"] }
 # -- Files
 simple-fs = { version = "0.5.1" }
 home = "0.5.11"
-zip = "0.6"
+zip = "2"
 walkdir = "2.4"
 # -- Web
 reqwest = {version = "0.12", default-features = false, features = ["json", "rustls-tls"]}
