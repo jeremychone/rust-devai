@@ -1,6 +1,6 @@
 use crate::Result;
 use crate::agent::{Agent, AgentRef};
-use crate::run::DirContext;
+use crate::dir_context::DirContext;
 use crate::script::LuaEngine;
 use simple_fs::SPath;
 use std::sync::Arc;
@@ -103,12 +103,13 @@ mod tests {
 	async fn test_run_literals_aipack_dir() -> Result<()> {
 		let script = r#"
 return {
-	  WORKSPACE_DIR    = CTX.WORKSPACE_DIR,
-		AIPACK_DIR       = CTX.AIPACK_DIR,
-		AGENT_FILE_NAME  = CTX.AGENT_FILE_NAME,
-		AGENT_FILE_PATH  = CTX.AGENT_FILE_PATH,
-		AGENT_FILE_DIR   = CTX.AGENT_FILE_DIR,
-		AGENT_FILE_STEM  = CTX.AGENT_FILE_STEM,
+	  WORKSPACE_DIR         = CTX.WORKSPACE_DIR,
+		WORKSPACE_AIPACK_DIR  = CTX.WORKSPACE_AIPACK_DIR,
+		BASE_AIPACK_DIR       = CTX.BASE_AIPACK_DIR,
+		AGENT_FILE_NAME       = CTX.AGENT_FILE_NAME,
+		AGENT_FILE_PATH       = CTX.AGENT_FILE_PATH,
+		AGENT_FILE_DIR        = CTX.AGENT_FILE_DIR,
+		AGENT_FILE_STEM       = CTX.AGENT_FILE_STEM,
 }
 		"#;
 
@@ -119,7 +120,8 @@ return {
 		assert_ends_with(res.x_get_str("WORKSPACE_DIR")?, "tests-data/sandbox-01");
 		assert_eq!(res.x_get_str("AGENT_FILE_NAME")?, "reflective-agent.aip");
 		assert_eq!(res.x_get_str("AGENT_FILE_STEM")?, "reflective-agent");
-		assert_ends_with(res.x_get_str("AIPACK_DIR")?, "tests-data/sandbox-01/.aipack");
+		assert_ends_with(res.x_get_str("WORKSPACE_AIPACK_DIR")?, "tests-data/sandbox-01/.aipack");
+		assert_ends_with(res.x_get_str("BASE_AIPACK_DIR")?, "tests-data/.aipack-base");
 		assert_ends_with(res.x_get_str("AGENT_FILE_PATH")?, "mock/reflective-agent.aip");
 
 		Ok(())

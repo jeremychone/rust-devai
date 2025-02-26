@@ -1,5 +1,5 @@
+use super::{DirContext, RepoKind};
 use crate::Result;
-use crate::run::{DirContext, RepoKind};
 use crate::support::files::list_dirs;
 use crate::support::paths;
 use simple_fs::SPath;

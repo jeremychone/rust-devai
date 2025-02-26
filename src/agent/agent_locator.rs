@@ -3,7 +3,7 @@
 
 use crate::agent::agent_ref::{AgentRef, PackRef, PartialAgentRef};
 use crate::agent::{Agent, AgentDoc, AgentOptions};
-use crate::run::{DirContext, PathResolver, find_pack_dirs};
+use crate::dir_context::{DirContext, PathResolver, find_pack_dirs};
 use crate::support::tomls::parse_toml;
 use crate::{Error, Result};
 use simple_fs::{SPath, read_to_string};

@@ -1,4 +1,4 @@
-use crate::run::DirContext;
+use crate::dir_context::DirContext;
 use genai::Client;
 use std::sync::Arc;
 

@@ -1,5 +1,6 @@
 use crate::Result;
-use crate::run::{DirContext, RuntimeContext, get_genai_client};
+use crate::dir_context::DirContext;
+use crate::run::{RuntimeContext, get_genai_client};
 use crate::script::LuaEngine;
 use genai::Client;
 
@@ -24,7 +25,7 @@ impl Runtime {
 	#[cfg(test)]
 	pub fn new_test_runtime_sandbox_01() -> Result<Self> {
 		use crate::_test_support::{SANDBOX_01_BASE_AIPACK_DIR, SANDBOX_01_WKS_DIR};
-		use crate::run::AipackPaths;
+		use crate::dir_context::AipackPaths;
 		use simple_fs::SPath;
 		use std::path::Path;
 

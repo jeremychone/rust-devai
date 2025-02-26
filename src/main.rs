@@ -2,6 +2,7 @@
 
 mod agent;
 mod cli;
+mod dir_context;
 mod error;
 mod exec;
 mod hub;

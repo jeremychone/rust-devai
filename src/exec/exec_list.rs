@@ -1,7 +1,7 @@
 use crate::Result;
 use crate::agent::PartialAgentRef;
 use crate::cli::ListArgs;
-use crate::run::{DirContext, find_pack_dirs};
+use crate::dir_context::{DirContext, find_pack_dirs};
 use crate::tui::print_pack_list;
 
 pub async fn exec_list(dir_context: DirContext, list_args: ListArgs) -> Result<()> {

@@ -1,7 +1,7 @@
 //! This module defines the AgentRef enum used to reference an agent either as a local file path
 //! or as a PackRef, which can be parsed from a string using the '@' delimiter.
 
-use crate::run::{PackDir, RepoKind};
+use crate::dir_context::{PackDir, RepoKind};
 use simple_fs::SPath;
 
 /// AgentRef represents a reference to an agent.

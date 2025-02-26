@@ -1,4 +1,5 @@
-use crate::run::{PathResolver, RuntimeContext};
+use crate::dir_context::PathResolver;
+use crate::run::RuntimeContext;
 use crate::script::lua_script::helpers::to_vec_of_strings;
 use crate::support::md::MdSectionIter;
 use mlua::{IntoLua, Lua, Value};

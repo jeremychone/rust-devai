@@ -1,7 +1,7 @@
 use crate::Result;
 use crate::cli::NewArgs;
+use crate::dir_context::DirContext;
 use crate::hub::get_hub;
-use crate::run::DirContext;
 
 /// exec for the New command
 /// Will create a new pack in base or workspace custom (not sure yet)

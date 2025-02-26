@@ -1,8 +1,9 @@
 use super::support::open_vscode;
 use crate::agent::{Agent, find_agent};
 use crate::cli::RunArgs;
+use crate::dir_context::DirContext;
 use crate::hub::{HubEvent, get_hub}; // Importing get_hub
-use crate::run::{DirContext, RunCommandOptions};
+use crate::run::RunCommandOptions;
 use crate::run::{Runtime, run_command_agent};
 use crate::support::jsons::into_values;
 use crate::types::FileMeta;
