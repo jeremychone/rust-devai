@@ -11,7 +11,7 @@
 #          Gemini: "gemini-2.0-flash", "gemini-2.0-pro-exp-02-05", "gemini-1.5-pro", "gemini-1.5-flash-8b" 
 #       Anthropic: "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"
 #          OpenAI: "o3-mini", "o3-mini-high", "o3-mini-low", "gpt-4o", "gpt-4o-mini"
-# model = "gpt-4o-mini" # or an alias below (e.g. "fast", "cost-saver")
+# model = "gpt-4o-mini" # or an alias below (e.g. "fast", "claude")
 
 # Temperature (by default unset)
 # temperature = 0.0
