@@ -1,4 +1,4 @@
-use crate::agent::{Agent, AgentOptions};
+use crate::agent::{Agent, AgentOptions, AgentRef};
 use crate::hub::get_hub;
 use crate::run::literals::Literals;
 use crate::run::run_input::{RunAgentInputResponse, run_agent_input};
@@ -120,18 +120,24 @@ pub async fn run_command_agent(
 	// Show the message
 	let model_str: &str = agent.model();
 	let model_resolved_str: &str = agent.model_resolved();
-	let model_name_message = if model_str != model_resolved_str {
+	let model_info = if model_str != model_resolved_str {
 		format!("{model_str} ({model_resolved_str})")
 	} else {
 		model_resolved_str.to_string()
 	};
-	// final resolved name
+	let agent_name = agent.name();
+
+	let mut agent_info: Option<String> = None;
+	if let AgentRef::PackRef(pack_ref) = agent.agent_ref() {
+		let kind_pretty = pack_ref.repo_kind.to_pretty_lower();
+		let pack_ref = pack_ref.to_string();
+		agent_info = Some(format!(" ({pack_ref} from {kind_pretty})"))
+	}
+	let agent_info = agent_info.as_deref().unwrap_or_default();
 
 	hub.publish(format!(
-		"\nRunning agent command: {}\n                 from: {}\n           with model: {}{genai_info}",
-		agent.name(),
-		agent_path,
-		model_name_message
+		"\nRunning agent command: {}{agent_info}\n                 from: {}\n           with model: {}{genai_info}",
+		agent_name, agent_path, model_info
 	))
 	.await;
 
@@ -292,7 +298,7 @@ async fn run_command_agent_input(
 		hub.publish(format!("-> Agent Output:\n{response_txt}")).await;
 	}
 
-	hub.publish(format!("-- DONE (input: {})", label)).await;
+	hub.publish(format!("==== DONE (input: {})", label)).await;
 
 	Ok(run_response)
 }

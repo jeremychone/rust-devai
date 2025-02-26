@@ -100,6 +100,17 @@ pub enum RepoKind {
 	BaseInstalled,
 }
 
+impl RepoKind {
+	pub fn to_pretty_lower(self) -> String {
+		match self {
+			Self::WksCustom => "workspace custom - .aipack/pack/custom",
+			Self::BaseCustom => "base custom - ~/.aipack-base/pack/custom",
+			Self::BaseInstalled => "base installed - ~/.aipack-base/pack/installed",
+		}
+		.to_string()
+	}
+}
+
 pub struct PackRepo {
 	pub kind: RepoKind,
 	pub path: SPath,
