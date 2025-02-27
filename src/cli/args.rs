@@ -12,26 +12,29 @@ pub struct CliArgs {
 
 #[derive(Subcommand, Debug)]
 pub enum CliCommand {
-	/// Initialize the `.aipack/` folder with the base setting files. Any file that already exists will not be touched.
+	/// Initialize the workspace `.aipack/` and the base `~/.aipack-base/` aipack directories
 	Init(InitArgs),
 
-	#[command(name = "init-base", about = "Init the ~/.aipack-base")]
+	#[command(name = "init-base", about = "Init the ~/.aipack-base only with force update")]
 	InitBase,
 
-	/// Executes the Command Agent `<name>` based on its name or short name.
-	///
-	/// The `<name>` is relative to the `.aipack/[default|custom]/command-agent/<name>.aipack`
-	///
-	/// for example `aip run proof-comments` or `aip run pc` will match:
-	/// either `.aipack/custom/command-agent/proof-comments.aipack`
-	/// and if not found will look in `.aipack/default/command-agent/proof-comments.aipack`
+	#[command(
+		about = "Executes the AIPack agent using `aip run demo@craft/code`, or an agent file `aip run path/to/agent.aip`.\n\n\
+    Example usage:\n\
+    ```sh\n\
+    # Run the demo@craft/code AIP agent\n\
+    aip run demo@craft/code\n\
+    \n\
+    # Run the demo@proof main.aip agent and provide a file as input\n\
+    aip run demo@proof -f ./README.md\n\
+    \n\
+    # Run a direct agent file from the local directory\n\
+    aip run some/agent.aip\n\
+    ```"
+	)]
 	Run(RunArgs),
 
-	// DISABLED FOR NOW
-	// Create a New Command Agent under `.aipack/custom/command-agent/`
-	// New(NewArgs),
-	//
-	/// List the available command agents
+	/// List the available aipacks `aip run list` or `aip run list demo@`
 	List(ListArgs),
 }
 
@@ -56,9 +59,11 @@ impl CliCommand {
 /// Arguments for the `run` subcommand
 #[derive(Parser, Debug)]
 pub struct RunArgs {
-	/// The name of the Command Agent to execute, required.
-	/// This should be the name of the markdown file under `.aipack/customs` or `.aipack/defaults` (without extension),
-	/// or the filename initial `proof-comments.md` will match to `proof-comments` or `pc`
+	#[clap(help = "The name of the agent, which can be:\n\
+- A AIP pack reference:\n\
+  `aip run demo@proof`\n\
+- Or a direct file:\n\
+  `aip run path/to/agent.aip`")]
 	pub cmd_agent_name: String,
 
 	/// Optional input, allowing multiple input
@@ -79,7 +84,7 @@ pub struct RunArgs {
 	#[arg(short = 'v', long = "verbose")]
 	pub verbose: bool,
 
-	/// Attempt to open the command agent file (for now use VSCode code command)
+	/// Attempt to open the agent file (for now use VSCode code command)
 	#[arg(short = 'o', long = "open")]
 	pub open: bool,
 
@@ -106,12 +111,10 @@ pub struct ListArgs {
 	pub open: bool,
 }
 
+/// DISABLED FOR NOW
 /// Arguments for the `run` subcommand
 #[derive(Parser, Debug)]
 pub struct NewArgs {
-	/// The command agent name which will be created under
-	/// e.g., `aip new my-cool-agent`
-	///        will create `.aipack/custom/command-agent/my-cool-agent.aipack`
 	pub agent_path: String,
 
 	/// Open the .aipack file, and the target file if exists.
