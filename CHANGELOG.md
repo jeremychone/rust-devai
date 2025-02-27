@@ -1,5 +1,11 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+
+## 2025-02-27 - [v0.6.1](https://github.com/jeremychone/rust-devai/compare/v0.6.0...v0.6.1)
+
+- `!` workspace - do not add .aipack/pack/custom on init anymore (still part of pack resolution)
+- `-` aipbase - fix core/ask-aipack/
+
 ## 2025-02-26 - **v0.6.0** **BIG CHANGE - now AIPACK**
 
 **BIG CHANGE - now AIPACK with agent packs `aip run namespace@pack_name`**
