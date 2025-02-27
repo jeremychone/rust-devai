@@ -1,4 +1,4 @@
-# IMPORTANT NOTICE - NOW AIPACK from v0.6.0 and on
+### IMPORTANT NOTICE - from v0.6.0 onward - AIPACK (rename from devai) 
 
 - This project is rebranding to [aipack](https://aipack.ai), a more suitable name for its future development.
 
@@ -8,22 +8,6 @@
 
 - But now `aipack` centric, which is going to bring huge value for the users and community.
 
-Now
-
-```sh
-aip run demo@proof-read
-
-# "demo" is the namespace (installed in ~/.aipack-base/pack/installed/demo/proof-read)
-# "proof_read" is the AI Pack, which has one entry point agent `main.aip`
-
-# namespace@pack_name can be put in custom, as `~/.aipack-base/pack/custom/demo/proof-read`
-# In this case, it will take precedence over the one form `installed`
-```
-
-You can find more information in the following [discussion #51](https://github.com/aipack-ai/aipack/discussions/51)
-
-# aipack - Build, Run, Share
-
 <div align="center">
 
 <a href="https://crates.io/crates/aipack"><img src="https://img.shields.io/crates/v/aipack.svg" /></a>
@@ -32,6 +16,49 @@ You can find more information in the following [discussion #51](https://github.c
 
 </div>
 
+You can find more information in the following [discussion #51](https://github.com/aipack-ai/aipack/discussions/51)
+
+# aipack - Build, Run, Share
+
+> DISCLAIMER: Right now, it works on **Linux & Mac**. Use **WSL** on **Windows** (**for now**).
+> - The cool thing is the `aip ..` can run on WSL, and then use VSCode on the same project, and all is good.
+
+For now, install with `cargo install aipack`
+
+Then,
+
+```sh
+# initialize workspace .aipack/ and ~/.aipack-base
+aip init
+
+# To proof read your README.md (namespace: demo, pack_name: proof)
+aip run demo@proof -f ./README.md
+
+# You can just use @pack_name if there is no other packname of this name
+aip run @proof -f ./README.md
+
+# To do some code crafting (will create _craft-code.md)
+aip run demo@craft/code
+
+# Or create your .aip file (you can omit the .aip)
+aip run path/to/file.aip
+
+```
+
+**IMPORTANT 1**: Make sure everything is committed before usage (at least while you are learning about aipack).
+
+**IMPORTANT 2**: Make sure to have your **API_KEY** in an environment variable (on Mac, there is an experimental keychain support)
+
+```
+OPENAI_API_KEY
+ANTHROPIC_API_KEY
+GEMINI_API_KEY
+XAI_API_KEY
+DEEPSEEK_API_KEY
+GROQ_API_KEY
+COHERE_API_KEY
+```
+
 - Website: https://aipack.ai
 
 - [Full intro video for v0.5 (still old devai name, but same concept)](https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj)
@@ -39,6 +66,7 @@ You can find more information in the following [discussion #51](https://github.c
 - Built on top of the [Rust genai library](https://crates.io/crates/genai), which supports all the top AI providers and models (OpenAI, Anthropic, Gemini, DeepSeek, Groq, Ollama, xAI, and Cohere).
 
 - Top new features:
+  - **2025-02-26 **(v0.6.0)** - BIG UPDATE - to **AIPACK**, now with pack support (`aip run demo@craft/code`)**
   - 2025-02-22 (v0.5.11) - Huge update with parametric agents, and coder (more info soon)
   - 2025-01-27 (v0.5.9) - Deepseek distill models support for Groq and Ollama (local)
   - 2025-01-23 (v0.5.7) - `aipack run craft/text` or `aipack run craft/code` (example of cool new agent module support)
@@ -62,53 +90,35 @@ _For now, the simplest way to install is with `cargo install aipack`._
 - Install Rust: https://www.rust-lang.org/tools/install
 - Run `cargo install aipack`
 
-#### Usage
-
-```sh
-# Init
-aipack init
-# This will create `./.aipack/` on the current directory, making that directory a aipack workspace
-#  (this will also have a  `./.aipack/custom/my/sample` AIPACK which can be ran with `aip run my@sample`)
-#
-# And, if not already created a `~/.aipack-base/` with the base/shared config.toml and 
-
-# Then, to run you sample from your workspace.
-aip run my@sample
-
-# Or run some demo packs
-
-
-# Can use multiple globs or direct files -f "./*.md" -f "./doc/**/*.md"
-
-# For a one-shot run (or --ni)
-aip run demo@proof-read -f "./doc/README.md" --non-interactive 
-
-```
-
-The main concept of **aipack** is to minimize friction in creating and running agents while providing maximum control over how we want those agents to run and maximizing iteration speed to mature them quickly.
-
-**IMPORTANT 1**: Make sure everything is committed before usage (at least while you are learning about aipack).
-
-**IMPORTANT 2**: Make sure to have your **`OPENAI_API_KEY`**, **`ANTHROPIC_API_KEY`**, **`DEEPSEEK_API_KEY`**, or **`XAI_API_KEY`**, or the key of your model provider [more info on API keys](_init/doc/README.md#api-keys)
-
-**NOTE**: Since `v0.5.4`, the agent folders now have the `command-` prefix under `.aipack/` (aipack will update the folder names when needed).
-
 #### How it works
 
-- **One Agent** == **One Markdown** 
-    - A `.aipack` Agent file is just a **Markdown File** with sections for each stage of the agent processing.
+- **One Agent** == **One Markdown**
+    - A `.aip` Agent file is just a **Markdown File** with sections for each stage of the agent processing.
     - See below for all the [possible stages](#multi-stage).
-- `aipack run proof-read -f "./*.md"` will run the installed Command Agent file `.aipack/default/proof-read.aipack` on all source files matching `./src/*.md` (Here is the source file for the default [proof-read.aipack](/_init/agents/proof-read.aipack))
-  - Each matching file will become an `input` of type [FileMeta](./_init/doc/lua.md#filemeta) for the **Lua** and **Handlebars** parts of the agent file. 
-- **aipack** agents are simple `.aipack` files that can be placed anywhere on disk.
-  - e.g., `aipack run ./my-path/to/my-agent.aipack ...`  
-- **Multi AI Provider / Models** - **aipack** uses [genai](https://crates.io/crates/genai) and therefore supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come. 
+- `aip run demo@proof -f "./*.md"`
+  - will run the installed Agent file `main.aip` in the
+  - pack name `proof`
+  - namespace `demo`
+  - agent file `main.aip`
+  - Full path `~/.aipack-base/pack/installed/demo/proof/main.aip`
+  - You can pass input to your agent with
+    - `-f "path/with/optional/**/glob.*" -f "README.md` (then the lua code will get a `{path = .., name =..}` FileMeta type of structure as input)
+    -  `-i "some string" -i "another input"` (then the lua code will get those strings as input)
+    - Each input will be one run of the agent.
+- `aip run some/path/to/agent`
+  - can end with `.aip` in this case direct file run
+  - if no `.aip` extension, then,
+    - `...agent.aip` will be executed if exists
+    - or `...agent/main.aip` will be executed if exists
+- **aipack** agents are simple `.aip` files that can be placed anywhere on disk.
+  - e.g., `aipack run ./my-path/to/my-agent.aipack ...`
+- **Multi AI Provider / Models** - **aipack** uses [genai](https://crates.io/crates/genai) and therefore supports OpenAI, Anthropic, Gemini, Groq, Ollama, Cohere, and more to come.
 - **Lua** is used for all scripting (thanks to the great [mlua](https://crates.io/crates/mlua) crate).
-- **Handlebars** is used for all prompt templating (thanks to the great Rust native [handlebars](https://crates.io/crates/handlebars) crate).     
+- **Handlebars** is used for all prompt templating (thanks to the great Rust native [handlebars](https://crates.io/crates/handlebars) crate).
 
 ### Multi Stage
 
-A single **aipack** file may comprise any of the following stages. 
+A single **aipack** file may comprise any of the following stages.
 
 | Stage           | Language       | Description                                                                                                |
 |-----------------|----------------|------------------------------------------------------------------------------------------------------------|
@@ -120,7 +130,6 @@ A single **aipack** file may comprise any of the following stages.
 | `# Output`      | **Lua**        | Processes the `ai_response` from the LLM. Otherwise, `ai_response.content` will be output to the terminal. |
 | `# After All`   | **Lua**        | Called with `inputs` and `outputs` for post-processing after all inputs are completed.                     |
 
-
 - `# Before All` / `# After All` can be considered as the **map**/**reduce** of the agent, and these will be run before and after the input processing.
 
 [more info on stages](_init/doc/README.md#complete-stages-description)
@@ -129,7 +138,7 @@ A single **aipack** file may comprise any of the following stages.
 
 See the aipack documentation at **[_init/doc/README.md](_init/doc/README.md)** (With [Lua modules doc](_init/doc/lua.md))
 
-You can also run the `ask-aipack` agent. 
+You can also run the `ask-aipack` agent.
 
 ```sh
 # IMPORTANT - Make sure you have the `OPENAI_API_KEY` or the key of your model in your environment
@@ -143,5 +152,5 @@ aipack run ask-aipack
 - More Lua functions
 - Agent module `my-module` may run `my-module/main.aip`, and running `my-module/some-other` will run `my-module/some-other.aip`
 - Support Lua `Require`
-- Full TUI/Ratatui 
+- Full TUI/Ratatui
 - Split runtime to [agentic](https://crates.io/crates/agentic)
