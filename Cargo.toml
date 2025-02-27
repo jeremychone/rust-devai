@@ -1,4 +1,4 @@
-cargo-features = ["edition2024"]
+# cargo-features = ["edition2024"] # Required when running `cargo outdated`
 
 [package]
 name = "aipack"
