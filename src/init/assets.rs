@@ -26,6 +26,7 @@ pub fn extract_workspace_zfile(path: &str) -> Result<ZFile> {
 	extract_zfile("workspace", path)
 }
 
+#[allow(unused)]
 pub fn extract_workspace_pack_file_paths() -> Result<Vec<String>> {
 	list_workspace_file_paths_start_with("pack")
 }

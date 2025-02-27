@@ -1,8 +1,7 @@
 use crate::Result;
 use crate::dir_context::{AipackPaths, DirContext, find_wks_dir};
 use crate::hub::get_hub;
-use crate::init::assets::{self, extract_workspace_config_toml_zfile};
-use crate::support::AsStrsExt as _;
+use crate::init::assets;
 use crate::support::files::current_dir;
 use simple_fs::{SPath, ensure_dir};
 use std::fs::write;
@@ -72,7 +71,7 @@ async fn create_or_refresh_wks_files(aipack_dir: &AipackPaths) -> Result<()> {
 	let config_path = aipack_dir.get_wks_config_toml_path()?;
 
 	if !config_path.exists() {
-		let config_zfile = extract_workspace_config_toml_zfile()?;
+		let config_zfile = assets::extract_workspace_config_toml_zfile()?;
 		write(&config_path, config_zfile.content)?;
 		hub.publish(format!(
 			"-> {:<18} '{}'",
@@ -82,14 +81,11 @@ async fn create_or_refresh_wks_files(aipack_dir: &AipackPaths) -> Result<()> {
 		.await;
 	}
 
-	// -- Ensture pack/custom
-	let wks_pack_custom_dir = aipack_dir.get_wks_pack_custom_dir()?;
-	ensure_dir(wks_pack_custom_dir)?;
+	// NOTE: Currently, we do not create the workspace .aipack/pack/custom directory because users can use their own paths to run agents.
+	//       Eventually, we might support installing packs in the workspace using `aip install jc@coder --workspace`.
+	//       These will be placed in `.aipack/pack/installed/` and will take precedence over the base custom & installed packs.
 
-	// -- Init the workspace pack path (the custom/...)
-	let pack_paths = assets::extract_workspace_pack_file_paths()?;
-	let wks_aipack_dir = aipack_dir.wks_aipack_dir();
-	assets::update_files("workspace", wks_aipack_dir, &pack_paths.x_as_strs(), false).await?;
+	// NOTE: For now, the workspace .aipack/pack/custom/ directory is still added to the pack resolution, which is beneficial for advanced users.
 
 	Ok(())
 }
