@@ -8,15 +8,15 @@
 
 - But now `aipack` centric, which is going to bring huge value for the users and community.
 
+You can find more information in the following [discussion #51](https://github.com/aipack-ai/aipack/discussions/51)
+
 <div align="center">
 
 <a href="https://crates.io/crates/aipack"><img src="https://img.shields.io/crates/v/aipack.svg" /></a>
 <a href="https://github.com/jeremychone/rust-aipack"><img alt="Static Badge" src="https://img.shields.io/badge/GitHub-Repo?color=%23336699"></a>
-<a href="https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj"><img alt="Static Badge" src="https://img.shields.io/badge/YouTube_aipack_Intro-Video?style=flat&logo=youtube&color=%23ff0000"></a>
+<a href="https://www.youtube.com/watch?v=b3LJcNkhkH4&list=PL7r-PXl6ZPcBcLsBdBABOFUuLziNyigqj"><img alt="Static Badge" src="https://img.shields.io/badge/YouTube_aipack_(devai)_Intro-Video?style=flat&logo=youtube&color=%23ff0000"></a>
 
 </div>
-
-You can find more information in the following [discussion #51](https://github.com/aipack-ai/aipack/discussions/51)
 
 # aipack - Build, Run, Share
 

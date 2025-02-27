@@ -1,5 +1,15 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2025-02-26 - **v0.6.0** **BIG CHANGE - now AIPACK**
+
+**BIG CHANGE - now AIPACK with agent packs `aip run namespace@pack_name`**
+
+- **same codebase**, **same feature set**, **same licenses (MIT or Apache)**
+
+- But now **ai packs centric**, which is going to bring huge value for the users and community.
+
+- See [README.md](README.md)
+
 ## 2025-02-23 - [v0.5.12](https://github.com/jeremychone/rust-devai/compare/v0.5.11...v0.5.12)
 
 - `*` readme - NOTICE about AIPACK migration
