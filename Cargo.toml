@@ -2,7 +2,7 @@ cargo-features = ["edition2024"]
 
 [package]
 name = "aipack"
-version = "0.6.1"
+version = "0.6.2-WIP"
 edition = "2024"
 rust-version = "1.85"
 license = "MIT OR Apache-2.0"
