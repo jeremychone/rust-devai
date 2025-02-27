@@ -274,19 +274,24 @@ local skip_response = aipack.skip("File already contains the documentation")
 
 All Lua scripts get the `CTX` table in scope to get the path of the runtime and agent.
 
-| Key                 | Value                                    |
-|---------------------|------------------------------------------|
-| CTX.WORKSPACE_DIR   | `/absolute/path/to/workspace_dir`        |
-| CTX.AIPACK_DIR      | `./.aipack`                              |
-| CTX.AGENT_NAME      | `my-agent`                               |
-| CTX.AGENT_FILE_PATH | `./.aipack/custom/agent/my-agent.aipack` |
-| CTX.AGENT_FILE_DIR  | `./.aipack/custom/agent`                 |
-| CTX.AGENT_FILE_NAME | `my-agent.aipack`                        |
-| CTX.AGENT_FILE_STEM | `my-agent`                               |
+| Key                      | Value                                      |
+|--------------------------|--------------------------------------------|
+| CTX.WORKSPACE_DIR        | `/absolute/path/to/workspace_dir`          |
+| CTX.WORKSPACE_AIPACK_DIR | `/absolute/path/to/workspace_dir/.aipack`  |
+| CTX.BASE_AIPACK_DIR      | `/absolute/path/to/home/.aipack-base`      |
+| CTX.AGENT_NAME           | `my-agent`                                 |
+| CTX.AGENT_FILE_PATH      | `/absolute/path/to/my-agent.aip`           |
+| CTX.AGENT_FILE_DIR       | `/absolute/path/to/agent`                  |
+| CTX.AGENT_FILE_NAME      | `my-agent.aip`                             |
+| CTX.AGENT_FILE_STEM      | `my-agent`                                 |
+| CTX.PACK_NAMESPACE       | `demo` (when `demo@craft/text`)            |
+| CTX.PACK_NAME            | `craft` (when `demo@craft/text`)           |
+| CTX.PACK_REF             | `demo@craft` (when `demo@craft/text`)      |
+| CTX.PACK_FULL_REF        | `demo@craft/text` (when `demo@craft/text`) |
 
-- All paths are relative to `WORKSPACE_DIR`.
-- The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. You can use this name to do a `aipack::run(CTX.AGENT_NAME, [])`.
-- These are available in `aipack run ..`
+- All paths are absolute.
+- `CTX.PACK..` are nil if the agent was not referenced with a pack path (i.e, with a "@")
+- The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. 
 
 # Common Types
 
