@@ -20,6 +20,7 @@ pub mod md;
 pub mod paths;
 pub mod text;
 pub mod tomls;
+pub mod zip;
 
 // endregion: --- Modules
 

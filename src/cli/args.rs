@@ -36,6 +36,9 @@ pub enum CliCommand {
 
 	/// List the available aipacks `aip run list` or `aip run list demo@`
 	List(ListArgs),
+
+	/// Pack a directory into a .aipack file
+	Pack(PackArgs),
 }
 
 /// Custom function
@@ -50,6 +53,7 @@ impl CliCommand {
 			CliCommand::InitBase => false,
 			// CliCommand::New(_) => false,
 			CliCommand::List(_) => false,
+			CliCommand::Pack(_) => false,
 		}
 	}
 }
@@ -97,6 +101,18 @@ pub struct RunArgs {
 	pub not_interactive: bool,
 }
 
+/// Arguments for the `pack` subcommand
+#[derive(Parser, Debug)]
+pub struct PackArgs {
+	/// The directory to pack into a .aipack file
+	pub dir_path: String,
+
+	/// Optional destination directory for the .aipack file
+	/// If not provided, the .aipack file will be created in the current directory
+	#[arg(short = 'o', long = "output")]
+	pub output_dir: Option<String>,
+}
+
 /// Arguments for the `run` subcommand
 #[derive(Parser, Debug)]
 pub struct ListArgs {
@@ -142,6 +158,7 @@ impl From<CliCommand> for ExecCommand {
 			CliCommand::Run(run_args) => ExecCommand::RunCommandAgent(run_args),
 			// CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
 			CliCommand::List(list_args) => ExecCommand::List(list_args),
+			CliCommand::Pack(pack_args) => ExecCommand::Pack(pack_args),
 		}
 	}
 }

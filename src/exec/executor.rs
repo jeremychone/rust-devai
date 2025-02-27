@@ -4,7 +4,7 @@
 use crate::agent::Agent;
 use crate::exec::exec_command::ExecCommand;
 use crate::exec::support::open_vscode;
-use crate::exec::{ExecEvent, RunRedoCtx, exec_list, exec_new, exec_run, exec_run_redo};
+use crate::exec::{ExecEvent, RunRedoCtx, exec_list, exec_new, exec_pack, exec_run, exec_run_redo};
 use crate::hub::get_hub;
 use crate::init::{init_base, init_wks};
 use crate::{Error, Result};
@@ -93,6 +93,8 @@ impl Executor {
 					exec_new(new_args, init_wks(None, false).await?).await?;
 				}
 				ExecCommand::List(list_args) => exec_list(init_wks(None, false).await?, list_args).await?,
+
+				ExecCommand::Pack(pack_args) => exec_pack(&pack_args).await?,
 
 				ExecCommand::RunCommandAgent(run_args) => {
 					hub.publish(ExecEvent::RunStart).await;

@@ -1,3 +1,4 @@
+use crate::pack;
 use derive_more::From;
 use derive_more::derive::Display;
 use tokio::runtime::TryCurrentError;
@@ -22,6 +23,10 @@ pub enum Error {
 		path: String,
 		reason: String,
 	},
+
+	// -- Pack
+	#[from]
+	Pack(pack::Error),
 
 	// -- Run
 	BeforeAllFailWrongReturn {

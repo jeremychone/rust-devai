@@ -7,6 +7,7 @@ mod error;
 mod exec;
 mod hub;
 mod init;
+mod pack;
 mod run;
 mod script;
 mod support;
