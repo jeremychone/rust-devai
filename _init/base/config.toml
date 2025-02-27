@@ -25,8 +25,8 @@ model = "gpt-4o-mini" # or an alias below (e.g. "fast", "claude")
 # This can also be overridden or complemented in the `# Options` section of the aipack.
 # Note: It is important to have `model_aliases` as a property of `default_options` as shown below.
 [default_options.model_aliases]
-standard = "gpt-4o"
+claude   = "claude-3-7-sonnet-latest"
 high     = "o3-mini-high"
 low      = "o3-mini-low"
-claude   = "claude-3-7-sonnet-latest"
+standard = "gpt-4o"
 fast     = "gemini-2.0-flash"

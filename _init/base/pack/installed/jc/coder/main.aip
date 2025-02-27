@@ -91,6 +91,8 @@ else
     print("INFO: No base_dir, update in place ")
 end
 
+local create_file_mode = base_dir ~= nil
+
 -- == Build the inputs(for now, only one)
 local input_base = {
     default_language             = meta.default_language or "Rust Programming",
@@ -101,6 +103,7 @@ local input_base = {
     second_part                  = second_part,
     prompt_path                  = prompt_file.path,
     inst                         = inst,
+    create_file_mode             = create_file_mode,
     base_dir                     = base_dir,
     context_refs                 = context_refs,
     knowledge_refs               = knowledge_refs,
@@ -200,7 +203,11 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 - For SQL, Lua, and other `--` comment languages, it will be `-- file: path/to/file...` (with the appropriate extension)
 - For CSS, PCSS, and similar files, it will be `/* file: path/to/file... */`  (with the appropriate extension)
 - This way, the code block generated for a language is valid for that language. 
-- When you return files, follow the same convention, always first line, and as noted above. Usually, files will be given this way too.  
+- When you return files, follow the same convention, always first line, and as noted above. Usually, files will be given this way too. 
+{{#if data.create_file_mode}}
+- Since the code blocks will be used to create or update files, make sure the code blocks provided use the 6 backticks convention so that if the content inside contains 3 backticks, everything works properly.  
+- When asked to generate a markdown file with some code inside, the markdown code block should use 6 backticks, and the content inside should use 3 backticks so that the markdown file is saved correctly.
+{{/if}} 
 
 ## Languages best practices
 
@@ -322,8 +329,14 @@ Here are the additional user instructions
 == End User Instructions
 {{/if}}
 
+Make sure that if you give code file content, you put them in markdown code block as described in the `<SECTION title="CODE BLOCK AND FILE CONVENTION">` system instruction. 
 
-Make sure that if you give code file content, you put them in markdown code block as described in the `=== START Code block & file name convention` system instruction. 
+{{#if data.create_file_mode}}
+Also, as mentioned in the system instruction `code block & file name convention`, 
+- Since the code blocks will be used to create or update files, make sure the code blocks provided use the 6 backticks convention so that if the content inside contains 3 backticks, everything works properly.  
+- When asked to generate a markdown file with some code inside, the markdown code block should use 6 backticks, and the content inside should use 3 backticks so that the markdown file is saved correctly.
+{{/if}}
+
 
 # Output
 
