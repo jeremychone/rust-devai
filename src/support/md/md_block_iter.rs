@@ -52,7 +52,7 @@ impl<'a> MdBlockIter<'a> {
 			// Detect entering a new code block
 			if previous_state.is_out() && !block_state.is_out() {
 				let lang = match block_state {
-					InBlockState::In6 => line.strip_prefix("``````").unwrap_or(line).trim(),
+					InBlockState::In4 => line.strip_prefix("````").unwrap_or(line).trim(),
 					InBlockState::In3 => line.strip_prefix("```").unwrap_or(line).trim(),
 					_ => line.trim(), // unreachable
 				};

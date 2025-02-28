@@ -204,11 +204,11 @@ This is a text without any code blocks.
 }
 
 #[test]
-fn test_md_block_iter_6ticks_simple() -> Result<()> {
+fn test_md_block_iter_4ticks_simple() -> Result<()> {
 	let content = r#"
 Some text
-``````rust
-``````
+````rust
+````
 ```python
 def hello():
 		print("Hello, world!")
@@ -223,11 +223,11 @@ def hello():
 }
 
 #[test]
-fn test_md_block_iter_6ticks_nested() -> Result<()> {
+fn test_md_block_iter_4ticks_nested() -> Result<()> {
 	// -- Setup & fixtures
 	let content = r#"
 Some text
-``````md
+````md
 This is a full markdown
 with some code block
 ```rust
@@ -236,7 +236,7 @@ let v = 123;
 and other code
 `let d = "asf";`
 
-``````
+````
 ```python
 def hello():
 		print("Hello, world!")

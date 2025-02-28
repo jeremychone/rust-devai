@@ -26,7 +26,7 @@ aipack run ./my-agents/first-agent.aip -f "./README.md"
 ```
 
 `./my-agents/my-first-agent.aip`
-``````md
+````md
 # Data
 
 ```lua
@@ -71,7 +71,7 @@ return "This will be printed in the terminal if it's a string"
 
 ```
 
-``````
+````
 
 - See [Complete Stages Description](#complete-stages-description) for more details on the stages.
 - See [Lua doc](lua.md) for more details on the available Lua modules and functions.

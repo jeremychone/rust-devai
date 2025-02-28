@@ -49,28 +49,6 @@ function prep_prompt_file(input, options)
 end
 
 
--- Will return a aipack skip if this task should be skipped
---   - If both inst and content are empty
---   - Or if inst (or content if inst is empty) starts with 'placeholder'
-function should_skip(inst, content) 
-  inst = inst and utils.text.trim(inst) or ""
-  content = content and utils.text.trim(content) or ""
-
-
-  if inst == "" and content == "" then
-    return aipack.skip("Empty content and instructions - Start writing, and do a Redo.")
-  end
-
-  local first_part = (inst ~= "" and inst) or content
-
-  -- if starts with placeholder
-  if first_part:sub(1, 11):lower() == "placeholder" then
-      return aipack.skip("Content is a placeholder, so skipping for now")
-  end 
-
-  return nil
-end
-
 -- retuns `inst, content` and each can be nil
 -- options {content_is_default = bool}
 --   - When content_is_default, means that if no two parts, the content will be the first_part
