@@ -26,6 +26,7 @@ pub struct PackToml {
 #[derive(Debug)]
 pub struct PackDirData {
 	pub pack_file: Utf8PathBuf,
+	#[allow(unused)]
 	pub pack_toml: PackToml,
 }
 

@@ -47,10 +47,6 @@ pub fn extract_template_zfile(path: &str) -> Result<ZFile> {
 	extract_zfile("template", path)
 }
 
-pub fn list_template_file_paths_start_with(prefix: &str) -> Result<Vec<String>> {
-	list_file_paths_start_with("template", prefix)
-}
-
 // endregion: --- Template ZFiles
 
 // region:    --- Base ZFiles

@@ -1,14 +1,10 @@
-use std::fs::{self, File};
-use std::io::{self, Read, Write};
-use std::path::Path;
-
 use camino::Utf8Path;
-use camino::Utf8PathBuf;
+use std::fs::{self, File};
+use std::io::{self};
 use walkdir::WalkDir;
-use zip::CompressionMethod;
 use zip::ZipArchive;
 use zip::ZipWriter;
-use zip::write::{FileOptions, SimpleFileOptions};
+use zip::write::SimpleFileOptions;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -68,6 +64,7 @@ pub fn zip_dir(src_dir: impl AsRef<Utf8Path>, dest_file: impl AsRef<Utf8Path>) -
 ///
 /// `src_zip` is the path to the zip archive.
 /// `dest_dir` is the destination directory where the contents of the zip will be extracted.
+#[allow(unused)]
 pub fn unzip_file(src_zip: impl AsRef<Utf8Path>, dest_dir: impl AsRef<Utf8Path>) -> Result<()> {
 	let src_zip = src_zip.as_ref();
 	let dest_dir = dest_dir.as_ref();

@@ -1,13 +1,12 @@
 use crate::cli::PackArgs;
 use crate::hub::get_hub;
 use crate::init::extract_template_pack_toml_zfile;
-use crate::pack::{self, Error as PackError, pack_dir};
+use crate::pack::{self, pack_dir};
 use crate::{Error, Result};
 use aho_corasick::AhoCorasick;
 use camino::Utf8PathBuf;
 use std::fs;
-use std::io::{self, Write};
-use std::path::Path;
+use std::io::{self};
 
 /// Execute the pack command which creates a .aipack file from a directory
 pub async fn exec_pack(pack_args: &PackArgs) -> Result<()> {
@@ -44,7 +43,7 @@ pub async fn exec_pack(pack_args: &PackArgs) -> Result<()> {
 			.await;
 			Ok(())
 		}
-		Err(pack::Error::AipackTomlMissing(missing_toml_path)) => {
+		Err(pack::Error::AipackTomlMissing(_missing_toml_path)) => {
 			// Generate template pack.toml
 			if let Err(gen_err) = generate_pack_toml(&src_dir).await {
 				hub.publish(format!("Failed to generate pack.toml: {}", gen_err)).await;
@@ -101,7 +100,7 @@ async fn generate_pack_toml(dir_path: &Utf8PathBuf) -> Result<()> {
 	// Extract the template pack.toml
 	let pack_toml_zfile = extract_template_pack_toml_zfile()?;
 	let mut content =
-		String::from_utf8(pack_toml_zfile.content).map_err(|err| Error::custom("template pack.toml is not UTF8 ??"))?;
+		String::from_utf8(pack_toml_zfile.content).map_err(|_| Error::custom("template pack.toml is not UTF8 ??"))?;
 
 	// Get the directory name
 	let dir_name = dir_path
@@ -111,7 +110,8 @@ async fn generate_pack_toml(dir_path: &Utf8PathBuf) -> Result<()> {
 	// Replace DIR_NAME with actual directory name using aho-corasick
 	let patterns = &["DIR_NAME"];
 	let replacements = &[dir_name];
-	let ac = AhoCorasick::new(patterns).map_err(|err| Error::custom("AhoCorasick pattern fail"))?;
+	let ac =
+		AhoCorasick::new(patterns).map_err(|err| Error::custom(format!("AhoCorasick pattern fail. Cause: {err}")))?;
 	content = ac.replace_all(&content, replacements);
 
 	// Write the file
