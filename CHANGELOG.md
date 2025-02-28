@@ -1,5 +1,11 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2025-02-28 - [v0.6.2](https://github.com/jeremychone/rust-devai/compare/v0.6.1...v0.6.2)
+
+- `-` @coder - normalize coder to use four backtics for code block
+- `-` jc@coder - fix the 6 backticks to be 4, which is the correct standard (for extract_blocks and extract_sections)
+- `+` pack - template generation
+- `+` pack - first pass at pack dir `aip pack some/path/to/dir
 
 ## 2025-02-27 - [v0.6.1](https://github.com/jeremychone/rust-devai/compare/v0.6.0...v0.6.1)
 
