@@ -2,23 +2,24 @@ use crate::Result;
 use crate::cli::InstallArgs;
 use crate::dir_context::DirContext;
 use crate::hub::get_hub;
-use simple_fs::SPath;
+use crate::packer::install_pack;
 
 // region:    --- InstallRef
-
-enum InstallRef {
-	/// Direct path
-	Path(SPath),
-	// Future the PackRef path `namespace@pack_name`
-}
 
 // endregion: --- InstallRef
 
 /// Executes the install command which installs an aipack file
 pub async fn exec_install(dir_context: DirContext, install_args: InstallArgs) -> Result<()> {
 	let hub = get_hub();
-	hub.publish(format!("\nInstalling aipack from '{}'...", install_args.aipack_ref))
-		.await;
+	hub.publish(format!(
+		"\n==== Installing aipack from '{}'...",
+		install_args.aipack_ref
+	))
+	.await;
+
+	install_pack(&dir_context, &install_args.aipack_ref)?;
+
+	hub.publish("\n==== DONE".to_string()).await;
 
 	Ok(())
 }

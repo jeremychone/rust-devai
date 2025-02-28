@@ -134,6 +134,7 @@ impl PackRepo {
 
 /// Get compute path/s
 impl AipackPaths {
+	// region:    --- Workspace Files & Dirs
 	pub fn get_wks_config_toml_path(&self) -> Result<SPath> {
 		let path = self.wks_aipack_dir.join(CONFIG_FILE_NAME)?;
 		Ok(path)
@@ -150,6 +151,21 @@ impl AipackPaths {
 		let dir = self.wks_aipack_dir.join(PACK_CUSTOM)?;
 		Ok(dir)
 	}
+	// endregion: --- Workspace Files & Dirs
+
+	// region:    --- Base Files & Dirs
+
+	pub fn get_base_pack_custom_dir(&self) -> Result<SPath> {
+		let dir = self.base_aipack_dir.join(PACK_CUSTOM)?;
+		Ok(dir)
+	}
+
+	pub fn get_base_pack_installed_dir(&self) -> Result<SPath> {
+		let dir = self.base_aipack_dir.join(PACK_INSTALLED)?;
+		Ok(dir)
+	}
+
+	// endregion: --- Base Files & Dirs
 
 	/// Returns the list of pack dirs, in the order of precedence.
 	///
@@ -167,13 +183,13 @@ impl AipackPaths {
 		}
 
 		// 2. Base custom directory: ~/.aipack-base/pack/custom
-		let base_custom = self.base_aipack_dir.join(PACK_CUSTOM)?;
+		let base_custom = self.get_base_pack_custom_dir()?;
 		if base_custom.exists() {
 			dirs.push(PackRepo::new(RepoKind::BaseCustom, base_custom));
 		}
 
 		// 3. Base installed directory: ~/.aipack-base/pack/installed
-		let base_installed = self.base_aipack_dir.join(PACK_INSTALLED)?;
+		let base_installed = self.get_base_pack_installed_dir()?;
 		if base_installed.exists() {
 			dirs.push(PackRepo::new(RepoKind::BaseInstalled, base_installed));
 		}

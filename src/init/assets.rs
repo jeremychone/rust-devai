@@ -115,7 +115,7 @@ pub fn extract_zfile(pre_path: &str, path: &str) -> Result<ZFile> {
 
 /// List the paths nder the `workspace/_prefix_` path and remove
 fn list_file_paths_start_with(pre_path: &str, prefix: &str) -> Result<Vec<String>> {
-	let archive = new_archive_reader()?;
+	let archive = new_asset_archive_reader()?;
 
 	let mut paths = Vec::new();
 
@@ -135,7 +135,7 @@ fn list_file_paths_start_with(pre_path: &str, prefix: &str) -> Result<Vec<String
 }
 
 fn extract_asset_content(path: &str) -> Result<Vec<u8>> {
-	let mut archive = new_archive_reader()?;
+	let mut archive = new_asset_archive_reader()?;
 
 	let mut file = archive
 		.by_name(path)
@@ -148,7 +148,7 @@ fn extract_asset_content(path: &str) -> Result<Vec<u8>> {
 	Ok(data)
 }
 
-fn new_archive_reader() -> Result<ZipArchive<Cursor<&'static [u8]>>> {
+fn new_asset_archive_reader() -> Result<ZipArchive<Cursor<&'static [u8]>>> {
 	let reader = Cursor::new(ASSETS_ZIP);
 
 	let archive = ZipArchive::new(reader)

@@ -1,5 +1,3 @@
-use crate::packer;
-use camino::Utf8PathBuf;
 use derive_more::From;
 use derive_more::derive::Display;
 use tokio::runtime::TryCurrentError;
@@ -27,6 +25,12 @@ pub enum Error {
 	},
 
 	// -- Pack
+	InvalidPackIdentity {
+		origin_path: String,
+		cause: &'static str,
+	},
+
+	// -- Packer & Installer
 	#[display("pack.toml file is missing at '{_0}'")]
 	AipackTomlMissing(String),
 
@@ -39,11 +43,9 @@ pub enum Error {
 	#[display("name field is missing or empty in '{_0}'")]
 	NameMissing(String),
 
-	Zip(String),
-
-	InvalidPackIdentity {
-		origin_path: String,
-		cause: &'static str,
+	FailToInstall {
+		aipack_file: String,
+		cause: String,
 	},
 
 	// -- Run
@@ -57,6 +59,28 @@ pub enum Error {
 	// -- Externals / custom
 	#[display("LUA ERROR - {_0}")]
 	Lua(String),
+
+	Zip {
+		zip_file: String,
+		cause: String,
+	},
+	ZipContent {
+		zip_file: String,
+		content_path: String,
+		cause: String,
+	},
+	ZipFileNotFound {
+		zip_file: String,
+		content_path: String,
+	},
+	ZipFail {
+		zip_dir: String,
+		cause: String,
+	},
+	UnzipZipFail {
+		zip_file: String,
+		cause: String,
+	},
 
 	// -- Externals auto froms
 	#[from]
