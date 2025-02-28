@@ -5,36 +5,47 @@ pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, From, Display)]
 pub enum Error {
-	#[from]
-	#[display("{_0}")]
-	Custom(String),
+    #[from]
+    #[display("{_0}")]
+    Custom(String),
 
-	AipackTomlMissing(Utf8PathBuf),
-	VersionMissing(Utf8PathBuf),
-	NamespaceMissing(Utf8PathBuf),
-	NameMissing(Utf8PathBuf),
+    #[display("pack.toml file is missing at '{_0}'")]
+    AipackTomlMissing(Utf8PathBuf),
+    
+    #[display("version field is missing or empty in '{_0}'")]
+    VersionMissing(Utf8PathBuf),
+    
+    #[display("namespace field is missing or empty in '{_0}'")]
+    NamespaceMissing(Utf8PathBuf),
+    
+    #[display("name field is missing or empty in '{_0}'")]
+    NameMissing(Utf8PathBuf),
 
-	// -- Externals
-	#[from]
-	Io(std::io::Error),
-	#[from]
-	TomlDe(toml::de::Error),
+    // -- Externals
+    #[from]
+    #[display("IO error: {_0}")]
+    Io(std::io::Error),
+    
+    #[from]
+    #[display("TOML parsing error: {_0}")]
+    TomlDe(toml::de::Error),
 
-	Zip(String),
+    #[display("Zip error: {_0}")]
+    Zip(String),
 }
 
 // region:    --- Custom
 
 impl Error {
-	pub fn custom(val: impl std::fmt::Display) -> Self {
-		Self::Custom(val.to_string())
-	}
+    pub fn custom(val: impl std::fmt::Display) -> Self {
+        Self::Custom(val.to_string())
+    }
 }
 
 impl From<&str> for Error {
-	fn from(val: &str) -> Self {
-		Self::Custom(val.to_string())
-	}
+    fn from(val: &str) -> Self {
+        Self::Custom(val.to_string())
+    }
 }
 
 // endregion: --- Custom

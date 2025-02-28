@@ -8,18 +8,13 @@ This way, the input run can operate on multiple files or just get one file in th
 local p_utils  = require("prompt_utils")
 local p_values = require("prompt_values")
 
--- == Init the prompt files
+-- == Init the prompt file if needed
 local input = inputs and inputs[1] or nil
 
 local prompt_file = p_utils.prep_prompt_file(input, {
     default_name           = ".coder/default",
     initial_content        = p_values.prompt_template
 })
-
-local ai_responses_for_raw_path     = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_raw.md"
-utils.file.save(ai_responses_for_raw_path, "")
-local ai_responses_for_prompt_path = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_prompt.md"
-utils.file.save(ai_responses_for_prompt_path, "")
 
 -- == Extract data from prompt files
 
@@ -47,11 +42,17 @@ local _line_blocks, inst_content = utils.text.extract_line_blocks(inst,
                                              {starts_with = ">", extrude = "content"})
 inst = utils.text.trim(inst_content)
 
-
-local should_skip = p_utils.should_skip(inst, second_part)
-if should_skip ~= nil then
-    return should_skip
+-- Determine if we should kep
+if inst == "" then
+    return aipack.skip("Empty instruction - Start writing, and do a Redo.")
 end
+
+-- Prep the cache files
+local ai_responses_for_raw_path     = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_raw.md"
+utils.file.save(ai_responses_for_raw_path, "")
+local ai_responses_for_prompt_path = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_prompt.md"
+utils.file.save(ai_responses_for_prompt_path, "")
+
 
 -- == Prep knowledge_refs
 local knowledge_refs = nil
@@ -206,6 +207,11 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 - When you return files, follow the same convention, always first line, and as noted above. Usually, files will be given this way too. 
 {{#if data.create_file_mode}}
 - Since the code blocks will be used to create or update files, make sure the code blocks provided use the 6 backticks convention so that if the content inside contains 3 backticks, everything works properly.  
+So it will be something like: 
+``````js
+// file: path/to/app.js
+... some content
+``````
 - When asked to generate a markdown file with some code inside, the markdown code block should use 6 backticks, and the content inside should use 3 backticks so that the markdown file is saved correctly.
 {{/if}} 
 
