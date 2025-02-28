@@ -25,11 +25,20 @@ You can find more information in the following [discussion #51](https://github.c
 
 For now, install with `cargo install aipack`
 
-Then,
+### Quick Start
 
 ```sh
+# In terminal go to your projct
+cd /path/to/my/project/
+
 # initialize workspace .aipack/ and ~/.aipack-base
 aip init
+
+# Make sure to export the desired API key
+export OPENAI_API_KEY    = "sk...."
+export ANTHROPIC_API_KEY = "...."
+export GEMINI_API_KEY    = "..."
+# For more keys, see below
 
 # To proof read your README.md (namespace: demo, pack_name: proof)
 aip run demo@proof -f ./README.md
@@ -43,6 +52,8 @@ aip run demo@craft/code
 # Or create your .aip file (you can omit the .aip)
 aip run path/to/file.aip
 
+# And then the big jc@coder
+api run jc@coder
 ```
 
 **IMPORTANT 1**: Make sure everything is committed before usage (at least while you are learning about aipack).
@@ -58,6 +69,8 @@ DEEPSEEK_API_KEY
 GROQ_API_KEY
 COHERE_API_KEY
 ```
+
+### Info
 
 - Website: https://aipack.ai
 
