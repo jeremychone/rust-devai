@@ -1,0 +1,28 @@
+# Here you define your AI Pack config
+# - It can be packed via `aip pack container_folder`
+# - This will create a `namespace-pack_name-v-0-1-0.aipack`
+# - It can be installed via `aip install namespace-pack_name-v-0-1-0.aipack`
+# Eventually, it can be deployed to aipack.ai with `aip publish container_folder`
+# And installed from the repository with `aip install namespace@pack_name`
+#
+
+# -- Required Section
+
+# The namespace of this AIPACK.
+# Recommendation: Have your username, or org name, or "my" if for personal sharing
+namespace = "my"
+
+# The pack name
+name = "DIR_NAME"
+
+# Version must be semver, `0.1.0` and can have modifiers `0.1.0-alpha.1`
+version = "0.1.0"
+
+
+# -- Optional section
+
+# homepage = "https://mycoolsite/"
+# repo = "https://github.com/cool-org/cool-name"
+# author = "Full Name"
+# email = "name@email.com"
+# license = "MIT Or Apache 2"

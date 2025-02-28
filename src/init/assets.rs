@@ -11,7 +11,7 @@ use std::io::{Cursor, Read};
 use zip::ZipArchive;
 
 #[derive(Debug)]
-pub(super) struct ZFile {
+pub struct ZFile {
 	#[allow(unused)]
 	pub path: String,
 	pub content: Vec<u8>,
@@ -36,6 +36,22 @@ pub fn list_workspace_file_paths_start_with(prefix: &str) -> Result<Vec<String>>
 }
 
 // endregion: --- Workspace ZFiles
+
+// region:    --- Template ZFiles
+
+pub fn extract_template_pack_toml_zfile() -> Result<ZFile> {
+	extract_template_zfile("pack.toml")
+}
+
+pub fn extract_template_zfile(path: &str) -> Result<ZFile> {
+	extract_zfile("template", path)
+}
+
+pub fn list_template_file_paths_start_with(prefix: &str) -> Result<Vec<String>> {
+	list_file_paths_start_with("template", prefix)
+}
+
+// endregion: --- Template ZFiles
 
 // region:    --- Base ZFiles
 
