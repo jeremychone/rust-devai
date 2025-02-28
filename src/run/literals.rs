@@ -33,13 +33,13 @@ impl Literals {
 		store.push(("PWD", dir_context.current_dir().to_string()));
 
 		if let AgentRef::PackRef(pack_ref) = agent.agent_ref() {
-			store.push(("PACK_NAMESPACE", pack_ref.namespace.to_string()));
-			store.push(("PACK_NAME", pack_ref.name.to_string()));
+			store.push(("PACK_NAMESPACE", pack_ref.namespace().to_string()));
+			store.push(("PACK_NAME", pack_ref.name().to_string()));
 			if let Some(sub_path) = pack_ref.sub_path.as_deref() {
 				store.push(("PACK_SUB_PATH", sub_path.to_string()));
 			}
 			// This will be `demo@craft`
-			store.push(("PACK_REF", format!("{}@{}", pack_ref.namespace, pack_ref.name)));
+			store.push(("PACK_REF", format!("{}@{}", pack_ref.namespace(), pack_ref.name())));
 			// This will be `demo@craft/text` (whatwever subpath is given by the user)
 			store.push(("PACK_FULL_REF", pack_ref.to_string()));
 

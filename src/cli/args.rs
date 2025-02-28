@@ -39,6 +39,9 @@ pub enum CliCommand {
 
 	/// Pack a directory into a .aipack file
 	Pack(PackArgs),
+
+	/// Install an aipack file
+	Install(InstallArgs),
 }
 
 /// Custom function
@@ -54,6 +57,7 @@ impl CliCommand {
 			// CliCommand::New(_) => false,
 			CliCommand::List(_) => false,
 			CliCommand::Pack(_) => false,
+			CliCommand::Install(_) => false,
 		}
 	}
 }
@@ -113,6 +117,15 @@ pub struct PackArgs {
 	pub output_dir: Option<String>,
 }
 
+/// Arguments for the `install` subcommand
+#[derive(Parser, Debug)]
+pub struct InstallArgs {
+	/// The path to the .aipack file to install
+	/// Can be the path to the `path/to/some-pack.aipack`
+	/// Or later, can be `namspace@pack_name` and in this case, it will look aipack.ai registry
+	pub aipack_ref: String,
+}
+
 /// Arguments for the `run` subcommand
 #[derive(Parser, Debug)]
 pub struct ListArgs {
@@ -159,6 +172,7 @@ impl From<CliCommand> for ExecCommand {
 			// CliCommand::New(new_args) => ExecCommand::NewCommandAgent(new_args),
 			CliCommand::List(list_args) => ExecCommand::List(list_args),
 			CliCommand::Pack(pack_args) => ExecCommand::Pack(pack_args),
+			CliCommand::Install(install_args) => ExecCommand::Install(install_args),
 		}
 	}
 }

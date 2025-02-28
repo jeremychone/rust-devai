@@ -8,6 +8,7 @@ mod exec;
 mod hub;
 mod init;
 mod pack;
+mod packer;
 mod run;
 mod script;
 mod support;

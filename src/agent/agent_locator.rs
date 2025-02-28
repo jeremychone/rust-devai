@@ -1,9 +1,10 @@
 //! Locate agent from
 //!
 
-use crate::agent::agent_ref::{AgentRef, PackRef, PartialAgentRef};
+use crate::agent::agent_ref::{AgentRef, PartialAgentRef};
 use crate::agent::{Agent, AgentDoc, AgentOptions};
 use crate::dir_context::{DirContext, PathResolver, find_pack_dirs};
+use crate::pack::LocalPackRef;
 use crate::support::tomls::parse_toml;
 use crate::{Error, Result};
 use simple_fs::{SPath, read_to_string};
@@ -61,7 +62,7 @@ pub fn find_agent(name: &str, dir_context: &DirContext) -> Result<Agent> {
 
 			// -- Buid the final agent_ref with the resolved namespace
 			// TODO: Need to cleanup this strategy. Perhaps have PartialPackRef, and PackRef with namespace and pack_name
-			let agent_ref = AgentRef::PackRef(PackRef::from_partial(pack_dir, pack_ref));
+			let agent_ref = AgentRef::PackRef(LocalPackRef::from_partial(pack_dir, pack_ref));
 
 			// -- Build and return the agent
 			let doc = AgentDoc::from_file(found_path)?;

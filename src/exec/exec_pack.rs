@@ -1,7 +1,7 @@
 use crate::cli::PackArgs;
 use crate::hub::get_hub;
 use crate::init::extract_template_pack_toml_zfile;
-use crate::pack::{self, pack_dir};
+use crate::packer::{self, pack_dir};
 use crate::{Error, Result};
 use aho_corasick::AhoCorasick;
 use camino::Utf8PathBuf;
@@ -43,7 +43,7 @@ pub async fn exec_pack(pack_args: &PackArgs) -> Result<()> {
 			.await;
 			Ok(())
 		}
-		Err(pack::Error::AipackTomlMissing(_missing_toml_path)) => {
+		Err(Error::AipackTomlMissing(_missing_toml_path)) => {
 			// Generate template pack.toml
 			if let Err(gen_err) = generate_pack_toml(&src_dir).await {
 				hub.publish(format!("Failed to generate pack.toml: {}", gen_err)).await;
@@ -89,7 +89,7 @@ pub async fn exec_pack(pack_args: &PackArgs) -> Result<()> {
 
 			Ok(())
 		}
-		Err(other) => Err(other.into()),
+		Err(other) => Err(other),
 	}
 }
 

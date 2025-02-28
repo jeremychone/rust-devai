@@ -1,34 +1,13 @@
 //! Module that pack the files into their .aipack
 
-use super::{Error, Result};
+use crate::pack::PackIdentity;
+use crate::packer::pack_toml::{PackDirData, PackToml, PartialPackToml};
 use crate::support::zip;
+use crate::{Error, Result};
 use camino::{Utf8Path, Utf8PathBuf};
 use lazy_regex::regex;
 use serde::Deserialize;
 use std::fs;
-
-#[derive(Deserialize)]
-pub struct PartialPackToml {
-	version: Option<String>,
-	namespace: Option<String>,
-	name: Option<String>,
-}
-
-/// Contains the validated required fields from pack.toml
-#[derive(Debug, Clone)]
-pub struct PackToml {
-	pub version: String,
-	pub namespace: String,
-	pub name: String,
-}
-
-/// Data returned when packing a directory
-#[derive(Debug)]
-pub struct PackDirData {
-	pub pack_file: Utf8PathBuf,
-	#[allow(unused)]
-	pub pack_toml: PackToml,
-}
 
 /// Packs a directory into a .aipack file
 ///
@@ -46,7 +25,7 @@ pub fn pack_dir(pack_dir: impl AsRef<Utf8Path>, dest_dir: impl AsRef<Utf8Path>) 
 	// Verify if pack.toml exists
 	let toml_path = pack_dir.join("pack.toml");
 	if !toml_path.exists() {
-		return Err(Error::AipackTomlMissing(toml_path));
+		return Err(Error::AipackTomlMissing(toml_path.into()));
 	}
 
 	// Read and validate the TOML file
@@ -72,7 +51,7 @@ pub fn pack_dir(pack_dir: impl AsRef<Utf8Path>, dest_dir: impl AsRef<Utf8Path>) 
 	zip::zip_dir(pack_dir, &aipack_path).map_err(|e| Error::Zip(e.to_string()))?;
 
 	Ok(PackDirData {
-		pack_file: aipack_path,
+		pack_file: aipack_path.into(),
 		pack_toml,
 	})
 }
@@ -93,7 +72,7 @@ fn validate_pack_toml(toml_content: &str, toml_path: &Utf8Path) -> Result<PackTo
 	// Validate fields
 	let version = match &partial_config.version {
 		Some(v) if !v.trim().is_empty() => v.clone(),
-		_ => return Err(Error::VersionMissing(toml_path.to_owned())),
+		_ => return Err(Error::VersionMissing(toml_path.to_string())),
 	};
 
 	// Validate version format
@@ -101,12 +80,12 @@ fn validate_pack_toml(toml_content: &str, toml_path: &Utf8Path) -> Result<PackTo
 
 	let namespace = match &partial_config.namespace {
 		Some(n) if !n.trim().is_empty() => n.clone(),
-		_ => return Err(Error::NamespaceMissing(toml_path.to_owned())),
+		_ => return Err(Error::NamespaceMissing(toml_path.to_string())),
 	};
 
 	let name = match &partial_config.name {
 		Some(n) if !n.trim().is_empty() => n.clone(),
-		_ => return Err(Error::NameMissing(toml_path.to_owned())),
+		_ => return Err(Error::NameMissing(toml_path.to_string())),
 	};
 
 	// Validate namespace and name format
@@ -141,23 +120,8 @@ fn validate_version(version: &str, toml_path: &Utf8Path) -> Result<()> {
 /// Names can only contain alphanumeric characters, hyphens, and underscores,
 /// and cannot start with a number
 fn validate_names(namespace: &str, name: &str, toml_path: &Utf8Path) -> Result<()> {
-	// Using lazy-regex to create a regex for valid namespace and name
-	let re = regex!(r"^[a-zA-Z_][a-zA-Z0-9_-]*$");
-
-	if !re.is_match(namespace) {
-		return Err(Error::custom(format!(
-			"Invalid namespace '{}' in {}. Namespace can only contain alphanumeric characters, hyphens, and underscores, and cannot start with a number.",
-			namespace, toml_path
-		)));
-	}
-
-	if !re.is_match(name) {
-		return Err(Error::custom(format!(
-			"Invalid package name '{}' in {}. Package name can only contain alphanumeric characters, hyphens, and underscores, and cannot start with a number.",
-			name, toml_path
-		)));
-	}
-
+	PackIdentity::validate_namespace(namespace)?;
+	PackIdentity::validate_name(name)?;
 	Ok(())
 }
 

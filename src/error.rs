@@ -1,4 +1,5 @@
-use crate::pack;
+use crate::packer;
+use camino::Utf8PathBuf;
 use derive_more::From;
 use derive_more::derive::Display;
 use tokio::runtime::TryCurrentError;
@@ -6,6 +7,7 @@ use tokio::runtime::TryCurrentError;
 pub type Result<T> = core::result::Result<T, Error>;
 
 #[derive(Debug, From, Display)]
+#[display("{self:?}")]
 pub enum Error {
 	// -- Cli Command
 	#[display("Command Agent not found at: {_0}")]
@@ -25,8 +27,24 @@ pub enum Error {
 	},
 
 	// -- Pack
-	#[from]
-	Pack(pack::Error),
+	#[display("pack.toml file is missing at '{_0}'")]
+	AipackTomlMissing(String),
+
+	#[display("version field is missing or empty in '{_0}'")]
+	VersionMissing(String),
+
+	#[display("namespace field is missing or empty in '{_0}'")]
+	NamespaceMissing(String),
+
+	#[display("name field is missing or empty in '{_0}'")]
+	NameMissing(String),
+
+	Zip(String),
+
+	InvalidPackIdentity {
+		origin_path: String,
+		cause: &'static str,
+	},
 
 	// -- Run
 	BeforeAllFailWrongReturn {
