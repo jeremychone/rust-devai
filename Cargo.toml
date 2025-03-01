@@ -15,7 +15,7 @@ repository = "https://github.com/aipack-ai/aipack"
 
 [lints.rust]
 unsafe_code = "forbid"
-# unused = { level = "allow", priority = -1 } # For exploratory dev.
+unused = { level = "allow", priority = -1 } # For exploratory dev.
 
 [[bin]]
 name = "aip"
@@ -24,6 +24,7 @@ path = "src/main.rs"
 [dependencies]
 # -- Async
 tokio = { version = "1" }
+tokio-stream = "0.1.17"
 flume = "0.11.1"
 # -- AI
 genai = "0.1.22"
@@ -54,6 +55,7 @@ camino = "1" # trying this lib out
 home = "0.5.11"
 zip = "2"
 walkdir = "2.4"
+size = "0.5.0"
 # -- Web
 reqwest = {version = "0.12", default-features = false, features = ["json", "rustls-tls"]}
 # -- Others
@@ -62,6 +64,7 @@ strum = { version = "0.27", features = ["derive"] }
 keyring = {version = "3", features = ["apple-native"]}
 strsim = "0.11"
 paste = "1.0"
+time = { version = "0.3.37", features = ["formatting"]}
 
 
 [build-dependencies]

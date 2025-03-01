@@ -1,5 +1,6 @@
 use super::path_consts::PACK_INSTALLED;
 use super::path_consts::{AIPACK_BASE, AIPACK_DIR_NAME, CONFIG_FILE_NAME, PACK_CUSTOM};
+use crate::dir_context::path_consts::PACK_DOWNLOAD;
 use crate::{Error, Result};
 use home::home_dir;
 use simple_fs::SPath;
@@ -162,6 +163,11 @@ impl AipackPaths {
 
 	pub fn get_base_pack_installed_dir(&self) -> Result<SPath> {
 		let dir = self.base_aipack_dir.join(PACK_INSTALLED)?;
+		Ok(dir)
+	}
+
+	pub fn get_base_pack_download_dir(&self) -> Result<SPath> {
+		let dir = self.base_aipack_dir.join(PACK_DOWNLOAD)?;
 		Ok(dir)
 	}
 

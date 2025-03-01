@@ -18,5 +18,6 @@ pub const CONFIG_FILE_NAME: &str = "config.toml";
 
 pub const PACK_CUSTOM: &str = "pack/custom";
 pub const PACK_INSTALLED: &str = "pack/installed";
+pub const PACK_DOWNLOAD: &str = "pack/.download";
 
 // -- New Agent Templates
