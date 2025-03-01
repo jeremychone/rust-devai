@@ -25,8 +25,6 @@ pub fn install_pack(dir_context: &DirContext, aipack_zipped_file: &str) -> Resul
 		dir_context.current_dir().join_str(aipack_zipped_file.to_str())
 	};
 
-	println!("->> {aipack_zipped_file}");
-
 	if !aipack_zipped_file.exists() {
 		return Err(Error::FailToInstall {
 			aipack_file: aipack_zipped_file.to_string(),

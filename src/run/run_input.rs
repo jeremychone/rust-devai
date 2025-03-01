@@ -1,6 +1,7 @@
 use crate::Result;
 use crate::agent::{Agent, PromptPart};
 use crate::hub::get_hub;
+use crate::pricing::price_it;
 use crate::run::literals::Literals;
 use crate::run::{DryMode, RunBaseOptions, Runtime};
 use crate::script::{AipackCustom, FromValue};
@@ -25,6 +26,7 @@ pub struct AiResponse {
 	pub model_name: ModelName,
 	pub adapter_kind: AdapterKind,
 	pub usage: MetaUsage,
+	pub price_usd: Option<f64>,
 	pub duration_sec: f64,
 	pub info: String,
 }
@@ -38,6 +40,7 @@ impl IntoLua for AiResponse {
 		table.set("model_name", self.model_name.into_lua(lua)?)?;
 		table.set("adapter_kind", self.adapter_kind.as_str().into_lua(lua)?)?;
 		table.set("usage", W(&self.usage).into_lua(lua)?)?;
+		table.set("price_usd", self.price_usd.into_lua(lua)?)?;
 		table.set("duration_sec", self.duration_sec.into_lua(lua)?)?;
 		table.set("info", self.info.into_lua(lua)?)?;
 
@@ -95,6 +98,7 @@ impl IntoLua for W<&MetaUsage> {
 
 // region:    --- RunAgentInputResponse
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Debug)]
 pub enum RunAgentInputResponse {
 	AiReponse(AiResponse),
@@ -245,9 +249,15 @@ pub async fn run_agent_input(
 		let duration_sec = duration.as_secs_f64(); // Convert to f64
 		let duration_sec = (duration_sec * 1000.0).round() / 1000.0; // Round to 3 decimal places
 
-		let usage_msg = format_usage(&chat_res.usage);
+		let mut info = duration_msg;
 
-		let info = format!("{duration_msg} | {usage_msg}");
+		let price_usd = get_price(&chat_res);
+		if let Some(price_usd) = price_usd {
+			info = format!("{info} | ~${price_usd}")
+		}
+
+		let usage_msg = format_usage(&chat_res.usage);
+		info = format!("{info} | {usage_msg}");
 
 		hub.publish(format!("<- ai_response content received - {info}")).await;
 
@@ -276,12 +286,14 @@ pub async fn run_agent_input(
 			"{info} | Model: {} | Adapter: {}",
 			chat_res_mode_iden.model_name, chat_res_mode_iden.adapter_kind,
 		);
+
 		Some(AiResponse {
 			content: ai_response_content,
 			reasoning_content: ai_response_reasoning_content,
 			model_name: chat_res_mode_iden.model_name,
 			adapter_kind: chat_res_mode_iden.adapter_kind,
 			duration_sec,
+			price_usd,
 			usage,
 			info,
 		})
@@ -320,6 +332,12 @@ pub async fn run_agent_input(
 }
 
 // region:    --- Support
+
+fn get_price(chat_res: &ChatResponse) -> Option<f64> {
+	let provider = chat_res.model_iden.adapter_kind.as_lower_str();
+	let model_name = &*chat_res.model_iden.model_name;
+	price_it(provider, model_name, &chat_res.usage)
+}
 
 fn format_usage(usage: &MetaUsage) -> String {
 	let mut buff = String::new();

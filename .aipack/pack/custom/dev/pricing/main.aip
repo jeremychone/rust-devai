@@ -1,0 +1,129 @@
+# Before All
+
+```lua
+local p_utils = require("pricing_utils")
+
+local base_dir = p_utils.base_dir
+
+local inputs = {
+    {name = "openai",    url = "https://openai.com/api/pricing/"},
+    {name = "groq",      url = "https://groq.com/pricing/"},
+    {name = "gemini",    url = "https://ai.google.dev/pricing#2_0flash"},
+    {name = "deepseek",  url = "https://api-docs.deepseek.com/quick_start/pricing"},
+    {name = "anthropic", url = "https://www.anthropic.com/pricing#anthropic-api"}
+}
+
+-- Agument inputs
+for _, input in ipairs(inputs) do
+    input.md_path = base_dir .. "/_data/pricing-" .. input.name .. ".md"
+    input.json_path = base_dir .. "/_data/pricing-" .. input.name .. ".json"
+end
+
+return aipack.before_all_response({
+    inputs     = inputs,
+    options    = {model = "gemini-2.0-flash"}
+})
+```
+
+# Data
+
+```lua
+local md_path = input.md_path
+local json_path = input.json_path
+
+if utils.path.exists(json_path) then
+    -- return aipack.skip(json_path .. "  already exist")
+end
+
+local rem_url = input.url
+
+if not utils.path.exists(md_path) then 
+    local req = {
+        jsonrpc = "2.0",
+        method = "get_md",
+        params = { url = rem_url },
+        id = 1
+    }
+
+    -- Yes, it will require to have this mini rpc service (just wrapper on top of puppeteer)
+    local res = utils.web.post("http://localhost:3000/jsonrpc", req)
+
+    local content = res.content.result.content
+    utils.file.save(md_path, content)
+end
+
+local file = utils.file.load(md_path)
+
+
+return {
+    content = file.content
+}
+```
+
+# Instruction
+
+From this content: 
+
+```md
+{{data.content}}
+```
+
+- Create a pricing JSON
+- Make sure all models are all lowercase, and replace space by -
+- For Anthropic, the `.` should be replaced by `-`
+- but for gemini model, keep the `.` in the name. 
+- Do not put in code block, just the raw json, pretty formatted. 
+
+with following schema
+
+```ts
+{
+    models:
+        {
+            name: string,
+            input: {
+                cached: number,
+                normal: number
+            },
+            output: number
+        }[]
+}
+```
+
+# Output 
+
+```lua
+local content = ai_response.content
+content = utils.md.outer_block_content_or_raw(content)
+
+utils.file.save(input.json_path, content)
+```
+
+# After All
+
+
+```lua
+local p_utils = require("pricing_utils")
+
+local json_path = p_utils.json_all_path
+
+local content = "{\n"
+
+local last_idx = #inputs
+
+for k, input in pairs(inputs) do
+  local json_path = input.json_path
+  local file_content = utils.file.load(json_path).content
+  content = content .. "\"" .. input.name .. "\": " .. file_content
+  if k == last_idx then 
+    content = content .. "\n"
+  else
+    content = content .. ",\n"
+  end
+end
+
+content = content .. "}"
+
+utils.file.save(json_path, content)
+
+```

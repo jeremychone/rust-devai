@@ -1,0 +1,62 @@
+# Options
+```toml
+model = "flash"
+```
+
+# Description
+
+This assume the `aip run dev@pricing` was ran and create thed `.ai-pricing/pricing-all.json`
+
+Then, we can rust this one as `aip run dev@pricing/genrs`
+
+
+# Data 
+
+```lua
+
+local p_utils = require("pricing_utils")
+
+local json_content = utils.file.load(p_utils.json_all_path).content
+
+local data_rs = utils.file.load("src/pricing/data.rs")
+
+return {
+    json_content = json_content,
+    data_rs      = data_rs,
+}
+
+```
+
+# Instruction
+
+Below the json file, that we need to translate in a rust file and update the `data.rs` file following its format.
+
+```json
+{{data.json_content}}
+```
+
+Here is the `data.rs` file to update
+
+```rs
+{{data.data_rs.content}}
+```
+
+Important, we have to keep the `data.rs` types as is, just update the values. Keep the whitepsaces too. 
+
+Some rules, 
+    - for openai model, when the name is prefix `openai-` you can remove it from the model name. 
+
+Just give back the `data.rs` file content in a rust makdown code block. 
+
+# Output 
+
+
+```lua 
+local content = ai_response.content
+content = utils.md.outer_block_content_or_raw(content)
+
+utils.file.save("src/pricing/data.rs", content)
+
+return "Data saved to src/pricing/data.rs"
+
+```

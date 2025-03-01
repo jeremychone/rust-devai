@@ -17,12 +17,13 @@ _*
 # Only allow .aipack/custom and .aipack/config.toml
 # Note: Here the starting `/` will just include the top .aipack. 
 #       Remove the starting `/` to include all .aipack/custom even if their in a sub dir
-# !/.aipack/
-# .aipack/*
-# !.aipack/custom/
-# !.aipack/custom/**
-# !.aipack/Config.toml
-# Ignore the .aipack
+!.aipack/
+.aipack/*
+!.aipack/pack/
+.aipack/pack/*
+!.aipack/pack/custom/
+.aipack/pack/custom/*
+!.aipack/pack/custom/dev/
 src/**/*.aip
 
 # -- Aipack for test

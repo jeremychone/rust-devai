@@ -9,6 +9,7 @@ mod hub;
 mod init;
 mod pack;
 mod packer;
+mod pricing;
 mod run;
 mod script;
 mod support;
