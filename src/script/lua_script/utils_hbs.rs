@@ -29,7 +29,7 @@ fn render(_lua: &Lua, (content, data): (String, Value)) -> mlua::Result<String> 
 mod tests {
 	type Result<T> = core::result::Result<T, Box<dyn std::error::Error>>; // For tests.
 
-	use crate::_test_support::{eval_lua, setup_lua};
+	use crate::_test_support::{assert_contains, eval_lua, setup_lua};
 
 	#[tokio::test]
 	async fn test_lua_hbs_render_simple() -> Result<()> {
@@ -47,7 +47,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	async fn test_lua_hbs_render_nested_table() -> Result<()> {
+	async fn test_lua_hbs_render_obj() -> Result<()> {
 		// Setup the Lua instance with the hbs module
 		let lua = setup_lua(super::init_module, "hbs")?;
 
@@ -58,6 +58,47 @@ mod tests {
 		"#;
 		let res = eval_lua(&lua, lua_code)?;
 		assert_eq!(res.as_str().ok_or("Result should be a string")?, "ID: 42, Nested: test");
+		Ok(())
+	}
+
+	#[tokio::test]
+	async fn test_lua_hbs_render_list() -> Result<()> {
+		// Setup the Lua instance with the hbs module
+		let lua = setup_lua(super::init_module, "hbs")?;
+
+		// Lua script that calls `utils.hbs.render` with a nested Lua table as data
+		let lua_code = r#"
+local data = {
+    name  = "Jen Donavan",
+    todos = {"Bug Triage AIPACK", "Fix Windows Support"}
+}
+
+local template = [[
+Hello {{name}}, 
+
+Your tasks today: 
+
+{{#each todos}}
+- {{this}}
+{{/each}}
+
+Have a good day (after you completed this tasks)
+]]
+
+local content = utils.hbs.render(template, data)
+
+return content
+		"#;
+
+		// -- Exec
+		let res = eval_lua(&lua, lua_code)?;
+
+		// -- Check
+		let content = res.as_str().ok_or("Should have returned a string")?;
+		assert_contains(content, "Hello Jen Donavan");
+		assert_contains(content, "- Bug Triage AIPACK");
+		assert_contains(content, "- Fix Windows Support");
+
 		Ok(())
 	}
 }
