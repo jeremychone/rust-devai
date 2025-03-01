@@ -1,5 +1,12 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2025-03-01 - [v0.6.4](https://github.com/jeremychone/rust-devai/compare/v0.6.2...v0.6.3)
+
+- `-` (#53) core@ask-aipack - first pass at fixing the `aip run core@ask-aipack`
+- `^` lua - file.list.. - added {absolute} option
+- `-` init-base - fix no print issue
+
+
 ## 2025-02-28 - [v0.6.3](https://github.com/jeremychone/rust-devai/compare/v0.6.2...v0.6.3)
 
 - `+` **pricing** - first pass at adding pricing. Now, when available, `ai_response.price_usd` and added in `ai_response.info`

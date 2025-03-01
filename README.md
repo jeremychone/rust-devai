@@ -2,7 +2,7 @@
 
 - This project is rebranding to [aipack](https://aipack.ai), a more suitable name for its future development.
 
-- This repo is now `https://github.com/aipack-ai/aipack`.
+- This repo is now https://github.com/aipack-ai/aipack.
 
 - **same codebase**, **same feature set**, **same licenses (MIT or Apache)**
 
@@ -23,9 +23,6 @@ You can find more information in the following [discussion #51](https://github.c
 > DISCLAIMER: For now, v0.6.x, AIPACK works on **Linux & Mac**, and requires **WSL** on **Windows** 
 >
 > IMPORTANT: **Proper Windows support** is coming sometime in v0.6.x and **definitely by v0.7.x** (about **Mid / End of March**)
-> 
-
-
 
 ### Quick Start
 
@@ -66,8 +63,15 @@ aip run demo@craft/code
 # Or create your .aip file (you can omit the .aip)
 aip run path/to/file.aip
 
-# And then the big jc@coder
-api run jc@coder
+# This is good agent to run to ask questions about aipack
+# Can even generate aipack code
+aip run core@ask-aipack
+# prompt file will be at `.aipack/.prompt/core@ask-aipack/ask-prompt.md`
+
+# And then the big jc@coder 
+# Note: Today, it is preinstalled, but later it will the first 
+#       aip install jc@coder (which will go to aipack.ai)
+aip run jc@coder
 ```
 
 **IMPORTANT 1**: Make sure everything is committed before usage (at least while you are learning about aipack).
@@ -93,6 +97,7 @@ COHERE_API_KEY
 - Built on top of the [Rust genai library](https://crates.io/crates/genai), which supports all the top AI providers and models (OpenAI, Anthropic, Gemini, DeepSeek, Groq, Ollama, xAI, and Cohere).
 
 - Top new features:
+  - **2025-02-28 (v0.6.3) - `aip pack ..`, `aip instal local...`, `ai_response.price_usd`, and more**
   - **2025-02-26 **(v0.6.0)** - BIG UPDATE - to **AIPACK**, now with pack support (`aip run demo@craft/code`)**
   - 2025-02-22 (v0.5.11) - Huge update with parametric agents, and coder (more info soon)
   - 2025-01-27 (v0.5.9) - Deepseek distill models support for Groq and Ollama (local)
@@ -110,14 +115,7 @@ COHERE_API_KEY
   - [David Horner](https://github.com/davehorner) for adding Windows support for Open Agent (with VSCode) ([#30](https://github.com/jeremychone/rust-aipack/pull/30))
   - [Diaa Kasem](https://github.com/diaakasem) for `--non-interactive`/`--ni` mode ([#28](https://github.com/jeremychone/rust-aipack/pull/28))
 
-#### Install
-
-_For now, the simplest way to install is with `cargo install aipack`._
-
-- Install Rust: https://www.rust-lang.org/tools/install
-- Run `cargo install aipack`
-
-#### How it works
+### How it works
 
 - **One Agent** == **One Markdown**
     - A `.aip` Agent file is just a **Markdown File** with sections for each stage of the agent processing.
@@ -159,25 +157,16 @@ A single **aipack** file may comprise any of the following stages.
 
 - `# Before All` / `# After All` can be considered as the **map**/**reduce** of the agent, and these will be run before and after the input processing.
 
-[more info on stages](_init/doc/README.md#complete-stages-description)
+[more info on stages](_init/base/doc/README.md#complete-stages-description)
 
 ## [aipack doc](_init/doc/README.md)
 
-See the aipack documentation at **[_init/doc/README.md](_init/doc/README.md)** (With [Lua modules doc](_init/doc/lua.md))
+See the aipack documentation at **[_init/doc/README.md](_init/base/doc/README.md)** (With [Lua modules doc](_init/base/doc/lua.md))
 
 You can also run the `ask-aipack` agent.
 
 ```sh
 # IMPORTANT - Make sure you have the `OPENAI_API_KEY` or the key of your model in your environment
-aipack run ask-aipack
-
-# and then open the `.aipack/tmp/ask-aipack.md`
+aip run core@ask-aipack
+# prompt file will be at `.aipack/.prompt/core@ask-aipack/ask-prompt.md`
 ```
-
-## Future Plans
-
-- More Lua functions
-- Agent module `my-module` may run `my-module/main.aip`, and running `my-module/some-other` will run `my-module/some-other.aip`
-- Support Lua `Require`
-- Full TUI/Ratatui
-- Split runtime to [agentic](https://crates.io/crates/agentic)
