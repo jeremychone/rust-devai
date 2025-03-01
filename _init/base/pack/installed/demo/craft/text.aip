@@ -3,10 +3,10 @@
 This agent is for crafting general text, such as emails, documents, or any text.
 
 - The input can be a string (with `-i quick-text`) or an existing file (`-f some/some-text.md`).
-    - When the input is a string, it will add a `./` prefix and a `.md` suffix if they are not present.
-    - If no input is given, the file `./_craft-text.md` will be used. 
-    - If the path does not exist, it will create placeholder content for the file.
-- If the file content is empty, it skips processing with a message.
+    - When the input is a string, a `./` prefix and a `.md` suffix will be added if they are not present.
+    - If no input is given, the file `./_craft-text.md` will be used.
+    - If the path does not exist, placeholder content will be created for the file.
+- If the file content is empty, processing will be skipped with a message.
 - If the file has a `====` separator:
     - The first part is the instruction.
     - The second part is the content/code to which the instruction is applied.
@@ -22,7 +22,7 @@ local file = craft.prep_input_file(input, {
     default_name = "_craft-text",
     placeholder_suffix = [[
 
-Enter your text to be proofread. 
+Enter your text to be proofread.
 Alternatively, add a `====` line separator to provide instructions before the separator and the content to apply the instructions after the `====`.
     ]]
 
@@ -35,7 +35,7 @@ if should_skip ~= nil then
     return should_skip
 end
 
--- split the content 
+-- split the content
 local inst, content = craft.prep_inst_and_content(content, "====", {content_is_default = true})
 
 return {
@@ -47,7 +47,7 @@ return {
 
 # System
 
-Your goal is to proofread the English of the document the user is giving you. 
+Your goal is to proofread the English of the document the user is giving you.
 
 - Do not change the HTML code or other code, layout, or any structural aspect of the document.
 - Only correct the grammar and the phrasing of the sentences when needed.

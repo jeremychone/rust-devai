@@ -2,7 +2,7 @@
 
 ```toml
 [genai]
-# Here we can override the default model for this agent only 
+# Here we can override the default model for this agent only
 # This agent works with Claude Sonnet
 
 # model = "claude-3-5-sonnet-20241022"
@@ -26,9 +26,9 @@ local doc_files = utils.file.list_load(".aipack/doc/**/*.md")
 
 local ask_file_path = ".aipack/tmp/ask-aipack.md"
 local placeholder_text = [[
-Placeholder: 
+Placeholder:
    - To ask your question, remove this placeholder section
-   - ask your question 
+   - ask your question
    - and `aip run ask-aipack`
    - or **Replay** in the terminal if already running
 ]]
@@ -36,7 +36,7 @@ Placeholder:
 if not utils.path.exists(ask_file_path) then
     utils.file.save(ask_file_path, placeholder_text)
 
-    -- Open it with VSCode 
+    -- Open it with VSCode
     -- Call with pcall to prevent failure if the code is not available
     -- TODO: Enhance this part (should notify the user)
     pcall(utils.cmd.exec,"code", {ask_file_path} )
@@ -46,7 +46,7 @@ end
 local ask_file_split = utils.file.load_md_split_first(ask_file_path)
 
 -- {before = "", first: MdSection, after: string}
--- For now, before is always empty, first is the MdSection with .content 
+-- For now, before is always empty, first is the MdSection with .content
 --          and .heading_content, and .heading_raw (empty string if no heading and heading content with '\n' if heading)
 
 -- If it starts with placeholder, then we skip
@@ -67,11 +67,11 @@ return {
 
 # System
 
-Your goal is to answer **aipack** questions in a concise and precise manner, with some code examples when appropriate. 
+Your goal is to answer **aipack** questions in a concise and precise manner, with some code examples when appropriate.
 
-**aipack** is a command line utility that allows you to write agents in a markdown file, with full control over the prompt, using a multi-stage approach. 
+**aipack** is a command line utility that allows you to write agents in a markdown file, with full control over the prompt, using a multi-stage approach.
 
-Here are some documentation files, separated with `=== file/path/to/document.md` for you to refer to in your answer. 
+Here are some documentation files, separated with `=== file/path/to/document.md` for you to refer to in your answer.
 
 {{#each data.doc_files}}
 
@@ -84,7 +84,7 @@ Here are some documentation files, separated with `=== file/path/to/document.md`
 # System
 
 - When the user asks a question, provide the answer.
-- Give me the file path of where the answer was found. 
+- Give me the file path of where the answer was found.
 - Format the answer this way:
 
 ```
@@ -93,19 +93,19 @@ Here are some documentation files, separated with `=== file/path/to/document.md`
 _answer_
 ```
 
-- For the `_user_question_` text, if the question is short, put it there; if it is long or contains special characters, summarize the question and put it there. 
-- For the `# Instruction` and `# System`, the content is just normal markdown, not in a markdown code block, except when putting some code, where it is appropriate to put them in the appropriate code block. 
-- If it is appropriate, do not hesitate to use bullet points to help clarity and conciseness. 
-- When the user asks to generate a stage of a aip file, do not wrap it with a `lua` code block, just `# stage_name` and then put the Lua code in the `lua` code block. 
+- For the `_user_question_` text, if the question is short, put it there; if it is long or contains special characters, summarize the question and put it there.
+- For the `# Instruction` and `# System`, the content is just normal markdown, not in a markdown code block, except when putting some code, where it is appropriate to put them in the appropriate code block.
+- If it is appropriate, do not hesitate to use bullet points to help clarity and conciseness.
+- When the user asks to generate a stage of an aip file, do not wrap it with a `lua` code block, just `# stage_name` and then put the Lua code in the `lua` code block.
 - When providing the answer, do not surround it in a markdown code block.
-- For the `# Instruction`, `# System`, and `# Assistant` sections, do not put the template in markdown codeblock handlebars, as this is not needed by aipack. Just the test with the handlebars characters, that will work nice. 
+- For the `# Instruction`, `# System`, and `# Assistant` sections, do not put the template in markdown codeblock handlebars, as this is not needed by aipack. Just the test with the handlebars characters, that will work nice.
 - Remember, a `.aipack` file is a markdown file, so when giving aipack examples, do not surround the aipack stages example with a markdown code block. Just put them in lines.
 - When giving the reference to the doc file, prefix it with `../` and then add the full path with the `file/path/to/document.md`, and put them in a markdown link like `[../../file/path/to/document.md](../../file/path/to/document.md#possible_heading_anchor)`
 
 
 # Instruction
 
-Here is the user question: 
+Here is the user question:
 
 {{data.ask_file_split.first.content}}
 
@@ -115,7 +115,7 @@ Here is the user question:
 
 -- Extract content from AI response
 local answer = ai_response.content
--- Sometimes, some models still put the result in a markdown block. 
+-- Sometimes, some models still put the result in a markdown block.
 -- This alleviates some of these issues (when it starts with ```)
 local answer = utils.text.trim(answer)
 local answer = utils.md.outer_block_content_or_raw(answer)

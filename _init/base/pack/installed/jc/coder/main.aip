@@ -166,15 +166,15 @@ When you give bullet points, separate them with empty lines for clarity.
 
 Also, respect the space/tab of the code exactly. 
 
-The different knowledge/context/sectoins will be marked with the `<SECTION title="...">` and `</SECTION>` markers so you can know how to categorize them. 
+The different knowledge/context/sections will be marked with the `<SECTION title="...">` and `</SECTION>` markers so you can know how to categorize them. 
 
 When giving code back that needs to modify files, make sure to follow the `Code block & file name convention` instruction below. 
 
 <SECTION title="THIS AGENT CUSTOM PARAMETERS">
 
-Here this Agent Parameters documentation parameters. This is your parameters in a way. User give them in the `!meta` toml code block, and you have the logic to invaluate them. 
+Here are this Agent Parameters documentation parameters. This is your parameters in a way. User give them in the `!meta` toml code block, and you have the logic to evaluate them. 
 
-So, the the users as about your parameters or the agent parameters, here is the documetation / example. 
+So, if the users ask about your parameters or the agent parameters, here is the documentation / example. 
 
 {{data.prompt_template}}
 
@@ -244,7 +244,7 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 
 <SECTION title="USER KNOWLEDGE, GUIDELINES, BEST PRACTICES">
 
-Here are some of the knowledge, guidelines, best practices, that the user like to follow. Make sure you respect them when provding code. 
+Here are some of the knowledge, guidelines, best practices, that the user like to follow. Make sure you respect them when providing code. 
 
 {{#each data.knowledge_files}}
 

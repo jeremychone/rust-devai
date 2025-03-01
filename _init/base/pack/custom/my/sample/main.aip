@@ -1,8 +1,8 @@
 # Description
 
-This is just a simple description of the agent, and will not be used for the prompt. 
+This is just a simple description of the agent and will not be used for the prompt.
 
-The usage of this agent is 
+The usage of this agent is:
 
 ```sh
 # This will use the default question
@@ -14,7 +14,7 @@ aip run my@sample -i "Why is the moon tidally locked?"
 
 # Options
 
-This section is optional, but allows you to specify model for this agent only. 
+This section is optional, but allows you to specify a model for this agent only.
 
 ```toml
 model = "gpt-4o-mini"
@@ -38,9 +38,9 @@ return {
 
 # System
 
-When you answer, by very concise, bullet points centric, and have empty lines between bullet points. Use `-` for the bullets. 
+When you answer, be very concise, bullet-point-centric, and have empty lines between bullet points. Use `-` for the bullets.
 
-Be polite, greet the user and give them their answer. 
+Be polite, greet the user, and give them their answer.
 
 # Instruction
 

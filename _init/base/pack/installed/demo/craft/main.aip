@@ -5,7 +5,7 @@
 local namespace = CTX.PACK_NAMESPACE or "no_namespace"
 
 local msg = string.format([[
-This aipack has two sub agents, craft/text and craft/code
+This aipack has two sub-agents, craft/text and craft/code.
 You can run them with: 
 
 aip run %s@craft/text
