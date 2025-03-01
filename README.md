@@ -20,12 +20,26 @@ You can find more information in the following [discussion #51](https://github.c
 
 # aipack - Build, Run, Share
 
-> DISCLAIMER: Right now, it works on **Linux & Mac**. Use **WSL** on **Windows** (**for now**).
-> - The cool thing is the `aip ..` can run on WSL, and then use VSCode on the same project, and all is good.
+> DISCLAIMER: For now, v0.6.x, AIPACK works on **Linux & Mac**, and requires **WSL** on **Windows** 
+>
+> IMPORTANT: **Proper Windows support** is coming sometime in v0.6.x and **definitely by v0.7.x** (about **Mid / End of March**)
+> 
 
-For now, install with `cargo install aipack`
+
 
 ### Quick Start
+
+**Install**
+
+For now, the install requires building it directly from source via Rust. Works great on all OSes.
+
+- Install Rust https://www.rust-lang.org/tools/install
+- For now, install with `cargo install aipack`
+
+> NOTE: Ironically the binary is relatively small, <15MB with batteries included, but building it will download quite a bit. 
+> Binaries and install instructions will be available on https://aipack.ai
+
+**Run**
 
 ```sh
 # In terminal go to your projct
