@@ -128,13 +128,13 @@ utils.text.ensure(content, {prefix = "./", suffix = ".md"}) -> string
 
 -- Ensure content ends with a single newline
 local normalized_content = utils.text.ensure_single_ending_newline(content)
-                                                                           -- string
+                                                                           
 
 -- split_first - Split the first occurrence of a separator
 local content = "some first content\n===\nsecond content"
-local first, second = utils.text.split_first(content,"===")
+local first, second = utils.text.split_first(content,"===\n")
 -- first  = "some first content\n"
--- second = "\nsecond content"
+-- second = "second content"
 -- NOTE: When no match, second is nil.
 --       If matched, but nothing after, second is ""
 
@@ -149,7 +149,7 @@ local updated_content = utils.text.replace_markers(content, new_sections) -- str
 
 -- Returns blocks of strings for all consecutive lines that match a pattern (starts_with only for now)
 -- Options: {starts_with: string, extrude?: "content", first?: number}
---     - where `extrude = "content"` will return the remaining content
+--     - where `extrude = "content"` will return the remaining content, otehrwise, remain will be nil
 --     - and `first = 2` will return the first 2 blocks, and then the remaining content regardless of matches.
 local line_blocks, remain = utils.text.extract_line_blocks(content: string, options: Options): table, string | nil
 ```

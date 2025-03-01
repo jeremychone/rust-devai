@@ -340,11 +340,7 @@ impl MdSectionIter<'_> {
 
 		let after = after_lines.join("\n");
 
-		MdSectionSplit {
-			before,
-			first: first.unwrap(),
-			after,
-		}
+		MdSectionSplit { before, first, after }
 	}
 }
 
@@ -574,7 +570,7 @@ second heading content"#;
 		// -- Check
 		let before = split_first.before;
 		let after = split_first.after;
-		let first = split_first.first;
+		let first = split_first.first.ok_or("Should have a first section")?;
 
 		// Check before
 		assert_eq!(before, "", "for now, before, always empty string");

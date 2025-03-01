@@ -48,6 +48,13 @@ impl FromStr for PackIdentity {
 	}
 }
 
+/// implement std::fmt::Display
+impl std::fmt::Display for PackIdentity {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}@{}", self.namespace, self.name)
+	}
+}
+
 // region:    --- Helper Validators
 static RGX: &Lazy<Regex> = regex!(r"^[a-zA-Z_][a-zA-Z0-9_-]*$");
 

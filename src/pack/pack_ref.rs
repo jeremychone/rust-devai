@@ -72,6 +72,9 @@ impl LocalPackRef {
 /// Getters
 #[allow(unused)]
 impl LocalPackRef {
+	pub fn identity(&self) -> &PackIdentity {
+		&self.identity
+	}
 	pub fn namespace(&self) -> &str {
 		&self.identity.namespace
 	}

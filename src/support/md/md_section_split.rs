@@ -4,7 +4,7 @@ use mlua::IntoLua;
 #[derive(Debug)]
 pub struct MdSectionSplit {
 	pub(super) before: String,
-	pub(super) first: MdSection,
+	pub(super) first: Option<MdSection>,
 	pub(super) after: String,
 }
 

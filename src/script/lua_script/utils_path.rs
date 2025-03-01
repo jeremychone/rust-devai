@@ -9,6 +9,7 @@
 //! * `utils.path.exists(path: string) -> bool`
 //! * `utils.path.is_file(path: string) -> bool`
 //! * `utils.path.is_dir(path: string) -> bool`
+//! * `utils.path.diff(file_path: string, base_path: string) -> string`
 //! * `utils.path.parent(path: string) -> string | nil`
 //! * `utils.path.join(path: string) -> string | nil` (default non os normalized)
 //! * `utils.path.join_os_normalized(path: string) -> string | nil` (windows style if start with like C:)
@@ -48,6 +49,10 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	let ctx = runtime_context.clone();
 	let path_is_dir_fn = lua.create_function(move |_lua, path: String| path_is_dir(&ctx, path))?;
 
+	// -- diff
+	let path_diff_fn =
+		lua.create_function(move |_lua, (file_path, base_path): (String, String)| path_diff(file_path, base_path))?;
+
 	// -- parent
 	let path_parent_fn = lua.create_function(move |_lua, path: String| path_parent(path))?;
 
@@ -60,6 +65,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 	table.set("exists", path_exists_fn)?;
 	table.set("is_file", path_is_file_fn)?;
 	table.set("is_dir", path_is_dir_fn)?;
+	table.set("diff", path_diff_fn)?;
 	table.set("parent", path_parent_fn)?;
 	table.set("join", path_join_fn)?;
 	table.set("join_os_non_normalized", path_join_non_os_normalized_fn)?;
@@ -73,7 +79,7 @@ pub fn init_module(lua: &Lua, runtime_context: &RuntimeContext) -> Result<Table>
 
 /// ## Lua Documentation
 /// ```lua
-/// path.split(path: string) -> parent, filename
+/// utils.path.split(path: string) -> parent, filename
 /// ```
 ///
 /// Split path into parent, filename.
@@ -91,7 +97,7 @@ fn path_split(lua: &Lua, path: String) -> mlua::Result<MultiValue> {
 
 /// ## Lua Documentation
 /// ```lua
-/// path.exists(path: string) -> bool
+/// utils.path.exists(path: string) -> bool
 /// ```
 ///
 /// Checks if the specified path exists.
@@ -102,7 +108,7 @@ fn path_exists(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 
 /// ## Lua Documentation
 /// ```lua
-/// path.is_file(path: string) -> bool
+/// utils.path.is_file(path: string) -> bool
 /// ```
 ///
 /// Checks if the specified path is a file.
@@ -113,7 +119,22 @@ fn path_is_file(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 
 /// ## Lua Documentation
 /// ```lua
-/// path.is_dir(path: string) -> bool
+/// utils.path.diff(file_path: string, base_path: string, ) -> string
+/// ```
+///
+/// Do a diff between two path, giving the relative path
+fn path_diff(file_path: String, base_path: String) -> mlua::Result<String> {
+	let file_path = SPath::from(file_path);
+	let base_path = SPath::from(base_path);
+	// NOTE: Right now, using unwrap_or_default, as this should not happen
+	//       But will update simple-fs to utf8 diff by default
+	let diff = file_path.diff(base_path).map(|p| p.to_string()).unwrap_or_default();
+	Ok(diff)
+}
+
+/// ## Lua Documentation
+/// ```lua
+/// utils.path.is_dir(path: string) -> bool
 /// ```
 ///
 /// Checks if the specified path is a directory.
@@ -124,7 +145,7 @@ fn path_is_dir(ctx: &RuntimeContext, path: String) -> mlua::Result<bool> {
 
 /// ## Lua Documentation
 /// ```lua
-/// path.parent(path: string) -> string | nil
+/// utils.path.parent(path: string) -> string | nil
 /// ```
 ///
 /// Returns the parent directory of the specified path, or nil if there is no parent.
@@ -140,7 +161,7 @@ fn path_parent(path: String) -> mlua::Result<Option<String>> {
 
 /// ## Lua Documentation
 /// ```lua
-/// path.join(path: string) -> string | nil
+/// utils.path.join(path: string) -> string | nil
 ///
 /// -- Table example:
 /// local paths = {"folder", "subfolder", "file.txt"}

@@ -2,6 +2,7 @@
 
 mod helpers;
 mod lua_engine;
+mod lua_value_ext;
 mod utils_aipack;
 mod utils_cmd;
 mod utils_code;
@@ -18,6 +19,7 @@ mod utils_text;
 mod utils_web;
 
 pub use lua_engine::*;
+pub use lua_value_ext::*;
 
 #[cfg(test)]
 pub use helpers::*;

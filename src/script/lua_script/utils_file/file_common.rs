@@ -1,6 +1,7 @@
 use crate::dir_context::{DirContext, PathResolver};
 use crate::hub::get_hub;
 use crate::run::RuntimeContext;
+use crate::script::LuaValueExt;
 use crate::script::lua_script::helpers::{get_value_prop_as_string, to_vec_of_strings};
 use crate::support::{AsStrsExt, files, paths};
 use crate::types::{FileMeta, FileRecord};
@@ -147,7 +148,7 @@ pub(super) fn file_ensure_exists(
 /// List a set of file reference (no content) for a given glob
 ///
 /// ```lua
-/// let all_doc_file = utils.file.list("doc/**/*.md")
+/// let all_doc_file = utils.file.list("doc/**/*.md", options: {base_dir?: string, absolute?: bool})
 /// ```
 ///
 ///
@@ -173,10 +174,12 @@ pub(super) fn file_list(
 ) -> mlua::Result<Value> {
 	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options.as_ref())?;
 
+	let absolute = options.x_get_bool("absolute").unwrap_or(false);
+
 	let sfiles = list_files(
 		&base_path,
 		Some(&include_globs.x_as_strs()),
-		Some(ListOptions::from_relative_glob(true)),
+		Some(ListOptions::from_relative_glob(!absolute)),
 	)
 	.map_err(Error::from)?;
 
@@ -184,13 +187,17 @@ pub(super) fn file_list(
 	let sfiles = sfiles
 		.into_iter()
 		.map(|f| {
-			//
-			let diff = f.diff(&base_path)?;
-			// if the diff goes back from base_path, then, we put the absolute path
-			if diff.to_str().starts_with("..") {
+			if absolute {
 				Ok(SPath::from(f))
 			} else {
-				Ok(diff)
+				//
+				let diff = f.diff(&base_path)?;
+				// if the diff goes back from base_path, then, we put the absolute path
+				if diff.to_str().starts_with("..") {
+					Ok(SPath::from(f))
+				} else {
+					Ok(diff)
+				}
 			}
 		})
 		.collect::<simple_fs::Result<Vec<SPath>>>()
@@ -207,7 +214,7 @@ pub(super) fn file_list(
 /// List a set of file reference (no content) for a given glob and load them
 ///
 /// ```lua
-/// let all_doc_file = utils.file.list_load("doc/**/*.md")
+/// let all_doc_file = utils.file.list_load("doc/**/*.md", options: {base_dir?: string, absolute?: bool})
 /// ```
 ///
 ///
@@ -234,27 +241,35 @@ pub(super) fn file_list_load(
 ) -> mlua::Result<Value> {
 	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options.as_ref())?;
 
+	let absolute = options.x_get_bool("absolute").unwrap_or(false);
+
 	let sfiles = list_files(
 		&base_path,
 		Some(&include_globs.x_as_strs()),
-		Some(ListOptions::from_relative_glob(true)),
+		Some(ListOptions::from_relative_glob(!absolute)),
 	)
 	.map_err(Error::from)?;
 
 	let file_records = sfiles
 		.into_iter()
 		.map(|sfile| -> Result<FileRecord> {
-			//
-			let diff = sfile.diff(&base_path)?;
-			// if the diff goes back from base_path, then, we put the absolute path
-			// TODO: need to double check this
-			let (base_path, rel_path) = if diff.to_str().starts_with("..") {
-				(SPath::from(""), SPath::from(sfile))
+			if absolute {
+				// Note the first path won't be taken in account by FileRecord (will need to make that better typed)
+				let file_record = FileRecord::load(&SPath::from(""), &sfile.into())?;
+				Ok(file_record)
 			} else {
-				(base_path.clone(), diff)
-			};
-			let file_record = FileRecord::load(&base_path, &rel_path)?;
-			Ok(file_record)
+				//
+				let diff = sfile.diff(&base_path)?;
+				// if the diff goes back from base_path, then, we put the absolute path
+				// TODO: need to double check this
+				let (base_path, rel_path) = if diff.to_str().starts_with("..") {
+					(SPath::from(""), SPath::from(sfile))
+				} else {
+					(base_path.clone(), diff)
+				};
+				let file_record = FileRecord::load(&base_path, &rel_path)?;
+				Ok(file_record)
+			}
 		})
 		.collect::<Result<Vec<_>>>()?;
 
@@ -268,7 +283,7 @@ pub(super) fn file_list_load(
 /// Return the first FileMeta or Nil
 ///
 /// ```lua
-/// let first_doc_file = utils.file.first("doc/**/*.md")
+/// let first_doc_file = utils.file.first("doc/**/*.md", options: {base_dir?: string, absolute?: bool})
 /// ```
 ///
 ///
@@ -296,10 +311,13 @@ pub(super) fn file_first(
 	options: Option<Value>,
 ) -> mlua::Result<Value> {
 	let (base_path, include_globs) = base_dir_and_globs(ctx, include_globs, options.as_ref())?;
+
+	let absolute = options.x_get_bool("absolute").unwrap_or(false);
+
 	let mut sfiles = iter_files(
 		&base_path,
 		Some(&include_globs.x_as_strs()),
-		Some(ListOptions::from_relative_glob(true)),
+		Some(ListOptions::from_relative_glob(!absolute)),
 	)
 	.map_err(Error::from)?;
 
@@ -307,11 +325,15 @@ pub(super) fn file_first(
 		return Ok(Value::Nil);
 	};
 
-	let sfile = sfile
-		.diff(&base_path)
-		.map_err(|err| Error::cc("Cannot diff with base_path", err))?;
+	let spath = if absolute {
+		sfile.into()
+	} else {
+		sfile
+			.diff(&base_path)
+			.map_err(|err| Error::cc("Cannot diff with base_path", err))?
+	};
 
-	let res = FileMeta::from(sfile).into_lua(lua)?;
+	let res = FileMeta::from(spath).into_lua(lua)?;
 
 	Ok(res)
 }

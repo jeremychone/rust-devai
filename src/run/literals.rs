@@ -38,10 +38,10 @@ impl Literals {
 			if let Some(sub_path) = pack_ref.sub_path.as_deref() {
 				store.push(("PACK_SUB_PATH", sub_path.to_string()));
 			}
+			// This will be `demo@craft/some/path`
+			store.push(("PACK_REF", pack_ref.to_string()));
 			// This will be `demo@craft`
-			store.push(("PACK_REF", format!("{}@{}", pack_ref.namespace(), pack_ref.name())));
-			// This will be `demo@craft/text` (whatwever subpath is given by the user)
-			store.push(("PACK_FULL_REF", pack_ref.to_string()));
+			store.push(("PACK_IDENTITY", pack_ref.identity().to_string()));
 
 			// This will be the absolute path of `demo@craft`
 			store.push(("PACK_DIR", pack_ref.pack_dir.to_string()));
