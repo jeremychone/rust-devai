@@ -1,5 +1,11 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
+## 2025-02-28 - [v0.6.3](https://github.com/jeremychone/rust-devai/compare/v0.6.2...v0.6.3)
+
+- `+` **pricing** - first pass at adding pricing. Now, when available, `ai_response.price_usd` and added in `ai_response.info`
+- `+` **install** - Now can do `aip install path/to/file.aipack`
+- `>` major internal refactor - pack, packer (and first wire for aip install)
+
 ## 2025-02-28 - [v0.6.2](https://github.com/jeremychone/rust-devai/compare/v0.6.1...v0.6.2)
 
 - `-` @coder - normalize coder to use four backtics for code block
