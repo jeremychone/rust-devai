@@ -20,10 +20,6 @@ pub async fn init_base(force: bool) -> Result<()> {
 		new = true;
 	}
 
-	// tokio sleep 1ms
-	// UGLY - Somehow if we do not sleep here, it does not print message when aipack-base get created from scratch
-	tokio::time::sleep(std::time::Duration::from_millis(1)).await;
-
 	if new {
 		hub.publish(format!("\n=== {} '{}'", "Initializing ~/.aipack-base at", base_dir))
 			.await;
@@ -56,8 +52,6 @@ pub async fn init_base(force: bool) -> Result<()> {
 
 	// -- Display message
 	hub.publish("=== DONE\n").await;
-	// yield
-	tokio::task::yield_now().await;
 
 	Ok(())
 }

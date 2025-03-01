@@ -127,26 +127,35 @@ impl TuiApp {
 		tokio::spawn(async move {
 			let mut rx = get_hub().subscriber();
 
-			while let Ok(event) = rx.recv().await {
-				match event {
-					HubEvent::Message(msg) => {
-						safer_println(&format!("{msg}"), interactive);
-					}
-					HubEvent::Error { error } => {
-						safer_println(&format!("Error: {error}"), interactive);
-					}
+			loop {
+				let evt_res = rx.recv().await;
+				match evt_res {
+					Ok(event) => {
+						match event {
+							HubEvent::Message(msg) => {
+								safer_println(&format!("{msg}"), interactive);
+							}
+							HubEvent::Error { error } => {
+								safer_println(&format!("Error: {error}"), interactive);
+							}
 
-					HubEvent::LuaPrint(text) => safer_println(&text, interactive),
+							HubEvent::LuaPrint(text) => safer_println(&text, interactive),
 
-					HubEvent::Executor(exec_event) => {
-						if let (ExecEvent::RunEnd, true) = (exec_event, interactive) {
-							// safer_println("\n[ r ]: Redo   |   [ q ]: Quit", interactive);
-							tui_elem::print_bottom_bar();
+							HubEvent::Executor(exec_event) => {
+								if let (ExecEvent::RunEnd, true) = (exec_event, interactive) {
+									// safer_println("\n[ r ]: Redo   |   [ q ]: Quit", interactive);
+									tui_elem::print_bottom_bar();
+								}
+							}
+							HubEvent::DoExecRedo => send_to_executor(&exec_tx, ExecCommand::Redo).await,
+							HubEvent::Quit => {
+								// Nothing to do for now
+							}
 						}
 					}
-					HubEvent::DoExecRedo => send_to_executor(&exec_tx, ExecCommand::Redo).await,
-					HubEvent::Quit => {
-						// Nothing to do for now
+					Err(err) => {
+						println!("TuiApp handle_hub_event event error: {err}");
+						break;
 					}
 				}
 			}

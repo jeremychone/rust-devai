@@ -60,6 +60,7 @@ pub async fn exec_pack(pack_args: &PackArgs) -> Result<()> {
 			// Wait for user input
 			hub.publish("\nContinue with packing? (Y/n): ").await;
 
+			// Workaround for now. Need to investigate how we can remove this.
 			// tokio yield
 			tokio::task::yield_now().await;
 			// tokio wait 10ms

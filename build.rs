@@ -28,6 +28,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 	for entry in WalkDir::new(init_dir) {
 		let entry = entry?;
 		let path = entry.path();
+		if path.ends_with(".DS_Store") {
+			continue;
+		}
 		let name = path.strip_prefix(init_dir)?.to_str().unwrap();
 		let name = name.replace("\\", "/");
 

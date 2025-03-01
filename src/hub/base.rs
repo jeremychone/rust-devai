@@ -13,7 +13,7 @@ pub struct Hub {
 
 impl Hub {
 	pub fn new() -> Self {
-		let (tx, _rx) = broadcast::channel(10);
+		let (tx, _rx) = broadcast::channel(500);
 		Self { tx: Arc::new(tx), _rx }
 	}
 
