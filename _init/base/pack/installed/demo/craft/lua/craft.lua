@@ -25,7 +25,7 @@ function prep_input_file(input, options)
   if add_separator then
     placeholder_content = placeholder_content .. " \n\n====\n\n"
   end
-  utils.file.ensure_exists(path,placeholder_content)  
+  utils.file.ensure_exists(path, placeholder_content)  
 
   -- open if first time
   if first_time then 
@@ -42,9 +42,8 @@ function should_skip(inst, content)
   inst = inst and utils.text.trim(inst) or ""
   content = content and utils.text.trim(content) or ""
 
-
   if inst == "" and content == "" then
-    return aipack.skip("Empty content and instructions - Start writing, and do a Redo.")
+    return aipack.skip("Empty content and instructions - Start writing, and do a redo.")
   end
 
   local first_part = (inst ~= "" and inst) or content
@@ -57,9 +56,9 @@ function should_skip(inst, content)
   return nil
 end
 
--- retuns `inst, content` and each can be nil
+-- returns `inst, content` and each can be nil
 -- options {content_is_default = bool}
---   - When content_is_default, means that if no two parts, the content will be the first_part
+--   - When content_is_default, it means that if there are no two parts, the content will be the first_part
 function prep_inst_and_content(content, separator, options) 
   local content_is_default = options and options.content_is_default or false
   local first_part, second_part = utils.text.split_first(content, separator)

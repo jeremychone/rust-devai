@@ -34,7 +34,7 @@ function prep_prompt_file(input, options)
     initial_content = placeholder_content
   else 
     if initial_content == nil then
-      intial_content = ""
+      initial_content = ""
     end
   end 
 
@@ -49,9 +49,9 @@ function prep_prompt_file(input, options)
 end
 
 
--- retuns `inst, content` and each can be nil
+-- returns `inst, content` and each can be nil
 -- options {content_is_default = bool}
---   - When content_is_default, means that if no two parts, the content will be the first_part
+--   - When content_is_default, it means that if no two parts, the content will be the first_part
 function prep_inst_and_content(content, separator, options) 
   local content_is_default = options and options.content_is_default or false
   local first_part, second_part = utils.text.split_first(content, separator)
@@ -69,8 +69,8 @@ function prep_inst_and_content(content, separator, options)
   return inst, content
 end
 
--- This load map the FileMeta array as a FileRecorde array by loading each files
--- It also augment the FileRecord with `.comment_file_path` (.e.g., "// file: some/path/to/file.ext")
+-- This loads maps the FileMeta array as a FileRecord array by loading each file
+-- It also augments the FileRecord with `.comment_file_path` (.e.g., "// file: some/path/to/file.ext")
 -- returns nil if refs is nil
 function load_file_refs(base_dir, refs) 
   local files = nil

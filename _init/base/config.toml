@@ -2,24 +2,24 @@
 
 [default_options]
 # `model` required to be able to run an agent. 
-#         This will be the fallback for any workspace that do not defined their model in their config.toml
+#         This will be the fallback for any workspace that does not define its model in their config.toml
 #         (any model supported by the Rust genai crate)
 #
 # e.g.,    
-#          Ollama: "llama3.3:70b", "llama3.1:8b", "llama3.2:3b" "deepseek-r1:8b" "deepseek-coder-v2:16b" (or any locally installed Ollama)
+#          Ollama: "llama3.3:70b", "llama3.1:8b", "llama3.2:3b", "deepseek-r1:8b", "deepseek-coder-v2:16b" (or any locally installed Ollama)
 #            Groq: "deepseek-r1-distill-llama-70b", "llama3-8b-8192", "llama-3.3-70b-versatile"
 #             xAI: "grok-beta"
-#        DeepSeek: "deepseek-chat" "deepseek-reasoner" (from deepseek.com)
+#        DeepSeek: "deepseek-chat", "deepseek-reasoner" (from deepseek.com)
 #          Gemini: "gemini-2.0-flash", "gemini-2.0-pro-exp-02-05", "gemini-1.5-pro", "gemini-1.5-flash-8b" 
 #       Anthropic: "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest"
 #          OpenAI: "o3-mini", "o3-mini-high", "o3-mini-low", "gpt-4o", "gpt-4o-mini"
-model = "gpt-4o-mini" # or an alias below (e.g. "fast", "claude")
+model = "gpt-4o-mini" # or an alias below (e.g. "flash", "claude")
 
 # Temperature (by default unset)
 # temperature = 0.0
 
 # How many inputs can be processed at the same time (Defaults to 1 if absent)
-# input_concurrency = 6
+input_concurrency = 2
 
 # Define your own model aliases for any model/provider you have access to, and they can be used in place of the model name.
 # This can also be overridden or complemented in the `# Options` section of the aipack.
@@ -29,4 +29,5 @@ claude   = "claude-3-7-sonnet-latest"
 high     = "o3-mini-high"
 low      = "o3-mini-low"
 standard = "gpt-4o"
-fast     = "gemini-2.0-flash"
+flash    = "gemini-2.0-flash"
+r1       = "deepseek-reasoner"

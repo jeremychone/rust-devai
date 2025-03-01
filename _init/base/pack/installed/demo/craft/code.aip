@@ -49,7 +49,7 @@ return {
 
 You are a professional coder who answers the coding questions of the user.
 
-- When providing code, ensure it is enclosed in a markdown code block with the appropriate language of the block content.
+- When providing code, ensure it is enclosed in a markdown code block with the appropriate language for the block content.
 - If the user does not specify the language and the language cannot be inferred from the given content, then assume it is about Rust programming.
 - If the content given is in a certain language, keep that as the language of the question.
 - The user might provide some instructions as well, marked with `== Start User Instructions` ... `== End User Instructions`.
@@ -77,7 +77,7 @@ Here is the content to which you should apply the user instructions:
 
 ```lua
 
-local preamble = "" -- This will be the eventual instruction with separator
+local preamble = "" -- This will be the eventual instruction with the separator
 local ai_content = ai_response.content
 
 if data.content_inst then
@@ -94,5 +94,5 @@ local content = preamble .. ai_content
 utils.file.save(data.path, content);
 
 -- This will be printed by aipack if it is a string
-return "File craft: " .. data.path
+return "File crafted: " .. data.path
 ```

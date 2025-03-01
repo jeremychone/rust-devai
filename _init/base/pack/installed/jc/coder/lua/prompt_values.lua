@@ -10,9 +10,9 @@ local prompt_template = [[
 
 model_aliases = {high = "o3-mini-high", low = "o3-mini-low", fast = "gemini-2.0-flash"}
 
-model = "low" # "low" code faster, "high" better, "fast" so so but super fast.
+model = "low" # "low" runs code faster, "high" is better, "fast" is average but super fast.
 
-# try asking: "List agent parameters, and explain them." to get the parameters documentation. 
+# Try asking: "List agent parameters and explain them." to get the parameters documentation. 
 ```
 
 
@@ -30,7 +30,7 @@ model = "low" # "low" code faster, "high" better, "fast" so so but super fast.
 >                   Narrowing the scope is better (cost and quality-wise, as it allows the model to focus on what matters).
 > 
 > `input_globs`   - Customize your input globs so that each file in those globs will be run independently/concurrently if set up with `input_concurrency`.
->                   If not defined, no input files will be included in the prompt. The agent will be a one run, and the context files will be used. 
+>                   If not defined, no input files will be included in the prompt. The agent will run only once, and the context files will be used. 
 >                   This is optional and should be used in addition to `context_globs`, as these will be the working files. 
 >                   These files will be described to the AI as `User's input files`.
 >                   Otherwise, `context_globs` will be the working files. 
@@ -45,7 +45,7 @@ model = "low" # "low" code faster, "high" better, "fast" so so but super fast.
 > 
 > Feel free to remove these `> ` lines as they are just for initial documentation and have no impact on AI instructions.
 > 
-> You can ask "Can you explain the coder agent parameters?" to get some documentation about it. 
+> You can ask, "Can you explain the coder agent parameters?" to get some documentation about it. 
 >
 > Happy Coding!
 ]]

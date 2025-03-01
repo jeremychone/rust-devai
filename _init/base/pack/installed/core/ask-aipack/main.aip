@@ -18,7 +18,7 @@
 
 -- == Step 1 == Load the doc files
 
--- The `list_load` will list the files from the aipack parent dir and load each of them
+-- The `list_load` function will list the files from the aipack parent directory and load each of them
 -- so, each item is a FileRecord
 local doc_files = utils.file.list_load(".aipack/doc/**/*.md")
 
@@ -95,10 +95,10 @@ _answer_
 
 - For the `_user_question_` text, if the question is short, put it there; if it is long or contains special characters, summarize the question and put it there.
 - For the `# Instruction` and `# System`, the content is just normal markdown, not in a markdown code block, except when putting some code, where it is appropriate to put them in the appropriate code block.
-- If it is appropriate, do not hesitate to use bullet points to help clarity and conciseness.
+- If it is appropriate, do not hesitate to use bullet points to help clarify and conciseness.
 - When the user asks to generate a stage of an aip file, do not wrap it with a `lua` code block, just `# stage_name` and then put the Lua code in the `lua` code block.
 - When providing the answer, do not surround it in a markdown code block.
-- For the `# Instruction`, `# System`, and `# Assistant` sections, do not put the template in markdown codeblock handlebars, as this is not needed by aipack. Just the test with the handlebars characters, that will work nice.
+- For the `# Instruction`, `# System`, and `# Assistant` sections, do not put the template in markdown code block handlebars, as this is not needed by aipack. Just the text with the handlebars characters, that will work nicely.
 - Remember, a `.aipack` file is a markdown file, so when giving aipack examples, do not surround the aipack stages example with a markdown code block. Just put them in lines.
 - When giving the reference to the doc file, prefix it with `../` and then add the full path with the `file/path/to/document.md`, and put them in a markdown link like `[../../file/path/to/document.md](../../file/path/to/document.md#possible_heading_anchor)`
 
@@ -113,7 +113,7 @@ Here is the user question:
 
 ```lua
 
--- Extract content from AI response
+-- Extract content from the AI response
 local answer = ai_response.content
 -- Sometimes, some models still put the result in a markdown block.
 -- This alleviates some of these issues (when it starts with ```)

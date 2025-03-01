@@ -34,7 +34,7 @@ Note that Lua types in the aipack documentation are expressed in a simplified Ty
 
 For example:
 
-- `options?: {starts_with: string, extrude?: "content" | "fragments", first?: number | bool}`
+- `options?: {starts_with: string, extrude?: "content" | "fragments", first?: number | boolean}`
 - Would mean:
   - The `options` property is optional, and when present, should be a "table object" (Lua Dictionary Table).
   - `starts_with` is required and can only be a string.
@@ -66,12 +66,12 @@ utils.file.save("doc/some-file.md", "some new content")         -- void (no retu
 utils.file.append("doc/some-file.md", "some new content")       -- void (no return for now)
 
 -- List files matching a glob pattern
---   (file.path will be relative to aipack workspace directory)
+--   (file.path will be relative to the aipack workspace directory)
 local all_doc_files = utils.file.list("doc/**/*.md")            -- {FileMeta, ...}
 
 -- List files matching a glob pattern and options (for now only base_dir)
---   (file.path will be relative to base directory, which is relative to workspace directory)
-local all_doc_files = utils.file.list("**/*.md", {base_dir: "doc/"})            -- {FileMeta, ...}
+--   (file.path will be relative to base directory, which is relative to the workspace directory)
+local all_doc_files = utils.file.list("**/*.md", {base_dir = "doc/"})            -- {FileMeta, ...}
 
 -- List files and load their content (or with the options as well)
 local all_files = utils.file.list_load({"doc/**/*.md", "src/**/*.rs"})           -- {FileRecord, ...}
@@ -163,10 +163,10 @@ See [MdBlock](#mdblock)
 utils.md.extract_blocks(md_content: string) -> Vec<MdBlock>
 -- Extract blocks for the language 'lang'
 utils.md.extract_blocks(md_content: string, lang: string) -> Vec<MdBlock>
--- Extract blocks (with or without language, and extrude: content, which the remaining content)
-utils.md.extract_blocks(md_content: String, {lang: string, extrude: "content"})
+-- Extract blocks (with or without language, and extrude: content, which is the remaining content)
+utils.md.extract_blocks(md_content: string, {lang: string, extrude = "content"})
 -- Extract, parse, and merge the `#!meta`, and return the value and the concatenated remaining text.
-local meta, remain = utils.md.extract_emai(md_content: String, {lang: string, extrude: "content"})
+local meta, remain = utils.md.extract_email(md_content: string, {lang: string, extrude = "content"})
 
 -- If content starts with ```, it will remove the first and last ```, and return the content in between
 -- Otherwise, it returns the original content
@@ -219,8 +219,8 @@ local web_response = utils.web.get("https://example.com")   -- WebResponse
 
 -- Do a post
 local web_response = utils.web.post("https://httpbin.org/post", { some = "stuff"})
--- if data is table, will be serialized as json, and content_type `application/json`
--- If data is string, then, just as is, and `plain/text`
+-- if data is a table, it will be serialized as json, and content_type `application/json`
+-- If data is a string, then, just as is, and `plain/text`
 ```
 
 #### WebResponse
@@ -234,8 +234,8 @@ The `WebResponse`
  url = string,
  content = string | table,
 }
--- .content will be Lua Table if response content_type is application/json
---          otherwise, just string
+-- .content will be a Lua Table if response content_type is application/json
+--          otherwise, just a string
 ```
 
 ### utils.html
@@ -290,8 +290,8 @@ All Lua scripts get the `CTX` table in scope to get the path of the runtime and 
 | CTX.PACK_FULL_REF        | `demo@craft/text` (when `demo@craft/text`) |
 
 - All paths are absolute.
-- `CTX.PACK..` are nil if the agent was not referenced with a pack path (i.e, with a "@")
-- The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`. 
+- `CTX.PACK..` are nil if the agent was not referenced with a pack path (i.e., with a "@")
+- The `AGENT_NAME` is the name provided that resolves to the `AGENT_FILE_PATH`.
 
 # Common Types
 

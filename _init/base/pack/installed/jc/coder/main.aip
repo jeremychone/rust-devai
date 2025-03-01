@@ -1,8 +1,8 @@
 # Before All
 
-Here we do the prep work in the "Before All" section in case we need to set `split_file_into_inputs = true`.
-This will return inputs, where each input will have `.context_files: string[]`.
-This way, the input run can operate on multiple files or just get one file in the array (or eventually more than one).
+Here we do the prep work in the "Before All" section in case we need to set `split_file_into_inputs = true`. 
+
+This will return inputs, where each input will have `.context_files: string[]`. This way, the input run can operate on multiple files or just get one file in the array (or eventually more than one).
 
 ```lua
 local p_utils  = require("prompt_utils")
@@ -32,7 +32,6 @@ if second_part ~= nil then
     end    
 end
 
-
 -- Note: For now, we ignore the second part, as this will display what the AI says beside the code it gives. This allows for explanations, but there is no need to put it back in context.
 
 -- Extract the meta and instruction
@@ -42,9 +41,9 @@ local _line_blocks, inst_content = utils.text.extract_line_blocks(inst,
                                              {starts_with = ">", extrude = "content"})
 inst = utils.text.trim(inst_content)
 
--- Determine if we should kep
+-- Determine if we should keep
 if inst == "" then
-    return aipack.skip("Empty instruction - Start writing, and do a Redo.")
+    return aipack.skip("Empty instruction - Start writing and do a Redo.")
 end
 
 -- Prep the cache files
@@ -52,7 +51,6 @@ local ai_responses_for_raw_path     = prompt_file.dir .. "/" .. ".cache/last_ai_
 utils.file.save(ai_responses_for_raw_path, "")
 local ai_responses_for_prompt_path = prompt_file.dir .. "/" .. ".cache/last_ai_responses_for_prompt.md"
 utils.file.save(ai_responses_for_prompt_path, "")
-
 
 -- == Prep knowledge_refs
 local knowledge_refs = nil
@@ -70,7 +68,7 @@ local input_refs   = nil
 local include_second_part = second_part ~= nil
 
 if base_dir ~= nil then
-    -- if base dir, we do not include_second_part
+    -- if base dir, we do not include second part
     include_second_part = false
     -- remove the trailing /
     base_dir =  base_dir:gsub("/+$", "")
@@ -91,7 +89,6 @@ if base_dir ~= nil then
 else
     print("INFO: No base_dir, update in place ")
 end
-
 
 -- == Build the inputs(for now, only one)
 local input_base = {
@@ -129,7 +126,7 @@ options.temperature       = meta.temperature
 options.model_aliases     = meta.model_aliases
 options.input_concurrency = meta.input_concurrency
 
--- NOTE: for now, it is just one input, but the goal is to allow multiples inputs
+-- NOTE: for now, it is just one input, but the goal is to allow multiple inputs
 return aipack.before_all_response({
     inputs  = inputs,
     options = options
@@ -150,13 +147,13 @@ base.knowledge_files = p_utils.load_file_refs(base.base_dir, base.knowledge_refs
 base.context_files   = p_utils.load_file_refs(base.base_dir,  base.context_refs)
 base.input_files     = p_utils.load_file_refs(base.base_dir,  input_refs)
 
--- The agumented base becomes the data. 
+-- The augmented base becomes the data. 
 return base
 ```
 
 # System
 
-You are a senior developer expert who has deep expertise in many languages and creates production-grade quality code (simple and scalable). 
+You are a senior developer expert who has deep expertise in many languages and creates production-grade quality code (simple and scalable).
 
 The user instruction will ask you to review/update the existing code or create new code if no existing code is provided.
 
@@ -172,17 +169,17 @@ When giving code back that needs to modify files, make sure to follow the `Code 
 
 <SECTION title="THIS AGENT CUSTOM PARAMETERS">
 
-Here are this Agent Parameters documentation parameters. This is your parameters in a way. User give them in the `!meta` toml code block, and you have the logic to evaluate them. 
+Here are this Agent Parameters documentation parameters. This is your parameters in a way. User gives them in the `!meta` toml code block, and you have the logic to evaluate them. 
 
 So, if the users ask about your parameters or the agent parameters, here is the documentation / example. 
 
 {{data.prompt_template}}
 
-When the user ask to list or such, answer in bullet points. Follow this format:  one bullet point per property, start quick example under tick, and then - explanation. Like below: 
+When the user asks to list or such, answer in bullet points. Follow this format:  one bullet point per property, start with a quick example under tick, and then - explanation. Like below: 
 
-- `base_dir = "src"` - tell the agent to look at the files is dir. No default, if not defined, context is what is above and below the `====`. If defined, what is below the `====` won't get back to the context, and files might be updated. 
+- `base_dir = "src"` - tells the agent to look at the files in this directory. No default, if not defined, context is what is above and below the `====`. If defined, what is below the `====` won't get back to the context, and files might be updated. 
 
-IMPORTANT: When describing the `context_globs` do not show the default as quick example, but more something like `context_globs = ["**/mod.rs", "utils/**/*.rs"]` - to explain the value of being narrow and focused. And then, at the end of the bullet point, give the default. 
+IMPORTANT: When describing the `context_globs`, do not show the default as a quick example, but more something like `context_globs = ["**/mod.rs", "utils/**/*.rs"]` - to explain the value of being narrow and focused. And then, at the end of the bullet point, give the default. 
 
 </SECTION>
 
@@ -197,7 +194,7 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 // file: path/to/app.js
 ... some content
 ````
-- Make sure to use the 4 backticks for code blocks, so that if they contain some content with 3 backticks all will work. 
+- Make sure to use the 4 backticks for code blocks, so that if they contain some content with 3 backticks, all will work. 
 - Make sure that the file comment line is the first line of the code block. NOT ABOVE IT
 - So, for HTML files, it will be `<!-- file: path/to/file.html -->`
 - For SQL, Lua, and other `--` comment languages, it will be `-- file: path/to/file...` (with the appropriate extension)
@@ -209,13 +206,13 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 
 ### Rust
 
-- Mostly assume that there is a `Result<T>` type alias in the module import, when doing a `use crate::Result` or whatever the used result is. 
+- Mostly assume that there is a `Result<T>` type alias in the module import when doing a `use crate::Result` or whatever the used result is. 
 - Keep code simple and to the point. Limit allocation when possible, but try to avoid creating types with lifetime when not strictly needed. 
 
 ### HTML
 
 - Keep the tags simple, and use modern techniques that work in browsers that are -2 years old.
-- Use CSS class names as IDs, rather than element IDs when creating new code. 
+- Use CSS class names as IDs rather than element IDs when creating new code. 
     - However, do not change the code unless explicitly asked by the user. 
 
 ### JavaScript
@@ -244,7 +241,7 @@ For example, for JavaScript, Java, Rust, and `//` comment languages, the file wi
 
 <SECTION title="USER KNOWLEDGE, GUIDELINES, BEST PRACTICES">
 
-Here are some of the knowledge, guidelines, best practices, that the user like to follow. Make sure you respect them when providing code. 
+Here are some of the knowledge, guidelines, and best practices that the user likes to follow. Make sure you respect them when providing code. 
 
 {{#each data.knowledge_files}}
 
@@ -252,11 +249,9 @@ Here are some of the knowledge, guidelines, best practices, that the user like t
 
 {{/each}}
 
-
 </SECTION>
 
 {{/if}}
-
 
 {{#if data.context_files}}
 
@@ -279,7 +274,6 @@ Only write the files that need to be rewritten based on the user instruction, an
 
 {{/if}}
 
-
 {{#if data.input_files}}
 
 <SECTION title="USER INPUT SOURCE FILES">
@@ -299,7 +293,6 @@ Only write the files that need to be rewritten based on the user instruction, an
 
 {{/if}}
 
-
 {{#if data.include_second_part}}
 
 <SECTION title="USER'S CONTENT AND/OR PREVIOUS ANSWER">
@@ -312,9 +305,7 @@ Here is some context and/or your previous answer:
 
 {{/if}}
 
-
 The user instruction will ask you to review/update the existing code or create a new one if no existing code is provided.
-
 
 # Instruction
 
@@ -325,9 +316,7 @@ Here are the additional user instructions
 == End User Instructions
 {{/if}}
 
-Make sure that if you give code file content, you put them in markdown code block as described in the `<SECTION title="CODE BLOCK AND FILE CONVENTION">` system instruction, with the 4 backticks.
-
-
+Make sure that if you give code file content, you put them in a markdown code block as described in the `<SECTION title="CODE BLOCK AND FILE CONVENTION">` system instruction, with the 4 backticks.
 
 # Output
 
@@ -356,7 +345,7 @@ if data.context_files ~= nil then
         local first, remain = utils.text.split_first(block.content, "\n")
         local file_path = first:match(" file:%s*([^%s]+)")
         if file_path then 
-            file_path = utils.path.join(base_dir,file_path)
+            file_path = utils.path.join(base_dir, file_path)
             utils.file.save(file_path, remain)
             msg = msg .. file_path .. " " 
         end

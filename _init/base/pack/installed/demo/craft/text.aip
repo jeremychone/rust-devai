@@ -23,7 +23,7 @@ local file = craft.prep_input_file(input, {
     placeholder_suffix = [[
 
 Enter your text to be proofread.
-Alternatively, add a `====` line separator to provide instructions before the separator and the content to apply the instructions after the `====`.
+Alternatively, add a `====` line separator to provide instructions before the separator and the content to which the instructions apply after the `====`.
     ]]
 
 })
