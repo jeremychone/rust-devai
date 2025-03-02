@@ -9,6 +9,7 @@ use std::io::{Write, copy};
 use std::path::Path;
 use std::time::SystemTime;
 use time::OffsetDateTime;
+use time_tz::{OffsetDateTimeExt, timezones};
 
 // region:    --- PackUri
 
@@ -96,6 +97,13 @@ async fn download_pack(dir_context: &DirContext, url: &str) -> Result<SPath> {
 
 	// Create a timestamped filename using the time crate
 	let now = OffsetDateTime::now_utc();
+	// attempt to get local now (otherwise, no big deal, same machine so should be consistent return)
+	let now = if let Ok(local) = time_tz::system::get_timezone() {
+		now.to_timezone(local)
+	} else {
+		now
+	};
+
 	let timestamp = now
 		.format(&time::format_description::well_known::Rfc3339)
 		.map_err(|e| Error::FailToInstall {
