@@ -1,7 +1,8 @@
 `.` minor | `-` Fix | `+` Addition | `^` improvement | `!` Change | `*` important | `>` Refactor
 
-## 2025-03-01 - [v0.6.4](https://github.com/jeremychone/rust-devai/compare/v0.6.2...v0.6.3)
+## 2025-03-01 - [v0.6.4](https://github.com/jeremychone/rust-devai/compare/v0.6.3...v0.6.4)
 
+- `^` demo & jc agents - change default prompt file to be under .aipack/.prompt/namespace@pack_name/...-prompt.md
 - `-` (#53) core@ask-aipack - first pass at fixing the `aip run core@ask-aipack`
 - `^` lua - file.list.. - added {absolute} option
 - `-` init-base - fix no print issue
