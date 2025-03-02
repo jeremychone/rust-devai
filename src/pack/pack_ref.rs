@@ -21,9 +21,10 @@ pub struct PartialPackRef {
 impl std::fmt::Display for PartialPackRef {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		if let Some(ns) = &self.namespace {
-			write!(f, "{}@", ns)?;
+			write!(f, "{}@{}", ns, self.name)?;
+		} else {
+			write!(f, "@{}", self.name)?;
 		}
-		write!(f, "{}", self.name)?;
 		if let Some(sub_path) = &self.sub_path {
 			write!(f, "/{}", sub_path)?;
 		}

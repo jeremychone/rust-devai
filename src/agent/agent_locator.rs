@@ -38,7 +38,7 @@ pub fn find_agent(name: &str, dir_context: &DirContext) -> Result<Agent> {
 			// -- in case > 1, for now, no support
 			if pack_dirs.len() > 1 {
 				return Err(Error::custom(format!(
-					"Multiple aipack matches for {pack_ref}. Name choose directly:\n{}\n",
+					"{name} matches multiple AI packs across different namespaces.\n\nRun aip run ... with one of the full AI pack references below:\n\n{}\n",
 					pack_dirs.iter().map(|p| p.to_string()).collect::<Vec<String>>().join("\n")
 				)));
 			}
