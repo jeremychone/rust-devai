@@ -6,7 +6,6 @@
 - `^` lua - file.list.. - added {absolute} option
 - `-` init-base - fix no print issue
 
-
 ## 2025-02-28 - [v0.6.3](https://github.com/jeremychone/rust-devai/compare/v0.6.2...v0.6.3)
 
 - `+` **pricing** - first pass at adding pricing. Now, when available, `ai_response.price_usd` and added in `ai_response.info`

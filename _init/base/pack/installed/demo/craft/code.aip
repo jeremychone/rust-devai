@@ -15,31 +15,39 @@ This agent is responsible for crafting programming code.
 # Data
 
 ```lua
+local p_utils  = require("prompt_utils")
+local p_values = require("prompt_values")
 
-local craft = require("craft")
+-- == Init the prompt file if needed
+local prompt_absolute_dir = CTX.WORKSPACE_AIPACK_DIR .. "/.prompt/" .. CTX.PACK_IDENTITY
+local prompt_file_path = prompt_absolute_dir .. "/code-prompt.md"
 
-local file = craft.prep_input_file(input, {
-    default_name = "_craft-code",
-    placeholder_suffix = [[
-
-Ask your coding question to generate code below the `====`
-And (optionally) add the code below the `====` as a starting point
-    ]],
+local prompt_file = p_utils.prep_prompt_file(input, {
+    default_prompt_path = prompt_file_path,
+    placeholder_suffix = p_values.code_prompt_template,
     add_separator = true
-
 })
 
--- Split the content
-local inst, content = craft.prep_inst_and_content(file.content, "====", {content_is_default = false})
+local prompt_file_rel_path = utils.path.diff(prompt_file.path, CTX.WORKSPACE_DIR)
+if #prompt_file_rel_path == 0 then
+    prompt_file_rel_path = prompt_file.path
+end
+print("\nOPEN your demo@craft/code prompt file: " .. prompt_file_rel_path .. "\n\n")
 
-local should_skip = craft.should_skip(inst, content)
+
+-- Split the content
+local inst, content = p_utils.prep_inst_and_content(prompt_file.content, "====", {content_is_default = false})
+
+local should_skip = p_utils.should_skip(inst, content)
 if should_skip ~= nil then
     return should_skip
 end
 
+
+
 -- Return the processed data
 return {
-    path          = file.path,
+    path          = prompt_file.path,
     content_code  = content,
     content_inst  = inst,
 }
@@ -76,21 +84,18 @@ Here is the content to which you should apply the user instructions:
 # Output
 
 ```lua
-
 local preamble = "" -- This will be the eventual instruction with the separator
 local ai_content = ai_response.content
 
 if data.content_inst then
     local content_inst = utils.text.trim_end(data.content_inst)
-
     preamble = content_inst .. "\n\n====\n\n"
-    
     ai_content = utils.text.trim_start(ai_content)
 end
 
 local content = preamble .. ai_content
 
--- Example of how to save to the same file
+-- Save to the same file
 utils.file.save(data.path, content);
 
 -- This will be printed by aipack if it is a string

@@ -8,9 +8,11 @@ local prompt_template = [[
 # context_globs = ["**/*.rs", "**/*.lua", "**/*.go", "**/*.java", "**/*.html", "**/*.js", "**/*.ts", "**/*.tsx", "**/*.css", "**/*.pcss", "**/*.scss"]
 # input_globs = ["**/mod.rs"]
 
-model_aliases = {high = "o3-mini-high", low = "o3-mini-low", fast = "gemini-2.0-flash"}
+# This will override what is defined in the config.toml(s)
+model_aliases = {claude = "claude-3-7-sonnet-latest", high = "o3-mini-high", low = "o3-mini-low", fast = "gemini-2.0-flash"}
 
-model = "low" # "low" runs code faster, "high" is better, "fast" is average but super fast.
+# If not set, will see the model defined in the ~/.aipack-base/config.toml or .aipack/config.toml
+model = "low" # "claude" often the best, "low" runs code faster, "high" is better, "fast" super fast (goot for simple task).
 
 # Try asking: "List agent parameters and explain them." to get the parameters documentation. 
 ```

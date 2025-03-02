@@ -9,12 +9,16 @@ local p_utils  = require("prompt_utils")
 local p_values = require("prompt_values")
 
 -- == Init the prompt file if needed
+local prompt_absolute_dir  = CTX.WORKSPACE_AIPACK_DIR .. "/.prompt/" .. CTX.PACK_IDENTITY
+local prompt_file_path     = prompt_absolute_dir .. "/coder-prompt.md"
+
 local input = inputs and inputs[1] or nil
 
 local prompt_file = p_utils.prep_prompt_file(input, {
-    default_name           = ".coder/default",
-    initial_content        = p_values.prompt_template
+    default_prompt_path = prompt_file_path,
+    initial_content     = p_values.prompt_template
 })
+local prompt_file_rel_path = utils.path.diff(prompt_file.path, CTX.WORKSPACE_DIR)
 
 -- == Extract data from prompt files
 
@@ -40,6 +44,8 @@ local meta, inst = utils.md.extract_meta(first_part)
 local _line_blocks, inst_content = utils.text.extract_line_blocks(inst, 
                                              {starts_with = ">", extrude = "content"})
 inst = utils.text.trim(inst_content)
+
+print("\nOPEN your @coder prompt file: " .. prompt_file_rel_path .. "\n\n")
 
 -- Determine if we should keep
 if inst == "" then

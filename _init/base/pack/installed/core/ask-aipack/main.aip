@@ -4,7 +4,9 @@
 
 -- === Prep the prompt file
 local prompt_absolute_dir = CTX.WORKSPACE_AIPACK_DIR .. "/.prompt/" .. CTX.PACK_IDENTITY
-local prompt_file_path = prompt_absolute_dir .. "/ask-aipack.md"
+local prompt_file_path = prompt_absolute_dir .. "/ask-prompt.md"
+local prompt_file_rel_path = utils.path.diff(prompt_file_path, CTX.WORKSPACE_DIR)
+
 local placeholder_text = [[
 > Placeholder:
 >    - Ask your question above the ==== separator
@@ -36,9 +38,9 @@ end
 
 -- Note important to split on `====\n` otherwise, the doc can be split. 
 local first_part, second_part = utils.text.split_first(prompt_file_content, "====\n")
-print("..." .. first_part)
 local _line_blocks, prompt_content = utils.text.extract_line_blocks(first_part, {starts_with = ">", extrude = "content"})
 
+print("\n\nOPEN your @ask-aipack prompt file: " .. prompt_file_rel_path .. "\n\n")
 
 if not prompt_content:find("%S") then
     return aipack.skip("Empty prompt. Enter you question and replay")
@@ -53,7 +55,7 @@ local doc_globs = CTX.BASE_AIPACK_DIR .. "/doc/**/*.md"
 local doc_files = utils.file.list_load(doc_globs, {absolute = true})
 print("Including " .. #doc_files .. " documentation files")
 
--- Agument with the pass diff
+-- Agument with the doc path diff
 -- NOTE: Vscode cannot open absolute paths, at least when out of workspace
 --       So, doing relative path with the ../../ does seems to work
 for _, doc_file in ipairs(doc_files) do

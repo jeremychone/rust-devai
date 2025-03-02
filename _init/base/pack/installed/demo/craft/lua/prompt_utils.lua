@@ -2,10 +2,11 @@
 function prep_prompt_file(input, options) 
   options = options or {}
   local default_prompt_path    = options.default_prompt_path
+  local placeholder_suffix     = options.placeholder_suffix
   local initial_content        = options.initial_content
   local add_separator          = options.add_separator ~= nil and options.add_separator or false 
-  
-  -- Enter prompt_path
+
+  -- Enter default file_stem
   local prompt_path = nil
   if input == nil then
     prompt_path = default_prompt_path
@@ -22,9 +23,17 @@ function prep_prompt_file(input, options)
 
   -- Create placeholder initial content
   -- (otherwise, the initial content will be)
-  if initial_content == nil then
-    initial_content = ""
-  end
+  if placeholder_suffix ~= nil then 
+    local placeholder_content = "placeholder - " .. placeholder_suffix
+    if add_separator then
+      placeholder_content = placeholder_content .. " \n\n====\n\n"
+    end
+    initial_content = placeholder_content
+  else 
+    if initial_content == nil then
+      initial_content = ""
+    end
+  end 
 
   utils.file.ensure_exists(prompt_path, initial_content, {content_when_empty =  true})
 
@@ -36,10 +45,30 @@ function prep_prompt_file(input, options)
   return utils.file.load(prompt_path)
 end
 
+-- Will return a aipack skip if this task should be skipped
+--   - If both inst and content are empty
+--   - Or if inst (or content if inst is empty) starts with 'placeholder'
+function should_skip(inst, content) 
+  inst = inst and utils.text.trim(inst) or ""
+  content = content and utils.text.trim(content) or ""
+
+  if inst == "" and content == "" then
+    return aipack.skip("Empty content and instructions - Start writing, and do a redo.")
+  end
+
+  local first_part = (inst ~= "" and inst) or content
+
+  -- if starts with placeholder
+  if first_part:sub(1, 11):lower() == "placeholder" then
+      return aipack.skip("Content is a placeholder, so skipping for now")
+  end 
+
+  return nil
+end
 
 -- returns `inst, content` and each can be nil
 -- options {content_is_default = bool}
---   - When content_is_default, it means that if no two parts, the content will be the first_part
+--   - When content_is_default, it means that if there are no two parts, the content will be the first_part
 function prep_inst_and_content(content, separator, options) 
   local content_is_default = options and options.content_is_default or false
   local first_part, second_part = utils.text.split_first(content, separator)
@@ -95,10 +124,10 @@ function shallow_copy(original, to_merge)
     return copy
 end
 
-
 return {
   prep_prompt_file      = prep_prompt_file,
   should_skip           = should_skip,
   prep_inst_and_content = prep_inst_and_content,
-  load_file_refs        = load_file_refs
+  load_file_refs        = load_file_refs,
+  shallow_copy          = shallow_copy
 }

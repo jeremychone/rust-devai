@@ -15,31 +15,37 @@ This agent is for crafting general text, such as emails, documents, or any text.
 # Data
 
 ```lua
+local p_utils  = require("prompt_utils")
+local p_values = require("prompt_values")
 
-local craft = require("craft")
+-- == Init the prompt file if needed
+local prompt_absolute_dir = CTX.WORKSPACE_AIPACK_DIR .. "/.prompt/" .. CTX.PACK_IDENTITY
+local prompt_file_path = prompt_absolute_dir .. "/text-prompt.md"
 
-local file = craft.prep_input_file(input, {
-    default_name = "_craft-text",
-    placeholder_suffix = [[
-
-Enter your text to be proofread.
-Alternatively, add a `====` line separator to provide instructions before the separator and the content to which the instructions apply after the `====`.
-    ]]
-
+local prompt_file = p_utils.prep_prompt_file(input, {
+    default_prompt_path = prompt_file_path,
+    placeholder_suffix = p_values.text_prompt_template
 })
 
-local content = file.content
+local prompt_file_rel_path = utils.path.diff(prompt_file.path, CTX.WORKSPACE_DIR)
+if #prompt_file_rel_path == 0 then
+    prompt_file_rel_path = prompt_file.path
+end
+print("\nOPEN your demo@craft/text prompt file: " .. prompt_file_rel_path .. "\n\n")
 
-local should_skip = craft.should_skip(content)
+
+-- Split the content
+local inst, content = p_utils.prep_inst_and_content(prompt_file.content, "====", {content_is_default = true})
+
+local should_skip = p_utils.should_skip(inst, content)
 if should_skip ~= nil then
     return should_skip
 end
 
--- split the content
-local inst, content = craft.prep_inst_and_content(content, "====", {content_is_default = true})
 
+-- Return the processed data
 return {
-    path      = file.path,
+    path      = prompt_file.path,
     content   = content,
     content_inst = inst,
 }
@@ -49,9 +55,10 @@ return {
 
 Your goal is to proofread the English of the document the user is giving you.
 
-- Do not change the HTML code or other code, layout, or any structural aspect of the document.
-- Only correct the grammar and the phrasing of the sentences when needed.
-- When you provide the answer, do not wrap it in a markdown code block or give an explanation.
+- Only correct grammar and phrasing when needed, and make it sound American.
+- For code, don't change the HTML code, layout, or any structural aspect of the document.
+- Don't wrap the answer in a markdown code block or give an explanation.
+- Only when it looks like a tweet with some hashtags, then don't rephrase or re-layout unless necessary, as it's for a short tweet.
 - The user might give some instructions as well; these will be marked with `== Start User Instructions` ... `== End User Instruction`
 
 # Instruction
@@ -72,21 +79,18 @@ Here are the additional user instructions
 # Output
 
 ```lua
-
 local preamble = "" -- This will be the eventual instruction with a separator
 local ai_content = ai_response.content
 
 if data.content_inst then
     local content_inst = utils.text.trim_end(data.content_inst)
-
     preamble = content_inst .. "\n\n====\n\n"
-    
     ai_content = utils.text.trim_start(ai_content)
 end
 
 local content = preamble .. ai_content
 
--- Example of how to save to the same file
+-- Save to the same file
 utils.file.save(data.path, content);
 
 -- This will be printed by aipack if it is a string
